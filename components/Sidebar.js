@@ -80,8 +80,6 @@ export default function Sidebar() {
       {/* --- Menu Items --- */}
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2 scrollbar-thin scrollbar-thumb-muted overflow-x-hidden">
         {menuItems.map((item) => {
-          // Check if path matches exact href OR if it starts with href (for nested pages like /add or /edit)
-          // Exception: Dashboard is root, so we check strict equality or ensure it doesn't falsely trigger for others
           const isActive = item.href === "/admin/dashboard" 
             ? pathname === item.href 
             : pathname.startsWith(item.href);
@@ -99,7 +97,6 @@ export default function Sidebar() {
               title={isCollapsed ? item.name : ""}
             >
               <item.icon size={20} className="shrink-0" />
-              
               <span 
                 className={clsx(
                   "text-sm font-medium transition-all duration-300 ease-in-out whitespace-nowrap",
