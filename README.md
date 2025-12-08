@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🪙 Digital Gold Wallet Management System
 
-## Getting Started
+A complete **manual-operated Digital Gold Wallet Software** for jewellery businesses, where customers deposit money through **UPI**, the admin **manually updates gold rates**, and the system converts deposits into **24K gold grams** with full **KYC, ledger, reporting, and withdrawal management**.
 
-First, run the development server:
+This system is built for **transparency, legal compliance, and long-term scalability**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Key Features
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+✅ Manual Gold Rate Management  
+✅ UPI-Based Manual Deposit Entry (No Payment Gateway)  
+✅ Complete KYC System with OCR  
+✅ Auto Gold Conversion  
+✅ Customer Gold Wallet  
+✅ Weekly Statements (WhatsApp / SMS / Email)  
+✅ Physical Gold / Money / Jewellery Withdrawals  
+✅ Full Ledger & Audit Logs  
+✅ PostgreSQL Database  
+✅ Admin + Customer Dual Panel System  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 👥 User Roles
 
-To learn more about Next.js, take a look at the following resources:
+### 1️⃣ Admin (Owner / Staff)
+- Manages customers, KYC, deposits, gold rate, withdrawals, reports, notifications
+- Full system control
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2️⃣ Customer (End User)
+- Views gold wallet
+- Uploads KYC
+- Deposits via UPI
+- Requests withdrawals
+- Downloads statements
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🧩 Modules Overview
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### ✅ Admin Module
+- Dashboard
+- Customer Management
+- KYC Management
+- Gold Rate Management (Manual)
+- Deposit Management (Manual UPI)
+- Withdrawal Management
+- Ledger & Reports
+- Notification System
+- Staff Management (Optional)
+- Admin Profile
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### ✅ Customer Module
+- Dashboard
+- Gold Wallet
+- UPI Deposit Page
+- Withdrawals
+- Statements
+- KYC Upload
+- Profile Settings
+
+---
+
+## 🗄️ Database
+
+- **Database Type:** PostgreSQL  
+- **Total Tables:** 13+ Core Tables  
+- Includes:
+  - users
+  - customers
+  - nominees
+  - kyc_documents
+  - gold_rates
+  - deposits
+  - gold_conversions
+  - revaluation_entries
+  - withdrawals
+  - ledger
+  - statements
+  - notification_logs
+  - staff_action_logs
+
+---
+
+## 🔐 KYC Features
+
+- Aadhaar / DL / Voter ID / Passport
+- Address Proof (Optional)
+- PAN (Optional)
+- Digital Signature Upload
+- Nominee Details
+- OCR Auto Data Extraction
+- Auto KYC Approval Workflow
+- Duplicate KYC Detection
+- Downloadable KYC PDF
+- Audit Logs for Legal Security
+
+---
+
+## 💰 Deposit & Gold Conversion Workflow
+
+1. Customer sends money via **UPI**
+2. Admin manually enters deposit into system
+3. System fetches **latest manually updated gold rate**
+4. Converts amount → **gold grams**
+5. Gold wallet updates automatically
+6. Ledger entry created
+
+---
+
+## 📈 Gold Rate Management
+
+- Admin manually updates daily gold rate
+- System:
+  - Recalculates all wallet values
+  - Creates revaluation ledger entries
+  - Updates profit/loss automatically
+
+---
+
+## 🏦 Withdrawals
+
+Customers can request:
+- ✅ Physical Gold
+- ✅ Money Payout
+- ✅ Jewellery Conversion
+
+Admin approves and completes requests manually.
+
+---
+
+## 📤 Notifications & Statements
+
+- Weekly Wallet Statements
+- Deposit Confirmation Alerts
+- Withdrawal Updates
+- KYC Approval Messages
+
+Channels:
+- WhatsApp API
+- SMS
+- Email
+
+---
+
+## 🛠️ Tech Stack (Suggested)
+
+| Layer | Technology |
+|--------|------------|
+| Frontend | React / Next.js |
+| Backend | Node.js / Express |
+| Database | PostgreSQL |
+| File Storage | Local / AWS S3 |
+| OCR | Tesseract / Paid API |
+| WhatsApp | WhatsApp Business API |
+| Authentication | JWT |
+| Hosting | AWS / DigitalOcean |

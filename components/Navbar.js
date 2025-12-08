@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
+import { useRouter, usePathname } from "next/navigation";
 import { 
   Sun, 
   Moon, 
@@ -14,7 +15,9 @@ import {
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -41,8 +44,20 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isAdminPage = pathname.startsWith("/admin");
+  const isCustomerPage = pathname.startsWith("/customers");
+  
   const handleLogout = () => {
+    logout();
     router.push("/");
+  };
+
+  const handleProfileClick = () => {
+    if (isAdminPage) {
+      router.push("/admin/profile");
+    } else if (isCustomerPage) {
+      router.push("/customers/profile-page");
+    }
   };
 
   return (
@@ -111,27 +126,30 @@ export default function Navbar() {
           {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
         </button>
 
-        {/* --- Admin Profile --- */}
+        {/* --- User Profile --- */}
         <div className="relative" ref={profileRef}>
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold hover:ring-2 hover:ring-ring hover:ring-offset-2 transition-all outline-none"
           >
-            KM
+            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
           </button>
 
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
               <div className="p-3 border-b border-border">
-                <p className="text-sm font-semibold">Admin User</p>
-                <p className="text-xs text-muted-foreground">admin@kampomido.com</p>
+                <p className="text-sm font-semibold">{user?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isAdminPage ? "Admin" : isCustomerPage ? "Customer" : "User"}
+                </p>
               </div>
               <div className="p-1">
-                <button className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left">
+                <button 
+                  onClick={handleProfileClick}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left"
+                >
                   <User size={16} /> My Profile
-                </button>
-                <button className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left">
-                  <Settings size={16} /> Settings
                 </button>
               </div>
               <div className="p-1 border-t border-border">

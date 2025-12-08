@@ -4,13 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
-  Coins, 
+  Wallet,
   ArrowDownCircle, 
   ArrowUpCircle, 
-  BookOpen,
-  Bell, 
+  FileText,
+  ShieldCheck,
   UserCircle,
   ChevronLeft,
   ChevronRight,
@@ -21,18 +19,16 @@ import { clsx } from "clsx";
 import { useUser } from "@/context/UserContext";
 
 const menuItems = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Customer Management", href: "/admin/customers", icon: Users },
-  { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
-  { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
-  { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
-  { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
-  { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
-  { name: "Notifications", href: "/admin/notifications", icon: Bell },
-  { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
+  { name: "Dashboard", href: "/customers/dashboard", icon: LayoutDashboard },
+  { name: "Deposit", href: "/customers/deposit-page", icon: ArrowDownCircle },
+  { name: "Withdrawals", href: "/customers/withdrawals", icon: ArrowUpCircle },
+  { name: "Wallet", href: "/customers/wallet-page", icon: Wallet },
+  { name: "Statements", href: "/customers/statements", icon: FileText },
+  { name: "KYC", href: "/customers/kyc-page", icon: ShieldCheck },
+  { name: "Profile", href: "/customers/profile-page", icon: UserCircle },
 ];
 
-export default function Sidebar() {
+export default function CustomerSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -81,7 +77,7 @@ export default function Sidebar() {
       {/* --- Menu Items --- */}
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2 scrollbar-thin scrollbar-thumb-muted overflow-x-hidden">
         {menuItems.map((item) => {
-          const isActive = item.href === "/admin/dashboard" 
+          const isActive = item.href === "/customers/dashboard" 
             ? pathname === item.href 
             : pathname.startsWith(item.href);
 
@@ -131,3 +127,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+
