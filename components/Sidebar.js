@@ -9,8 +9,7 @@ import {
   Coins, 
   ArrowDownCircle, 
   ArrowUpCircle, 
-  BookOpen, 
-  BarChart, 
+  BookOpen,
   Bell, 
   UserCircle,
   ChevronLeft,
@@ -28,7 +27,6 @@ const menuItems = [
   { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
   { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
   { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
-  { name: "Reports Section", href: "/admin/reports", icon: BarChart },
   { name: "Notifications", href: "/admin/notifications", icon: Bell },
   { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
 ];
