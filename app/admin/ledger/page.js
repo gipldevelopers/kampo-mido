@@ -52,21 +52,21 @@ const TypeBadge = ({ type }) => {
 
   if (type === 'Deposit') {
     styles = "bg-green-500/10 text-green-600 border-green-500/20";
-    icon = <ArrowDownLeft size={12} className="mr-1" />;
+    icon = <ArrowDownLeft size={10} className="sm:w-3 sm:h-3 mr-0.5 sm:mr-1 shrink-0" />;
   } else if (type === 'Withdrawal') {
     styles = "bg-destructive/10 text-destructive border-destructive/20";
-    icon = <ArrowUpRight size={12} className="mr-1" />;
+    icon = <ArrowUpRight size={10} className="sm:w-3 sm:h-3 mr-0.5 sm:mr-1 shrink-0" />;
   } else if (type === 'Revaluation') {
     styles = "bg-primary/10 text-primary border-primary/20";
-    icon = <RefreshCcw size={12} className="mr-1" />;
+    icon = <RefreshCcw size={10} className="sm:w-3 sm:h-3 mr-0.5 sm:mr-1 shrink-0" />;
   } else if (type === 'Conversion') { // Added Conversion Style
     styles = "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    icon = <ArrowRightLeft size={12} className="mr-1" />;
+    icon = <ArrowRightLeft size={10} className="sm:w-3 sm:h-3 mr-0.5 sm:mr-1 shrink-0" />;
   }
 
   return (
-    <span className={`flex items-center w-fit px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles}`}>
-      {icon} {type}
+    <span className={`flex items-center w-fit px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${styles}`}>
+      {icon} <span>{type}</span>
     </span>
   );
 };
@@ -110,23 +110,23 @@ export default function LedgerAndReports() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-10">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
       
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Ledger & Reports</h2>
-          <p className="text-sm text-muted-foreground">Manage financial records and generate system reports.</p>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">Ledger & Reports</h2>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manage financial records and generate system reports.</p>
         </div>
       </div>
 
       {/* Tabs Navigation */}
       <div className="border-b border-border">
-        <nav className="flex gap-6">
+        <nav className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab("ledger")}
-            className={`pb-3 text-sm font-medium transition-all relative ${
+            className={`pb-2 sm:pb-3 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${
               activeTab === "ledger" 
                 ? 'text-primary' 
                 : 'text-muted-foreground hover:text-foreground'
@@ -137,7 +137,7 @@ export default function LedgerAndReports() {
           </button>
           <button
             onClick={() => setActiveTab("reports")}
-            className={`pb-3 text-sm font-medium transition-all relative ${
+            className={`pb-2 sm:pb-3 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${
               activeTab === "reports" 
                 ? 'text-primary' 
                 : 'text-muted-foreground hover:text-foreground'
@@ -151,29 +151,29 @@ export default function LedgerAndReports() {
 
       {/* --- TAB CONTENT: LEDGER --- */}
       {activeTab === "ledger" && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in slide-in-from-bottom-2 duration-300">
           {/* Toolbar */}
-          <div className="flex flex-col md:flex-row gap-4 bg-card p-4 rounded-xl border border-border shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 md:gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
               <input 
                 type="text" 
                 placeholder="Search Customer or Transaction ID..." 
-                className="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                className="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="flex gap-3">
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <Filter size={16} className="text-muted-foreground" />
+            <div className="flex gap-2 sm:gap-3">
+              <div className="relative flex-1 sm:flex-none">
+                <div className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Filter size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
                 </div>
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="h-full pl-9 pr-8 py-2 bg-background border border-input rounded-md text-sm font-medium text-foreground hover:bg-muted transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary min-w-[160px]"
+                  className="w-full sm:w-auto h-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary sm:min-w-[160px]"
                 >
                   <option value="All">All Transactions</option>
                   <option value="Deposit">Deposits</option>
@@ -181,26 +181,26 @@ export default function LedgerAndReports() {
                   <option value="Withdrawal">Withdrawals</option>
                   <option value="Revaluation">Revaluations</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <ChevronDown size={14} className="text-muted-foreground" />
+                <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <ChevronDown size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" />
                 </div>
               </div>
 
               <div className="relative" ref={exportRef}>
                 <button 
                   onClick={() => setIsExportOpen(!isExportOpen)}
-                  className="h-full flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
+                  className="h-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted/80 transition-colors"
                 >
-                  <Download size={16} /> Export
+                  <Download size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Export</span>
                 </button>
                 {isExportOpen && (
-                  <div className="absolute right-0 top-12 w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                     <div className="p-1">
-                      <button onClick={() => handleExport('PDF')} className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-left">
-                        <FileText size={14} /> PDF
+                      <button onClick={() => handleExport('PDF')} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
+                        <FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF
                       </button>
-                      <button onClick={() => handleExport('Excel')} className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-left">
-                        <FileSpreadsheet size={14} /> Excel
+                      <button onClick={() => handleExport('Excel')} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
+                        <FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel
                       </button>
                     </div>
                   </div>
@@ -209,34 +209,82 @@ export default function LedgerAndReports() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+          {/* Table - Mobile Card View / Desktop Table View */}
+          <div className="bg-card rounded-lg sm:rounded-xl border border-border shadow-sm overflow-hidden">
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-border">
+              {filteredLedger.length > 0 ? (
+                filteredLedger.map((row) => (
+                  <div key={row.id} className="p-3 hover:bg-muted/20 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{row.id}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{row.customer}</p>
+                      </div>
+                      <TypeBadge type={row.type} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Date</p>
+                        <p className="text-xs text-foreground">{row.date}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Rate</p>
+                        <p className="text-xs text-foreground">₹ {row.rate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Amount</p>
+                        <p className="text-xs sm:text-sm font-medium text-foreground">{row.amount > 0 ? `₹ ${row.amount.toLocaleString()}` : "-"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-muted-foreground">Gold Impact</p>
+                        <p className={`text-xs sm:text-sm font-bold ${
+                          row.impact === 'Credit' ? 'text-green-600' : 
+                          row.impact === 'Debit' ? 'text-destructive' : 'text-muted-foreground'
+                        }`}>
+                          {row.impact === 'Credit' ? '+' : row.impact === 'Debit' ? '-' : ''}
+                          {row.gold > 0 ? `${row.gold} g` : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p className="text-sm">No ledger entries found.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
-                    <th className="px-6 py-3 font-medium">Date & Time</th>
-                    <th className="px-6 py-3 font-medium">Txn ID</th>
-                    <th className="px-6 py-3 font-medium">Customer/Source</th>
-                    <th className="px-6 py-3 font-medium">Type</th>
-                    <th className="px-6 py-3 font-medium">Amount (₹)</th>
-                    <th className="px-6 py-3 font-medium">Rate</th>
-                    <th className="px-6 py-3 font-medium text-right">Gold Impact</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Date & Time</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Txn ID</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer/Source</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Type</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Amount (₹)</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Rate</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Gold Impact</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredLedger.length > 0 ? (
                     filteredLedger.map((row) => (
                       <tr key={row.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-6 py-4 text-muted-foreground">{row.date}</td>
-                        <td className="px-6 py-4 font-medium text-foreground">{row.id}</td>
-                        <td className="px-6 py-4">{row.customer}</td>
-                        <td className="px-6 py-4"><TypeBadge type={row.type} /></td>
-                        <td className="px-6 py-4 font-medium">
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{row.date}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{row.id}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">{row.customer}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4"><TypeBadge type={row.type} /></td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium">
                           {row.amount > 0 ? `₹ ${row.amount.toLocaleString()}` : "-"}
                         </td>
-                        <td className="px-6 py-4 text-muted-foreground">₹ {row.rate}</td>
-                        <td className={`px-6 py-4 text-right font-bold ${
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">₹ {row.rate}</td>
+                        <td className={`px-4 lg:px-6 py-3 lg:py-4 text-right font-bold ${
                           row.impact === 'Credit' ? 'text-green-600' : 
                           row.impact === 'Debit' ? 'text-destructive' : 'text-muted-foreground'
                         }`}>
@@ -257,35 +305,35 @@ export default function LedgerAndReports() {
 
       {/* --- TAB CONTENT: REPORTS --- */}
       {activeTab === "reports" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-in slide-in-from-bottom-2 duration-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {reportTypes.map((report) => (
-              <div key={report.id} className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between h-full">
+              <div key={report.id} className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between h-full">
                 <div>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <report.icon size={24} />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3 sm:mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <report.icon size={20} className="sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{report.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{report.desc}</p>
+                  <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-1.5 sm:mb-2">{report.title}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-5 md:mb-6">{report.desc}</p>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleGenerateReport(report.id, report.title)}
                       disabled={generatingId === report.id}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70"
+                      className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70"
                     >
                       {generatingId === report.id ? "Generating..." : "Generate Report"}
                     </button>
                   </div>
                   
                   <div className="flex gap-2 pt-2 border-t border-border">
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-background border border-input rounded-md text-xs font-medium hover:bg-muted transition-colors">
-                      <FileText size={14} className="text-muted-foreground" /> PDF
+                    <button className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-background border border-input rounded-md text-[10px] sm:text-xs font-medium hover:bg-muted transition-colors">
+                      <FileText size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" /> PDF
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-background border border-input rounded-md text-xs font-medium hover:bg-muted transition-colors">
-                      <Download size={14} className="text-muted-foreground" /> Excel
+                    <button className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-background border border-input rounded-md text-[10px] sm:text-xs font-medium hover:bg-muted transition-colors">
+                      <Download size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" /> Excel
                     </button>
                   </div>
                 </div>
@@ -294,12 +342,12 @@ export default function LedgerAndReports() {
           </div>
 
           {/* Recent Downloads */}
-          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 bg-muted/30 border-b border-border flex justify-between items-center">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Calendar size={16} /> Recently Generated
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl shadow-sm overflow-hidden">
+            <div className="p-3 sm:p-4 bg-muted/30 border-b border-border flex justify-between items-center gap-2">
+              <h3 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+                <Calendar size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Recently Generated</span>
               </h3>
-              <button className="text-xs text-primary hover:underline flex items-center">View All <ChevronRight size={12} /></button>
+              <button className="text-[10px] sm:text-xs text-primary hover:underline flex items-center gap-1 shrink-0">View All <ChevronRight size={10} className="sm:w-3 sm:h-3" /></button>
             </div>
             <div className="divide-y divide-border">
               {[
@@ -307,18 +355,18 @@ export default function LedgerAndReports() {
                 { name: "Weekly Liability - Week 48", type: "Excel", size: "450 KB", date: "Yesterday, 05:30 PM" },
                 { name: "Customer Balance Sheet", type: "Excel", size: "2.8 MB", date: "01 Dec, 09:15 AM" }
               ].map((file, i) => (
-                <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/10 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-secondary rounded text-secondary-foreground">
-                      {file.type === "PDF" ? <FileText size={16} /> : <FileSpreadsheet size={16} />}
+                <div key={i} className="flex items-center justify-between p-3 sm:p-4 hover:bg-muted/10 transition-colors gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-secondary rounded text-secondary-foreground shrink-0">
+                      {file.type === "PDF" ? <FileText size={14} className="sm:w-4 sm:h-4" /> : <FileSpreadsheet size={14} className="sm:w-4 sm:h-4" />}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">{file.date} • {file.size}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium truncate">{file.name}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{file.date} • {file.size}</p>
                     </div>
                   </div>
-                  <button className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-colors">
-                    <Download size={16} />
+                  <button className="p-1.5 sm:p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-colors shrink-0">
+                    <Download size={14} className="sm:w-4 sm:h-4" />
                   </button>
                 </div>
               ))}

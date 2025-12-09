@@ -83,87 +83,87 @@ export default function GoldRateManagement() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-10">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
       
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Gold Rate Management</h2>
-          <p className="text-sm text-muted-foreground">Set daily gold rates and manage revaluation.</p>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">Gold Rate Management</h2>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Set daily gold rates and manage revaluation.</p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         
         {/* LEFT COLUMN: Update Form (Span 2) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           
           {/* Current Rate Display */}
-          <div className="bg-primary/5 border border-primary/20 p-6 rounded-xl flex items-center justify-between shadow-sm">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Current Active Rate</p>
-              <h3 className="text-4xl font-bold text-primary flex items-baseline gap-2">
-                ₹ {currentRate.toLocaleString()}
-                <span className="text-lg font-medium text-muted-foreground">/ gram</span>
+          <div className="bg-primary/5 border border-primary/20 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl flex items-center justify-between shadow-sm gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground mb-1">Current Active Rate</p>
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                <span className="break-words">₹ {currentRate.toLocaleString()}</span>
+                <span className="text-xs sm:text-sm md:text-lg font-medium text-muted-foreground">/ gram</span>
               </h3>
             </div>
-            <div className="p-4 bg-background rounded-full border border-primary/20 shadow-sm">
-              <TrendingUp size={32} className="text-primary" />
+            <div className="p-2 sm:p-3 md:p-4 bg-background rounded-full border border-primary/20 shadow-sm shrink-0">
+              <TrendingUp size={20} className="sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary" />
             </div>
           </div>
 
           {/* Update Form */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <Clock size={18} className="text-muted-foreground" /> Update Today&apos;s Rate
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4 md:mb-6 flex items-center gap-1.5 sm:gap-2">
+              <Clock size={16} className="sm:w-[18px] sm:h-[18px] text-muted-foreground shrink-0" /> <span>Update Today&apos;s Rate</span>
             </h3>
             
-            <form onSubmit={handleUpdate} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">New Gold Rate (₹/g)</label>
+            <form onSubmit={handleUpdate} className="space-y-4 sm:space-y-5 md:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-foreground">New Gold Rate (₹/g)</label>
                   <input 
                     type="number" 
                     value={newRate}
                     onChange={(e) => setNewRate(e.target.value)}
                     placeholder="e.g. 7650"
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Effective Date & Time</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-foreground">Effective Date & Time</label>
                   <div className="relative">
                     <input 
                       type="datetime-local" 
                       value={effectiveDate}
                       onChange={(e) => setEffectiveDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
+                      className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
                       required
                     />
-                    <Calendar className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Calendar className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground pointer-events-none" />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Rate Notes (Optional)</label>
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Rate Notes (Optional)</label>
                 <textarea 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Reason for update (e.g., Market fluctuation)"
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px]"
+                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
                 ></textarea>
               </div>
 
-              <div className="pt-2 bg-muted/30 p-4 rounded-md border border-border">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                  <div className="text-sm text-muted-foreground">
+              <div className="pt-2 bg-muted/30 p-3 sm:p-4 rounded-md border border-border">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 shrink-0" />
+                  <div className="text-xs sm:text-sm text-muted-foreground min-w-0 flex-1">
                     <p className="font-medium text-foreground mb-1">System Actions upon Update:</p>
-                    <ul className="list-disc pl-4 space-y-1">
+                    <ul className="list-disc pl-3 sm:pl-4 space-y-0.5 sm:space-y-1">
                       <li>All customer wallet values will be recalculated immediately.</li>
                       <li>Ledger revaluation entries will be auto-generated.</li>
                     </ul>
@@ -175,15 +175,15 @@ export default function GoldRateManagement() {
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Processing...
+                      <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin shrink-0" /> <span>Processing...</span>
                     </>
                   ) : (
                     <>
-                      <Save size={16} /> Update Rate
+                      <Save size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Update Rate</span>
                     </>
                   )}
                 </button>
@@ -193,35 +193,35 @@ export default function GoldRateManagement() {
         </div>
 
         {/* RIGHT COLUMN: History (Span 1) */}
-        <div className="bg-card border border-border rounded-xl shadow-sm flex flex-col h-fit">
-          <div className="p-6 border-b border-border">
-            <h3 className="font-semibold text-lg flex items-center gap-2">
-              <History size={18} className="text-muted-foreground" /> Recent History
+        <div className="bg-card border border-border rounded-lg sm:rounded-xl shadow-sm flex flex-col h-fit">
+          <div className="p-3 sm:p-4 md:p-6 border-b border-border">
+            <h3 className="font-semibold text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+              <History size={16} className="sm:w-[18px] sm:h-[18px] text-muted-foreground shrink-0" /> <span>Recent History</span>
             </h3>
           </div>
           <div className="divide-y divide-border">
             {history.map((item) => (
-              <div key={item.id} className="p-4 hover:bg-muted/20 transition-colors">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-lg font-bold text-foreground">₹ {item.rate.toLocaleString()}</span>
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full border border-border">
+              <div key={item.id} className="p-3 sm:p-4 hover:bg-muted/20 transition-colors">
+                <div className="flex justify-between items-center mb-1 gap-2">
+                  <span className="text-base sm:text-lg font-bold text-foreground break-words">₹ {item.rate.toLocaleString()}</span>
+                  <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border shrink-0 whitespace-nowrap">
                     {item.updatedBy}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                  <Clock size={12} /> {item.effective}
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                  <Clock size={10} className="sm:w-3 sm:h-3 shrink-0" /> <span className="break-words">{item.effective}</span>
                 </p>
                 {item.notes && (
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded-md">
-                    <FileText size={12} className="mt-0.5 shrink-0" />
-                    {item.notes}
+                  <div className="flex items-start gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground bg-muted/30 p-1.5 sm:p-2 rounded-md">
+                    <FileText size={10} className="sm:w-3 sm:h-3 mt-0.5 shrink-0" />
+                    <span className="break-words">{item.notes}</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-border">
-            <button className="w-full py-2 text-sm text-primary font-medium hover:bg-primary/5 rounded-md transition-colors">
+          <div className="p-3 sm:p-4 border-t border-border">
+            <button className="w-full py-1.5 sm:py-2 text-xs sm:text-sm text-primary font-medium hover:bg-primary/5 rounded-md transition-colors">
               View Full History
             </button>
           </div>
