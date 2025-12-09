@@ -105,7 +105,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-sm">
-          <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+          <Link href="/auth/forgot-password" className="text-muted-foreground hover:text-primary transition-colors">
             Forgot password?
           </Link>
         </div>
