@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Gem
+  Gem,
+  X
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUser } from "@/context/UserContext";
@@ -28,7 +29,7 @@ const menuItems = [
   { name: "Profile", href: "/customers/profile-page", icon: UserCircle },
 ];
 
-export default function CustomerSidebar() {
+export default function CustomerSidebar({ onClose }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -42,13 +43,14 @@ export default function CustomerSidebar() {
   return (
     <aside 
       className={clsx(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-300 ease-in-out sticky top-0 z-30 overflow-hidden",
-        isCollapsed ? "w-16" : "w-64"
+        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-300 ease-in-out md:sticky top-0 z-30 overflow-hidden shadow-lg md:shadow-none",
+        "w-64 md:w-64",
+        isCollapsed && "md:w-16"
       )}
     >
       {/* --- Sidebar Header --- */}
       <div className={clsx(
-        "h-16 flex items-center border-b border-sidebar-border whitespace-nowrap px-3 transition-all duration-300",
+        "h-14 md:h-16 flex items-center border-b border-sidebar-border whitespace-nowrap px-3 transition-all duration-300",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
         
@@ -60,15 +62,26 @@ export default function CustomerSidebar() {
           <div className="bg-primary/10 p-1.5 rounded-md shrink-0 text-primary">
             <Gem size={20} />
           </div>
-          <span className="font-bold text-lg text-sidebar-foreground tracking-tight whitespace-nowrap">
+          <span className="font-bold text-base md:text-lg text-sidebar-foreground tracking-tight whitespace-nowrap">
             Kampo Mido
           </span>
         </div>
 
-        {/* Toggle Button */}
+        {/* Mobile Close Button */}
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="md:hidden p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        )}
+
+        {/* Desktop Toggle Button */}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
+          className="hidden md:block p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>

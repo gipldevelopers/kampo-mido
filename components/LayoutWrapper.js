@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import CustomerSidebar from "@/components/CustomerSidebar";
@@ -8,6 +9,7 @@ import Footer from "@/components/Footer";
 
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Check if the current page is an admin page
   const isAdminPage = pathname.startsWith("/admin");
@@ -23,10 +25,24 @@ export default function LayoutWrapper({ children }) {
   if (isAdminPage) {
     return (
       <div className="flex min-h-screen bg-muted/20">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <Navbar />
-          <main className="flex-1 p-6 overflow-auto">
+        {/* Mobile Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        {/* Sidebar - Hidden on mobile, shown as overlay when menu is open */}
+        <div className={`
+          fixed md:static inset-y-0 left-0 z-50 md:z-auto
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
+        </div>
+        <div className="flex-1 flex flex-col w-full md:w-auto min-w-0">
+          <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             {children}
           </main>
           <Footer />
@@ -39,10 +55,24 @@ export default function LayoutWrapper({ children }) {
   if (isCustomerPage) {
     return (
       <div className="flex min-h-screen bg-muted/20">
-        <CustomerSidebar />
-        <div className="flex-1 flex flex-col">
-          <Navbar />
-          <main className="flex-1 p-6 overflow-auto">
+        {/* Mobile Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        {/* Sidebar - Hidden on mobile, shown as overlay when menu is open */}
+        <div className={`
+          fixed md:static inset-y-0 left-0 z-50 md:z-auto
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <CustomerSidebar onClose={() => setIsMobileMenuOpen(false)} />
+        </div>
+        <div className="flex-1 flex flex-col w-full md:w-auto min-w-0">
+          <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             {children}
           </main>
           <Footer />

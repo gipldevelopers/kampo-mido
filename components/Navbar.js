@@ -10,10 +10,12 @@ import {
   Search, 
   User, 
   Settings, 
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from "lucide-react";
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useUser();
   const router = useRouter();
@@ -63,22 +65,32 @@ export default function Navbar() {
   return (
     // Changed bg-background/95 backdrop-blur -> bg-background
     // This removes the blur and transparency, making it solid and synced with theme
-    <nav className="h-16 border-b border-border bg-background px-6 flex items-center justify-between sticky top-0 z-20">
+    <nav className="h-14 md:h-16 border-b border-border bg-background px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-20">
       
-      {/* Left Side: Search Bar */}
-      <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring transition-all">
-          <Search className="w-4 h-4 text-muted-foreground" />
+      {/* Left Side: Mobile Menu + Search Bar */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Mobile Menu Button */}
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-muted/50 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring transition-all">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input 
             type="text" 
             placeholder="Search..." 
-            className="bg-transparent border-none outline-none text-sm w-64 text-foreground placeholder:text-muted-foreground"
+            className="bg-transparent border-none outline-none text-sm w-32 sm:w-48 md:w-64 text-foreground placeholder:text-muted-foreground"
           />
         </div>
       </div>
 
       {/* Right Side: Icons & Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
         
         {/* --- Notification Bell --- */}
         <div className="relative" ref={notifRef}>
@@ -93,7 +105,7 @@ export default function Navbar() {
           </button>
 
           {isNotifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
               <div className="p-4 border-b border-border flex justify-between items-center">
                 <h3 className="font-semibold text-sm">Notifications</h3>
                 <button onClick={() => setNotifications([])} className="text-xs text-primary hover:underline">Mark all read</button>
@@ -136,7 +148,7 @@ export default function Navbar() {
           </button>
 
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
+            <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
               <div className="p-3 border-b border-border">
                 <p className="text-sm font-semibold">{user?.name || "User"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
