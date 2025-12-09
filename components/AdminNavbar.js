@@ -1,0 +1,249 @@
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { useTheme } from "@/context/ThemeContext";
+import { useUser } from "@/context/UserContext";
+import { useRouter } from "next/navigation";
+import { 
+  Sun, 
+  Moon, 
+  Bell, 
+  Search, 
+  User,
+  LogOut,
+  Menu,
+  ArrowUpRight,
+  ArrowDownLeft,
+  RefreshCcw,
+  ArrowRightLeft,
+  CheckCircle2
+} from "lucide-react";
+
+export default function AdminNavbar({ onMenuClick }) {
+  const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useUser();
+  const router = useRouter();
+  
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Admin-specific notifications
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: "New Deposit", description: "User John Doe deposited ₹50,000", time: "2 min ago", type: "Deposit", dotColor: "bg-green-500" },
+    { id: 2, title: "KYC Pending", description: "New KYC verification request", time: "1 hour ago", type: "KYC", dotColor: "bg-red-500" },
+    { id: 3, title: "Gold Rate", description: "Gold rate updated to ₹7,645", time: "4 hours ago", type: "Revaluation", dotColor: "bg-blue-500" },
+  ]);
+
+  const [recentActivity] = useState([
+    { id: "TXN-8005", customer: "System", date: "30 Nov, 09:00 AM", rate: 7550, amount: null, goldImpact: null, type: "Revaluation" },
+    { id: "TXN-8006", customer: "Sneha Gupta", date: "29 Nov, 02:15 PM", rate: 7520, amount: 50000, goldImpact: 6.64, type: "Conversion" },
+  ]);
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  const handleProfileClick = () => {
+    router.push("/admin/profile");
+  };
+
+  const getTypeBadge = (type) => {
+    let icon = null;
+    let text = "";
+    let bgColor = "";
+    let textColor = "";
+    
+    if (type === "Deposit") {
+      icon = <ArrowDownLeft size={12} className="sm:w-3 sm:h-3" />;
+      text = "Deposit";
+      bgColor = "bg-green-500/10";
+      textColor = "text-green-600";
+    } else if (type === "Withdrawal") {
+      icon = <ArrowUpRight size={12} className="sm:w-3 sm:h-3" />;
+      text = "Withdrawal";
+      bgColor = "bg-destructive/10";
+      textColor = "text-destructive";
+    } else if (type === "Revaluation") {
+      icon = <RefreshCcw size={12} className="sm:w-3 sm:h-3" />;
+      text = "Revaluation";
+      bgColor = "bg-primary/10";
+      textColor = "text-primary";
+    } else if (type === "Conversion") {
+      icon = <ArrowRightLeft size={12} className="sm:w-3 sm:h-3" />;
+      text = "Conversion";
+      bgColor = "bg-blue-500/10";
+      textColor = "text-blue-600";
+    } else if (type === "KYC") {
+      icon = <CheckCircle2 size={12} className="sm:w-3 sm:h-3" />;
+      text = "KYC";
+      bgColor = "bg-secondary";
+      textColor = "text-secondary-foreground";
+    }
+    
+    return { icon, text, bgColor, textColor };
+  };
+
+  return (
+    <nav className="h-14 md:h-16 border-b border-border bg-background px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-20">
+      
+      {/* Left Side: Mobile Menu + Search Bar */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Mobile Menu Button */}
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-muted/50 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring transition-all">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input 
+            type="text" 
+            placeholder="Search customers..." 
+            className="bg-transparent border-none outline-none text-sm w-32 sm:w-48 md:w-64 text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
+
+      {/* Right Side: Icons & Actions */}
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+        
+        {/* --- Notification Bell --- */}
+        <div className="relative" ref={notifRef}>
+          {/* Mobile Backdrop */}
+          {isNotifOpen && (
+            <div 
+              className="fixed inset-0 bg-black/20 z-40 md:hidden"
+              onClick={() => setIsNotifOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          
+          <button 
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            className="p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors relative outline-none"
+          >
+            <Bell className="w-5 h-5" />
+            {notifications.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background animate-pulse"></span>
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <div className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 md:w-96 max-w-[90vw] sm:max-w-md h-auto max-h-[70vh] sm:max-h-[600px] bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50 flex flex-col">
+              {/* Header */}
+              <div className="p-3 sm:p-4 border-b border-border flex justify-between items-center shrink-0">
+                <h3 className="font-semibold text-sm sm:text-base">Notifications</h3>
+                <button 
+                  onClick={() => setNotifications([])} 
+                  className="text-xs sm:text-sm text-primary hover:underline font-medium"
+                >
+                  Mark all read
+                </button>
+              </div>
+              
+              {/* Notifications List */}
+              <div className="flex-1 overflow-y-auto max-h-[300px] sm:max-h-[400px] md:max-h-[450px]">
+                {notifications.length === 0 ? (
+                  <div className="p-4 sm:p-5 md:p-6 text-center text-xs sm:text-sm text-muted-foreground">No new notifications</div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {notifications.map((notif) => {
+                      return (
+                        <div key={notif.id} className="p-2 sm:p-2 md:p-3.5 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-start gap-2 sm:gap-2.5">
+                            {/* Colored Status Dot */}
+                            <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 ${notif.dotColor || 'bg-primary'} rounded-full shrink-0 mt-1 sm:mt-1.5`}></div>
+                            
+                            {/* Notification Content */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm md:text-base font-semibold text-foreground mb-0.5 sm:mb-1">
+                                {notif.title}
+                              </p>
+                              <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mb-0.5 sm:mb-1 wrap-break-word">
+                                {notif.description}
+                              </p>
+                              <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                                {notif.time}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* View All Activity Button */}
+              <div className="p-2.5 sm:p-3 border-t border-border text-center shrink-0">
+                <button className="text-xs sm:text-sm md:text-base font-medium text-primary hover:underline">
+                  View All Activity
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Theme Toggle */}
+        <button onClick={toggleTheme} className="p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors">
+          {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+        </button>
+
+        {/* --- User Profile --- */}
+        <div className="relative" ref={profileRef}>
+          <button 
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold hover:ring-2 hover:ring-ring hover:ring-offset-2 transition-all outline-none"
+          >
+            {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
+          </button>
+
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-card text-card-foreground border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 z-50">
+              <div className="p-3 border-b border-border">
+                <p className="text-sm font-semibold">{user?.name || "Admin"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || "admin@example.com"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Admin</p>
+              </div>
+              <div className="p-1">
+                <button 
+                  onClick={handleProfileClick}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left"
+                >
+                  <User size={16} /> My Profile
+                </button>
+              </div>
+              <div className="p-1 border-t border-border">
+                <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md text-destructive hover:bg-destructive/10 transition-colors text-left font-medium">
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </nav>
+  );
+}
+

@@ -38,24 +38,24 @@ export default function StatementsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-10">
+    <div className="space-y-4 sm:space-y-5 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
       
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 md:gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Statements</h2>
-          <p className="text-sm text-muted-foreground">View and download your account statements.</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">Statements</h2>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5 sm:mt-1">View and download your account statements.</p>
         </div>
       </div>
 
       {/* Tabs Navigation */}
       <div className="border-b border-border">
-        <nav className="flex gap-6">
+        <nav className="flex gap-3 sm:gap-4 md:gap-6">
           <button
             onClick={() => setStatementType("weekly")}
-            className={`pb-3 text-sm font-medium transition-all relative ${
+            className={`pb-2 sm:pb-3 text-[11px] sm:text-xs md:text-sm font-medium transition-all relative ${
               statementType === "weekly" 
                 ? 'text-primary' 
                 : 'text-muted-foreground hover:text-foreground'
@@ -68,7 +68,7 @@ export default function StatementsPage() {
           </button>
           <button
             onClick={() => setStatementType("monthly")}
-            className={`pb-3 text-sm font-medium transition-all relative ${
+            className={`pb-2 sm:pb-3 text-[11px] sm:text-xs md:text-sm font-medium transition-all relative ${
               statementType === "monthly" 
                 ? 'text-primary' 
                 : 'text-muted-foreground hover:text-foreground'
@@ -83,16 +83,16 @@ export default function StatementsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[300px] sm:min-h-[400px]">
         {/* Statements List */}
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">
+        <div className="bg-card border border-border rounded-lg sm:rounded-xl shadow-sm overflow-hidden">
+          <div className="p-3 sm:p-4 md:p-6 border-b border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+              <h3 className="font-semibold text-sm sm:text-base md:text-lg">
                 {statementType === "weekly" ? "Weekly Statements" : "Monthly Statements"}
               </h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Filter size={16} />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-muted-foreground">
+                <Filter size={12} className="sm:w-4 sm:h-4" />
                 <span>All Statements</span>
               </div>
             </div>
@@ -101,20 +101,20 @@ export default function StatementsPage() {
         <div className="divide-y divide-border">
           {statements.length > 0 ? (
             statements.map((statement) => (
-              <div key={statement.id} className="p-6 hover:bg-muted/20 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <FileText size={24} className="text-primary" />
+              <div key={statement.id} className="p-3 sm:p-4 md:p-6 hover:bg-muted/20 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
+                    <div className="p-2 sm:p-2.5 md:p-3 bg-primary/10 rounded-lg shrink-0">
+                      <FileText size={18} className="sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground mb-1">{statement.period}</h4>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-[11px] sm:text-xs md:text-sm text-foreground mb-1 truncate">{statement.period}</h4>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <Calendar size={10} className="sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
                           {statement.date}
                         </span>
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>{statement.size}</span>
                       </div>
                     </div>
@@ -122,17 +122,17 @@ export default function StatementsPage() {
                   <button
                     onClick={() => handleDownload(statement.id)}
                     disabled={loading === statement.id}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed shrink-0"
                   >
                     {loading === statement.id ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
-                        Downloading...
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                        <span>Downloading...</span>
                       </>
                     ) : (
                       <>
-                        <Download size={16} />
-                        Download PDF
+                        <Download size={12} className="sm:w-4 sm:h-4" />
+                        <span>Download PDF</span>
                       </>
                     )}
                   </button>
@@ -140,9 +140,9 @@ export default function StatementsPage() {
               </div>
             ))
           ) : (
-            <div className="p-12 text-center">
-              <FileText size={48} className="mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No statements available yet.</p>
+            <div className="p-8 sm:p-12 text-center">
+              <FileText size={36} className="sm:w-12 sm:h-12 md:w-12 md:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+              <p className="text-[11px] sm:text-xs md:text-sm text-muted-foreground">No statements available yet.</p>
             </div>
           )}
         </div>
@@ -150,9 +150,9 @@ export default function StatementsPage() {
       </div>
 
       {/* Info Card */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-        <p className="text-sm font-medium text-foreground mb-2">About Statements</p>
-        <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+      <div className="bg-primary/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4">
+        <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-1.5 sm:mb-2">About Statements</p>
+        <ul className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground space-y-0.5 sm:space-y-1 list-disc list-inside">
           <li>Weekly statements are generated every Monday</li>
           <li>Monthly statements are generated on the 1st of each month</li>
           <li>Statements include all transactions, deposits, withdrawals, and gold conversions</li>

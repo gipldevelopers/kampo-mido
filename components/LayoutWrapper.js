@@ -4,7 +4,8 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import CustomerSidebar from "@/components/CustomerSidebar";
-import Navbar from "@/components/Navbar";
+import AdminNavbar from "@/components/AdminNavbar";
+import CustomerNavbar from "@/components/CustomerNavbar";
 import Footer from "@/components/Footer";
 
 export default function LayoutWrapper({ children }) {
@@ -42,7 +43,7 @@ export default function LayoutWrapper({ children }) {
           <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
         </div>
         <div className="flex-1 flex flex-col w-full md:w-auto min-w-0">
-          <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+          <AdminNavbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
           <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             {children}
           </main>
@@ -73,7 +74,7 @@ export default function LayoutWrapper({ children }) {
           <CustomerSidebar onClose={() => setIsMobileMenuOpen(false)} />
         </div>
         <div className="flex-1 flex flex-col w-full md:w-auto min-w-0">
-          <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+          <CustomerNavbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
           <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             {children}
           </main>
