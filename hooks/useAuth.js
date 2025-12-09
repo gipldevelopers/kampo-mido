@@ -19,36 +19,27 @@ export function useAuth(requiredRole = null) {
       const storedUser = AuthService.getStoredUser();
 
       if (storedUser && AuthService.isAuthenticated()) {
-        // Try to get current user from API (validates token)
-        const currentUser = await AuthService.getCurrentUser();
-        
-        if (currentUser) {
-          setUser(currentUser);
+        setUser(storedUser);
 
-          // Check role-based access if requiredRole is specified
-          if (requiredRole) {
-            const userRole = currentUser.role;
-            // Role 1 = Admin, Role 2 = Customer
-            if (requiredRole === "admin" && userRole !== 1) {
-              router.push("/unauthorized");
-              return;
-            }
-            if (requiredRole === "customer" && userRole !== 2) {
-              router.push("/unauthorized");
-              return;
-            }
-            if (Array.isArray(requiredRole) && !requiredRole.includes(userRole)) {
-              router.push("/unauthorized");
-              return;
-            }
+        // Check role-based access if requiredRole is specified
+        if (requiredRole) {
+          const userRole = storedUser.role?.toLowerCase();
+          // Role is a string: "admin" or "customer"
+          if (requiredRole === "admin" && userRole !== "admin") {
+            router.push("/unauthorized");
+            return;
           }
-
-          setAccessChecked(true);
-        } else {
-          // Token invalid or expired
-          AuthService.logout();
-          router.push("/");
+          if (requiredRole === "customer" && userRole !== "customer") {
+            router.push("/unauthorized");
+            return;
+          }
+          if (Array.isArray(requiredRole) && !requiredRole.includes(userRole)) {
+            router.push("/unauthorized");
+            return;
+          }
         }
+
+        setAccessChecked(true);
       } else {
         // No stored user or token
         router.push("/");
@@ -62,9 +53,9 @@ export function useAuth(requiredRole = null) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (credentials) => {
     try {
-      const { user: loggedInUser } = await AuthService.login(email, password);
+      const { user: loggedInUser } = await AuthService.login(credentials);
       setUser(loggedInUser);
       return loggedInUser;
     } catch (error) {
@@ -79,28 +70,29 @@ export function useAuth(requiredRole = null) {
   };
 
   const hasRole = (role) => {
-    if (!user) return false;
-    // Role 1 = Admin, Role 2 = Customer
-    if (role === "admin") return user.role === 1;
-    if (role === "customer") return user.role === 2;
-    return user.role === role;
+    if (!user || !user.role) return false;
+    const userRole = user.role.toLowerCase();
+    const checkRole = typeof role === "string" ? role.toLowerCase() : role;
+    return userRole === checkRole;
   };
 
   const hasAnyRole = (roles) => {
-    if (!user) return false;
+    if (!user || !user.role) return false;
+    const userRole = user.role.toLowerCase();
     return roles.some((role) => {
-      if (role === "admin") return user.role === 1;
-      if (role === "customer") return user.role === 2;
-      return user.role === role;
+      const checkRole = typeof role === "string" ? role.toLowerCase() : role;
+      return userRole === checkRole;
     });
   };
 
   const isAdmin = () => {
-    return hasRole("admin");
+    if (!user || !user.role) return false;
+    return user.role.toLowerCase() === "admin";
   };
 
   const isCustomer = () => {
-    return hasRole("customer");
+    if (!user || !user.role) return false;
+    return user.role.toLowerCase() === "customer";
   };
 
   return {

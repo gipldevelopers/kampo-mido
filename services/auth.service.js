@@ -22,32 +22,42 @@ class AuthService {
     return !!token;
   }
 
-  // Get current user (from localStorage or API)
-  async getCurrentUser() {
-    const storedUser = this.getStoredUser();
-    if (storedUser && this.isAuthenticated()) {
-      try {
-        // Optionally verify token with backend
-        const response = await API.get("/auth/me");
-        return response.data;
-      } catch (error) {
-        // If token is invalid, clear storage
-        if (error.response?.status === 401) {
-          this.logout();
-          return null;
-        }
-        // Return stored user if API call fails (offline mode)
-        return storedUser;
-      }
-    }
-    return null;
-  }
-
-  // Login user
-  async login(email, password) {
+  // Login user with email/password OR phone/password
+  async login(credentials) {
     try {
-      const response = await API.post("/auth/login", { email, password });
-      const { user, token } = response.data;
+      // Determine if login is with email or phone
+      const payload = {};
+
+      if (credentials.email) {
+        payload.email = credentials.email;
+      } else if (credentials.phone) {
+        payload.phone = credentials.phone;
+      } else {
+        throw new Error("Either email or phone is required");
+      }
+
+      payload.password = credentials.password;
+
+      const response = await API.post("/auth/login", payload);
+
+      // API response structure: { success, message, data: { user, token } }
+      let user, token;
+
+      if (response.data && response.data.data) {
+        user = response.data.data.user;
+        token = response.data.data.token;
+      }
+
+      // Validate response data
+      if (!user) {
+        console.error("Login response:", response.data);
+        throw new Error("Invalid response: Missing user data");
+      }
+
+      if (!token) {
+        console.error("Login response:", response.data);
+        throw new Error("Invalid response: Missing token");
+      }
 
       // Store token and user
       if (typeof window !== "undefined") {
@@ -62,28 +72,21 @@ class AuthService {
   }
 
   // Logout user
-  logout() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    }
-  }
-
-  // Register new user
-  async register(userData) {
+  async logout() {
     try {
-      const response = await API.post("/auth/register", userData);
-      const { user, token } = response.data;
-
-      // Store token and user
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+      // Call logout API if token exists
+      if (this.isAuthenticated()) {
+        await API.post("/auth/logout");
       }
-
-      return { user, token };
     } catch (error) {
-      throw error;
+      // Even if API call fails, clear local storage
+      console.error("Logout API error:", error);
+    } finally {
+      // Always clear local storage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
   }
 
@@ -97,10 +100,10 @@ class AuthService {
     }
   }
 
-  // Reset password
-  async resetPassword(token, newPassword, confirmPassword) {
+  // Reset password with token
+  async resetPasswordToken(token, newPassword, confirmPassword) {
     try {
-      const response = await API.post("/auth/reset-password", {
+      const response = await API.post("/auth/reset-password-token", {
         token,
         newPassword,
         confirmPassword,
@@ -110,36 +113,6 @@ class AuthService {
       throw error;
     }
   }
-
-  // Change password (authenticated user)
-  async changePassword(oldPassword, newPassword) {
-    try {
-      const response = await API.post("/auth/change-password", {
-        oldPassword,
-        newPassword,
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Refresh token
-  async refreshToken() {
-    try {
-      const response = await API.post("/auth/refresh");
-      const { token } = response.data;
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", token);
-      }
-
-      return token;
-    } catch (error) {
-      throw error;
-    }
-  }
 }
 
 export default new AuthService();
-

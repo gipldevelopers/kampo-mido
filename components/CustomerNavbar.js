@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useUser } from "@/context/UserContext";
 import { useRouter } from "next/navigation";
+import AuthService from "@/services/auth.service";
 import { 
   Sun, 
   Moon, 
@@ -54,9 +55,17 @@ export default function CustomerNavbar({ onMenuClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   
-  const handleLogout = () => {
-    logout();
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if API fails, clear local state and redirect
+      logout();
+      router.push("/");
+    }
   };
 
   const handleProfileClick = () => {

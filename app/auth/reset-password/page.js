@@ -1,11 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import AuthService from "@/services/auth.service";
+import Toast from "@/components/Toast";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -13,6 +16,18 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState(null);
+  const [resetToken, setResetToken] = useState("");
+
+  // Get token from URL query parameter
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      setResetToken(token);
+    } else {
+      setToast({ message: "Invalid or missing reset token", type: "error" });
+    }
+  }, [searchParams]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -40,22 +55,43 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    setIsLoading(true);
+    if (!resetToken) {
+      setToast({ message: "Reset token is missing. Please use the link from your email.", type: "error" });
+      return;
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    setIsLoading(true);
+    setToast(null);
+
+    try {
+      // Call reset password API
+      await AuthService.resetPasswordToken(resetToken, newPassword, confirmPassword);
+
+      // Success - show success state
       setIsSubmitted(true);
-      
+
       // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/");
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      // Handle API errors
+      const errorMessage = error.response?.data?.message || error.message || "Failed to reset password. Please try again.";
+      setToast({ message: errorMessage, type: "error" });
+
+      // Set specific field errors if provided by API
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-card rounded-xl border border-border shadow-lg">
         {!isSubmitted ? (
           <>
@@ -71,8 +107,8 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* New Password Field */}
               <div className="space-y-2">
-                <label 
-                  htmlFor="newPassword" 
+                <label
+                  htmlFor="newPassword"
                   className="text-sm font-medium text-foreground"
                 >
                   New Password
@@ -80,7 +116,7 @@ export default function ResetPasswordPage() {
                 <div className="relative">
                   {/* Icon on the left side */}
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-                  <input 
+                  <input
                     id="newPassword"
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
@@ -95,9 +131,8 @@ export default function ResetPasswordPage() {
                     }}
                     required
                     // Adjusted padding-left (pl-11) and padding-right (pr-11) for icon spacing
-                    className={`w-full pl-11 pr-11 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${
-                      errors.newPassword ? "border-destructive" : "border-input"
-                    }`}
+                    className={`w-full pl-11 pr-11 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${errors.newPassword ? "border-destructive" : "border-input"
+                      }`}
                     placeholder="Enter your new password"
                   />
                   {/* Eye icon for toggling visibility */}
@@ -126,8 +161,8 @@ export default function ResetPasswordPage() {
 
               {/* Confirm Password Field */}
               <div className="space-y-2">
-                <label 
-                  htmlFor="confirmPassword" 
+                <label
+                  htmlFor="confirmPassword"
                   className="text-sm font-medium text-foreground"
                 >
                   Confirm New Password
@@ -135,7 +170,7 @@ export default function ResetPasswordPage() {
                 <div className="relative">
                   {/* Icon on the left side */}
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-                  <input 
+                  <input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
@@ -147,9 +182,8 @@ export default function ResetPasswordPage() {
                     }}
                     required
                     // Adjusted padding-left (pl-11) and padding-right (pr-11) for icon spacing
-                    className={`w-full pl-11 pr-11 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${
-                      errors.confirmPassword ? "border-destructive" : "border-input"
-                    }`}
+                    className={`w-full pl-11 pr-11 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${errors.confirmPassword ? "border-destructive" : "border-input"
+                      }`}
                     placeholder="Confirm your new password"
                   />
                   {/* Eye icon for toggling visibility */}
@@ -175,8 +209,8 @@ export default function ResetPasswordPage() {
               </div>
 
               {/* Submit Button */}
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isLoading}
                 className="w-full py-2 bg-primary text-primary-foreground font-semibold rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -186,8 +220,8 @@ export default function ResetPasswordPage() {
 
             {/* Back to Login Link */}
             <div className="text-center text-sm">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -203,7 +237,7 @@ export default function ResetPasswordPage() {
                 <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-foreground">Password Updated!</h2>
               <p className="text-muted-foreground">

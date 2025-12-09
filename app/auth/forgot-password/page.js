@@ -1,13 +1,16 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Mail } from "lucide-react"; // Imported Mail icon
+import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
+import AuthService from "@/services/auth.service";
+import Toast from "@/components/Toast";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
 
   const validateEmail = () => {
     if (!email) {
@@ -27,20 +30,33 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateEmail()) {
-        return;
+      return;
     }
 
     setIsLoading(true);
+    setError("");
+    setToast(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Call forgot password API
+      await AuthService.forgotPassword(email);
+      
+      // Success - show success state
       setIsSubmitted(true);
-    }, 1500);
+    } catch (error) {
+      // Handle API errors
+      const errorMessage = error.response?.data?.message || error.message || "Failed to send reset link. Please try again.";
+      setError(errorMessage);
+      setToast({ message: errorMessage, type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      
       <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-card rounded-xl border border-border shadow-lg">
         {!isSubmitted ? (
           <>
