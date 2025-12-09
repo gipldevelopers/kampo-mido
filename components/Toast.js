@@ -33,30 +33,31 @@ export default function Toast({ message, type, onClose }) {
 
   return (
     <div 
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${
+      className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out w-[calc(100%-1rem)] sm:w-auto max-w-[calc(100vw-2rem)] sm:max-w-md ${
         isVisible 
           ? "opacity-100 translate-y-0" // Visible State
           : "opacity-0 translate-y-8"   // Hidden State
       }`}
     >
-      <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl ${
+      <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-lg border shadow-xl ${
         type === 'success' 
           ? 'bg-background border-primary text-foreground' 
           : 'bg-background border-destructive text-destructive'
       }`}>
-        <div className={`p-1 rounded-full ${
+        <div className={`p-0.5 sm:p-1 rounded-full shrink-0 ${
           type === 'success' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
         }`}>
-          {type === 'success' ? <Check size={16} /> : <X size={16} />}
+          {type === 'success' ? <Check size={14} className="sm:w-4 sm:h-4" /> : <X size={14} className="sm:w-4 sm:h-4" />}
         </div>
         
-        <p className="text-sm font-medium">{message}</p>
+        <p className="text-xs sm:text-sm font-medium break-words flex-1 min-w-0">{message}</p>
         
         <button 
           onClick={handleClose} 
-          className="ml-4 p-1 hover:bg-muted rounded-full transition-colors"
+          className="ml-2 sm:ml-4 p-0.5 sm:p-1 hover:bg-muted rounded-full transition-colors shrink-0"
+          aria-label="Close notification"
         >
-          <X size={14} />
+          <X size={12} className="sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
     </div>

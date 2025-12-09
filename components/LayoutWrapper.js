@@ -30,13 +30,14 @@ export default function LayoutWrapper({ children }) {
           <div 
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
           />
         )}
         {/* Sidebar - Hidden on mobile, shown as overlay when menu is open */}
         <div className={`
           fixed md:static inset-y-0 left-0 z-50 md:z-auto
-          transform transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          transform transition-transform duration-300 ease-in-out will-change-transform
+          ${isMobileMenuOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full md:translate-x-0 pointer-events-none md:pointer-events-auto'}
         `}>
           <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
         </div>
@@ -60,13 +61,14 @@ export default function LayoutWrapper({ children }) {
           <div 
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
           />
         )}
         {/* Sidebar - Hidden on mobile, shown as overlay when menu is open */}
         <div className={`
           fixed md:static inset-y-0 left-0 z-50 md:z-auto
-          transform transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          transform transition-transform duration-300 ease-in-out will-change-transform
+          ${isMobileMenuOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full md:translate-x-0 pointer-events-none md:pointer-events-auto'}
         `}>
           <CustomerSidebar onClose={() => setIsMobileMenuOpen(false)} />
         </div>
