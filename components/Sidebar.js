@@ -24,6 +24,7 @@ import { useUser } from "@/context/UserContext";
 const menuItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Customer Management", href: "/admin/customers", icon: Users },
+  { name: "User Management", href: "/admin/users", icon: Users },
   { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
   { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
   { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
