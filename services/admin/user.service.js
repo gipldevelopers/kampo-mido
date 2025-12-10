@@ -20,15 +20,48 @@ class UserService {
     }
   }
 
-  // Get all users with pagination
-  async getAllUsers(page = 1, limit = 20) {
+  // Get all users
+  async getAllUsers() {
     try {
-      const response = await API.get("/admin/users", {
-        params: {
-          page,
-          limit,
-        },
+      const response = await API.get("/admin/users/get-all-users", {
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get user by ID
+  async getUserById(userId) {
+    try {
+      const response = await API.get(`/admin/users/view-user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Update user
+  async updateUser(userId, userData) {
+    try {
+      const response = await API.put(`/admin/users/update-user/${userId}`, {
+        firstname: userData.firstname,
+        lastname: userData.lastname,
+        email: userData.email,
+        status: userData.status,
+        phone: userData.phone,
+        address: userData.address,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Delete user
+  async deleteUser(userId) {
+    try {
+      const response = await API.delete(`/admin/users/delete-user/${userId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -37,4 +70,3 @@ class UserService {
 }
 
 export default new UserService();
-

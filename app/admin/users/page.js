@@ -39,6 +39,7 @@ const StatusBadge = ({ status, type }) => {
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All"); 
   const [toast, setToast] = useState(null);
@@ -53,7 +54,7 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await UserService.getAllUsers(page, limit);
+      const response = await UserService.getAllUsers();
       
       // Handle different response structures
       if (response.data && Array.isArray(response.data)) {
@@ -140,9 +141,25 @@ export default function UserManagement() {
     return matchesSearch;
   });
 
-  const handleDelete = (id, name) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    setToast({ message: `${name} deleted successfully`, type: 'success' });
+  const handleDelete = async (id, name) => {
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      await UserService.deleteUser(id);
+      
+      // Remove user from state
+      setUsers(prev => prev.filter(u => u.id !== id));
+      setToast({ message: `${name} deleted successfully`, type: 'success' });
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to delete user";
+      setToast({ message: errorMessage, type: "error" });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -239,7 +256,12 @@ export default function UserManagement() {
                             <Pencil size={14} />
                           </button>
                         </Link>
-                        <button onClick={() => handleDelete(user.id, getUserName(user))} className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors" title="Delete">
+                        <button 
+                          onClick={() => handleDelete(user.id, getUserName(user))} 
+                          disabled={deletingId === user.id}
+                          className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                          title="Delete"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -304,7 +326,12 @@ export default function UserManagement() {
                                 <Pencil size={14} className="lg:w-4 lg:h-4" />
                               </button>
                             </Link>
-                            <button onClick={() => handleDelete(user.id, getUserName(user))} className="p-1.5 lg:p-2 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors" title="Delete User">
+                            <button 
+                              onClick={() => handleDelete(user.id, getUserName(user))} 
+                              disabled={deletingId === user.id}
+                              className="p-1.5 lg:p-2 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                              title="Delete User"
+                            >
                               <Trash2 size={14} className="lg:w-4 lg:h-4" />
                             </button>
                           </div>
