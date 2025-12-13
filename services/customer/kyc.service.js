@@ -7,7 +7,7 @@ class KYCService {
   async uploadKYC(kycData) {
     try {
       const formData = new FormData();
-      
+
       // Append files
       if (kycData.aadhaarFront) {
         formData.append("aadhaarFront", kycData.aadhaarFront);
@@ -21,7 +21,7 @@ class KYCService {
       if (kycData.selfie) {
         formData.append("selfie", kycData.selfie);
       }
-      
+
       // Append text fields
       if (kycData.idType) {
         formData.append("idType", kycData.idType);
@@ -38,7 +38,17 @@ class KYCService {
           "Content-Type": "multipart/form-data",
         },
       });
-      
+
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get KYC status
+  async getKYCStatus() {
+    try {
+      const response = await API.get("/customer/kyc/status");
       return response.data;
     } catch (error) {
       throw error;

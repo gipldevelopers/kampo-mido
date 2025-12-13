@@ -39,7 +39,8 @@ const StatusBadge = ({ status }) => {
 export default function KYCPage() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [kycStatus] = useState("Pending");
+  const [fetchingStatus, setFetchingStatus] = useState(true);
+  const [kycStatus, setKycStatus] = useState("Pending");
   const [isSubmitted, setIsSubmitted] = useState(false);
   
   // Document uploads
@@ -63,6 +64,58 @@ export default function KYCPage() {
   const [nomineeDob, setNomineeDob] = useState("");
   const [nomineeAddress, setNomineeAddress] = useState("");
   const [nomineePhone, setNomineePhone] = useState("");
+
+  // Fetch KYC status on mount
+  useEffect(() => {
+    const fetchKYCStatus = async () => {
+      setFetchingStatus(true);
+      try {
+        const response = await KYCService.getKYCStatus();
+        
+        // Handle different response structures
+        let status = "Pending";
+        if (response.data) {
+          status = response.data.status || response.data.kycStatus || "Pending";
+        } else if (response.status) {
+          status = response.status;
+        } else if (response.kycStatus) {
+          status = response.kycStatus;
+        }
+        
+        // Normalize status to match UI (Pending, Verified, Rejected)
+        const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+        if (normalizedStatus === "Approved") {
+          setKycStatus("Verified");
+        } else {
+          setKycStatus(normalizedStatus);
+        }
+        
+        // Check if KYC is already submitted (if status is not Pending, it's been submitted)
+        if (normalizedStatus !== "Pending") {
+          setIsSubmitted(true);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("kycSubmitted", "true");
+          }
+        } else {
+          // Check localStorage for submission status
+          if (typeof window !== "undefined") {
+            const submitted = localStorage.getItem("kycSubmitted");
+            if (submitted === "true") {
+              setIsSubmitted(true);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching KYC status:", error);
+        // Don't show error toast for status fetch - just use default "Pending"
+        // If it's a 404 or similar, KYC might not exist yet, which is fine
+      } finally {
+        setFetchingStatus(false);
+      }
+    };
+
+    fetchKYCStatus();
+  }, []);
 
   const handleFileUpload = (file, setFile, setPreview, maxSize = 5) => {
     // Prevent file upload if already submitted
@@ -212,7 +265,14 @@ export default function KYCPage() {
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">Status:</span>
-          <StatusBadge status={kycStatus} />
+          {fetchingStatus ? (
+            <div className="flex items-center gap-1.5">
+              <Loader2 size={12} className="animate-spin text-muted-foreground" />
+              <span className="text-[10px] sm:text-xs text-muted-foreground">Loading...</span>
+            </div>
+          ) : (
+            <StatusBadge status={kycStatus} />
+          )}
         </div>
       </div>
 
@@ -460,38 +520,87 @@ export default function KYCPage() {
               <div className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <span className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Current Status</span>
-                  <StatusBadge status={kycStatus} />
+                  {fetchingStatus ? (
+                    <div className="flex items-center gap-1.5">
+                      <Loader2 size={12} className="animate-spin text-muted-foreground" />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">Loading...</span>
+                    </div>
+                  ) : (
+                    <StatusBadge status={kycStatus} />
+                  )}
                 </div>
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  {kycStatus === "Pending" && "Your KYC is under review. Please wait for admin approval."}
-                  {kycStatus === "Verified" && "Your KYC has been verified. You can use all platform features."}
-                  {kycStatus === "Rejected" && "Your KYC was rejected. Please re-upload documents."}
-                </p>
+                {!fetchingStatus && (
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                    {kycStatus === "Pending" && "Your KYC is under review. Please wait for admin approval."}
+                    {kycStatus === "Verified" && "Your KYC has been verified. You can use all platform features."}
+                    {kycStatus === "Rejected" && "Your KYC was rejected. Please re-upload documents."}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Aadhaar</span>
-                  <span className="text-foreground font-medium">
-                    {aadhaarFront && aadhaarBack ? "✓ Uploaded" : "Pending"}
+                  <span className={`font-medium ${
+                    kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "text-primary" 
+                      : aadhaarFront && aadhaarBack 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "✓ Approved" 
+                      : aadhaarFront && aadhaarBack 
+                        ? "✓ Uploaded" 
+                        : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">PAN Card</span>
-                  <span className="text-foreground font-medium">
-                    {panCard ? "✓ Uploaded" : "Pending"}
+                  <span className={`font-medium ${
+                    kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "text-primary" 
+                      : panCard 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "✓ Approved" 
+                      : panCard 
+                        ? "✓ Uploaded" 
+                        : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Selfie</span>
-                  <span className="text-foreground font-medium">
-                    {selfie ? "✓ Uploaded" : "Pending"}
+                  <span className={`font-medium ${
+                    kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "text-primary" 
+                      : selfie 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "✓ Approved" 
+                      : selfie 
+                        ? "✓ Uploaded" 
+                        : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Nominee</span>
-                  <span className="text-foreground font-medium">
-                    {nomineeName ? "✓ Added" : "Pending"}
+                  <span className={`font-medium ${
+                    kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "text-primary" 
+                      : nomineeName 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved" 
+                      ? "✓ Approved" 
+                      : nomineeName 
+                        ? "✓ Added" 
+                        : "Pending"}
                   </span>
                 </div>
               </div>

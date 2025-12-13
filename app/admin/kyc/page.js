@@ -75,16 +75,18 @@ export default function KYCManagement() {
 
         // Map API data to UI format
         const mappedRequests = kycList.map((kyc) => {
-          // Prioritize KYC ID, fallback to customerId if needed
-          // The API endpoint /admin/kyc/view/{id} expects the KYC record ID
+          // The API endpoint /admin/kyc/view/{id} expects the KYC record ID (not customer ID)
+          // Always use KYC ID - do NOT fallback to customerId
           const kycId = kyc.id || kyc.kycId;
           const customerId = kyc.customerId || kyc.customer?.id;
           
-          // Use KYC ID as primary identifier for the detail page
-          const displayId = kycId || customerId;
+          // Only use KYC ID - if it doesn't exist, skip this entry or handle error
+          if (!kycId) {
+            console.warn("KYC entry missing ID:", kyc);
+          }
           
           return {
-            id: displayId ? String(displayId) : "N/A",
+            id: kycId ? String(kycId) : null, // Only use KYC ID
             kycId: kycId ? String(kycId) : null,
             customerId: customerId ? String(customerId) : null,
             name: kyc.customer?.fullName || kyc.fullName || kyc.name || "N/A",
@@ -93,7 +95,7 @@ export default function KYCManagement() {
             status: kyc.status ? kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1) : "Pending",
             docType: kyc.idType || kyc.documentType || "Aadhaar Card",
           };
-        });
+        }).filter(req => req.id !== null); // Filter out entries without KYC ID
 
         setRequests(mappedRequests);
       } catch (error) {
@@ -126,11 +128,29 @@ export default function KYCManagement() {
   });
 
   const handleQuickApprove = async (id, name) => {
+    if (!id || id === "N/A" || id === "null") {
+      setToast({ message: "Invalid KYC ID", type: "error" });
+      return;
+    }
+    
+    // Extract numeric KYC ID if formatted
+    let kycId = String(id);
+    if (!/^\d+$/.test(kycId)) {
+      const numericMatch = kycId.match(/\d+/);
+      if (numericMatch) {
+        kycId = numericMatch[0];
+      } else {
+        setToast({ message: "Invalid KYC ID format", type: "error" });
+        return;
+      }
+    }
+    
     try {
-      await AdminKYCService.updateKYCStatus(id, "approved", "Quick approved by admin");
+      await AdminKYCService.updateKYCStatus(kycId, "approved", "Quick approved by admin");
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
       setToast({ message: `KYC for ${name} approved successfully`, type: "success" });
     } catch (error) {
+      console.error("Quick Approve Error:", error);
       const errorMessage = error.response?.data?.message || error.message || "Failed to approve KYC";
       setToast({ message: errorMessage, type: "error" });
     }

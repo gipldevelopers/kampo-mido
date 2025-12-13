@@ -37,7 +37,7 @@ export default function KYCDetail({ params }) {
       try {
         // Ensure ID is a valid number or string
         // Remove any non-numeric characters if it's a formatted ID like "KYC-2001"
-        let kycId = id && id !== "N/A" ? String(id) : null;
+        let kycId = id && id !== "N/A" && id !== "null" ? String(id) : null;
         
         // If ID contains non-numeric characters, try to extract numeric part
         if (kycId && !/^\d+$/.test(kycId)) {
@@ -45,10 +45,14 @@ export default function KYCDetail({ params }) {
           const numericMatch = kycId.match(/\d+/);
           if (numericMatch) {
             kycId = numericMatch[0];
+          } else {
+            setToast({ message: "Invalid KYC ID format", type: "error" });
+            setLoading(false);
+            return;
           }
         }
         
-        if (!kycId || kycId === "N/A") {
+        if (!kycId || kycId === "N/A" || kycId === "null") {
           setToast({ message: "Invalid KYC ID", type: "error" });
           setLoading(false);
           return;
@@ -86,7 +90,7 @@ export default function KYCDetail({ params }) {
           );
 
           setKycData({
-            id: kyc.id || id,
+            id: kyc.id || kyc.kycId || kycId, // Store the actual KYC record ID
             status: kyc.status || "Pending",
             customer: {
               name: kyc.customer?.name || kyc.customer?.fullName || kyc.fullName || "N/A",
@@ -155,12 +159,29 @@ export default function KYCDetail({ params }) {
   };
 
   const handleAction = async (action) => {
-    // Ensure ID is valid
-    const kycId = id && id !== "N/A" ? String(id) : null;
-    if (!kycId) {
+    // Ensure ID is valid and extract numeric KYC ID
+    let kycId = id && id !== "N/A" && id !== "null" ? String(id) : null;
+    
+    // Extract numeric part if ID is formatted (e.g., "KYC-2001")
+    if (kycId && !/^\d+$/.test(kycId)) {
+      const numericMatch = kycId.match(/\d+/);
+      if (numericMatch) {
+        kycId = numericMatch[0];
+      } else {
+        setToast({ message: "Invalid KYC ID format", type: "error" });
+        return;
+      }
+    }
+    
+    if (!kycId || kycId === "N/A" || kycId === "null") {
       setToast({ message: "Invalid KYC ID", type: "error" });
       return;
     }
+    
+    // Use the KYC ID from kycData if available (more reliable)
+    const finalKycId = kycData?.id ? String(kycData.id) : kycId;
+    
+    console.log("Action:", action, "KYC ID:", finalKycId);
 
     if (action === "approve") {
       if (!notes.trim()) {
@@ -168,13 +189,14 @@ export default function KYCDetail({ params }) {
         return;
       }
       try {
-        await AdminKYCService.updateKYCStatus(kycId, "approved", notes);
+        await AdminKYCService.updateKYCStatus(finalKycId, "approved", notes);
         setToast({ message: "KYC Approved Successfully", type: "success" });
         if (kycData) {
           setKycData({ ...kycData, status: "Approved" });
         }
         setNotes("");
       } catch (error) {
+        console.error("Approve KYC Error:", error);
         const errorMessage = error.response?.data?.message || error.message || "Failed to approve KYC";
         setToast({ message: errorMessage, type: "error" });
       }
@@ -191,7 +213,7 @@ export default function KYCDetail({ params }) {
           .filter(Boolean);
 
         await AdminKYCService.updateKYCStatus(
-          kycId, 
+          finalKycId, 
           "rejected", 
           notes,
           documentsToReupload.length > 0 ? documentsToReupload : undefined
@@ -204,6 +226,7 @@ export default function KYCDetail({ params }) {
         setSelectedDocuments([]);
         setShowDocumentSelector(false);
       } catch (error) {
+        console.error("Reject KYC Error:", error);
         const errorMessage = error.response?.data?.message || error.message || "Failed to reject KYC";
         setToast({ message: errorMessage, type: "error" });
       }
@@ -220,7 +243,7 @@ export default function KYCDetail({ params }) {
           .filter(Boolean);
 
         await AdminKYCService.requestReupload(
-          kycId, 
+          finalKycId, 
           documentsToReupload, 
           notes || "Please re-upload the selected documents with better quality."
         );
@@ -229,6 +252,7 @@ export default function KYCDetail({ params }) {
         setSelectedDocuments([]);
         setShowDocumentSelector(false);
       } catch (error) {
+        console.error("Request Re-upload Error:", error);
         const errorMessage = error.response?.data?.message || error.message || "Failed to request re-upload";
         setToast({ message: errorMessage, type: "error" });
       }
