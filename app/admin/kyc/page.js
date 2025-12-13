@@ -1,12 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  CheckCircle2, 
-  Eye, 
+import {
+  Search,
+  Filter,
+  Download,
+  CheckCircle2,
+  Eye,
   MoreHorizontal,
   Clock,
   User,
@@ -37,7 +37,7 @@ export default function KYCManagement() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("All"); 
+  const [filter, setFilter] = useState("All");
   const [toast, setToast] = useState(null);
 
   // Dropdown States
@@ -79,12 +79,12 @@ export default function KYCManagement() {
           // Always use KYC ID - do NOT fallback to customerId
           const kycId = kyc.id || kyc.kycId;
           const customerId = kyc.customerId || kyc.customer?.id;
-          
+
           // Only use KYC ID - if it doesn't exist, skip this entry or handle error
           if (!kycId) {
             console.warn("KYC entry missing ID:", kyc);
           }
-          
+
           return {
             id: kycId ? String(kycId) : null, // Only use KYC ID
             kycId: kycId ? String(kycId) : null,
@@ -120,9 +120,9 @@ export default function KYCManagement() {
 
   // Filter Logic
   const filteredRequests = requests.filter(req => {
-    const matchesSearch = req.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          req.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.id.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (filter === "All") return matchesSearch;
     return matchesSearch && req.status === filter;
   });
@@ -132,7 +132,7 @@ export default function KYCManagement() {
       setToast({ message: "Invalid KYC ID", type: "error" });
       return;
     }
-    
+
     // Extract numeric KYC ID if formatted
     let kycId = String(id);
     if (!/^\d+$/.test(kycId)) {
@@ -144,7 +144,7 @@ export default function KYCManagement() {
         return;
       }
     }
-    
+
     try {
       await AdminKYCService.updateKYCStatus(kycId, "approved", "Quick approved by admin");
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
@@ -158,7 +158,7 @@ export default function KYCManagement() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -171,13 +171,13 @@ export default function KYCManagement() {
 
       {/* Toolbar (Styled like Customer Page) */}
       <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 md:gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm">
-        
+
         {/* Search Input */}
         <div className="relative flex-1">
           <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-          <input 
-            type="text" 
-            placeholder="Search by Name or KYC ID..." 
+          <input
+            type="text"
+            placeholder="Search by Name or KYC ID..."
             className="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -186,7 +186,7 @@ export default function KYCManagement() {
 
         {/* Actions */}
         <div className="flex gap-2 sm:gap-3">
-          
+
           {/* Filter Dropdown */}
           <div className="relative flex-1 sm:flex-none">
             <div className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -209,13 +209,13 @@ export default function KYCManagement() {
 
           {/* Export Dropdown */}
           <div className="relative" ref={exportRef}>
-            <button 
+            <button
               onClick={() => setIsExportOpen(!isExportOpen)}
               className="h-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted/80 transition-colors"
             >
               <Download size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Export</span>
             </button>
-            
+
             {isExportOpen && (
               <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-1">
@@ -244,121 +244,115 @@ export default function KYCManagement() {
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-border">
               {filteredRequests.length > 0 ? (
-            filteredRequests.map((req) => (
-              <div key={req.id} className="p-3 hover:bg-muted/20 transition-colors">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-xs sm:text-sm text-foreground truncate">{req.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{req.id}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {req.status === "Pending" && (
-                      <button 
-                        onClick={() => handleQuickApprove(req.id, req.name)}
-                        className="p-1.5 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors" 
-                        title="Quick Approve"
-                      >
-                        <CheckCircle2 size={14} />
-                      </button>
-                    )}
-                    <Link href={`/admin/kyc/${req.id}`}>
-                      <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View">
-                        <Eye size={14} />
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Document</p>
-                    <p className="text-xs text-foreground">{req.docType}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Staff</p>
-                    <div className="flex items-center gap-1">
-                      <User size={10} className="text-muted-foreground" />
-                      <p className="text-xs text-foreground">{req.staff}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={12} className="text-muted-foreground" />
-                    <p className="text-[10px] text-muted-foreground">{req.date}</p>
-                  </div>
-                  <StatusBadge status={req.status} />
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              <p className="text-sm">No KYC requests found.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer</th>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Document Type</th>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Upload Date</th>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredRequests.length > 0 ? (
                 filteredRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <div>
-                        <p className="font-medium text-foreground">{req.name}</p>
-                        <p className="text-xs text-muted-foreground">{req.id}</p>
+                  <div key={req.id} className="p-3 hover:bg-muted/20 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm text-foreground truncate">{req.name}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{req.id}</p>
                       </div>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">{req.docType}</td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock size={14} className="lg:w-4 lg:h-4" /> {req.date}
-                      </div>
-                    </td>
-                    
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <StatusBadge status={req.status} />
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5 lg:gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {req.status === "Pending" && (
-                          <button 
+                          <button
                             onClick={() => handleQuickApprove(req.id, req.name)}
-                            className="p-1.5 lg:p-2 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors" 
+                            className="p-1.5 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors"
                             title="Quick Approve"
                           >
-                            <CheckCircle2 size={14} className="lg:w-4 lg:h-4" />
+                            <CheckCircle2 size={14} />
                           </button>
                         )}
                         <Link href={`/admin/kyc/${req.id}`}>
-                          <button className="p-1.5 lg:p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View Details">
-                            <Eye size={14} className="lg:w-4 lg:h-4" />
+                          <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View">
+                            <Eye size={14} />
                           </button>
                         </Link>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Document</p>
+                        <p className="text-xs text-foreground">{req.docType}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Staff</p>
+                        <div className="flex items-center gap-1">
+                          <User size={10} className="text-muted-foreground" />
+                          <p className="text-xs text-foreground">{req.staff}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={12} className="text-muted-foreground" />
+                        <p className="text-[10px] text-muted-foreground">{req.date}</p>
+                      </div>
+                      <StatusBadge status={req.status} />
+                    </div>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-muted-foreground">
-                    No KYC requests found.
-                  </td>
-                </tr>
+                <div className="p-8 text-center text-muted-foreground">
+                  <p className="text-sm">No KYC requests found.</p>
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Document Type</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredRequests.length > 0 ? (
+                    filteredRequests.map((req) => (
+                      <tr key={req.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <div>
+                            <p className="font-medium text-foreground">{req.name}</p>
+                            <p className="text-xs text-muted-foreground">{req.id}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">{req.docType}</td>
+
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <StatusBadge status={req.status} />
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5 lg:gap-2">
+                            {req.status === "Pending" && (
+                              <button
+                                onClick={() => handleQuickApprove(req.id, req.name)}
+                                className="p-1.5 lg:p-2 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors"
+                                title="Quick Approve"
+                              >
+                                <CheckCircle2 size={14} className="lg:w-4 lg:h-4" />
+                              </button>
+                            )}
+                            <Link href={`/admin/kyc/${req.id}`}>
+                              <button className="p-1.5 lg:p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View Details">
+                                <Eye size={14} className="lg:w-4 lg:h-4" />
+                              </button>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-8 text-center text-muted-foreground">
+                        No KYC requests found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </div>
