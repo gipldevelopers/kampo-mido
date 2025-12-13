@@ -17,15 +17,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import Toast from "@/components/Toast";
-
-// --- Mock Data ---
-const initialKYCRequests = [
-  { id: "KYC-2001", name: "Rahul Sharma", date: "Today, 10:23 AM", staff: "Admin", status: "Pending", docType: "Aadhaar Card" },
-  { id: "KYC-2002", name: "Priya Singh", date: "Yesterday, 4:15 PM", staff: "Manager", status: "Approved", docType: "PAN Card" },
-  { id: "KYC-2003", name: "Amit Kumar", date: "01 Dec, 11:00 AM", staff: "Admin", status: "Rejected", docType: "Driving License" },
-  { id: "KYC-2004", name: "Sneha Gupta", date: "01 Dec, 09:30 AM", staff: "System", status: "Pending", docType: "Aadhaar Card" },
-  { id: "KYC-2005", name: "Vikram Malhotra", date: "30 Nov, 2:00 PM", staff: "Admin", status: "Approved", docType: "Passport" },
-];
+import AdminKYCService from "@/services/admin/admin-kyc.service";
 
 // --- Components ---
 const StatusBadge = ({ status }) => {
@@ -42,7 +34,8 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function KYCManagement() {
-  const [requests, setRequests] = useState(initialKYCRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All"); 
   const [toast, setToast] = useState(null);
@@ -52,6 +45,68 @@ export default function KYCManagement() {
 
   // Refs
   const exportRef = useRef(null);
+
+  // Fetch KYC requests
+  useEffect(() => {
+    const fetchKYCRequests = async () => {
+      setLoading(true);
+      try {
+        const status = filter === "All" ? null : filter.toLowerCase();
+        const response = await AdminKYCService.getAllKYC({
+          status,
+          page: 1,
+          limit: 50,
+        });
+
+        // Handle different response structures
+        let kycList = [];
+        if (response.data && Array.isArray(response.data)) {
+          kycList = response.data;
+        } else if (response.kyc && Array.isArray(response.kyc)) {
+          kycList = response.kyc;
+        } else if (Array.isArray(response)) {
+          kycList = response;
+        }
+
+        // Debug: Log the response to understand structure
+        if (kycList.length > 0) {
+          console.log("KYC List Sample:", kycList[0]);
+        }
+
+        // Map API data to UI format
+        const mappedRequests = kycList.map((kyc) => {
+          // Prioritize KYC ID, fallback to customerId if needed
+          // The API endpoint /admin/kyc/view/{id} expects the KYC record ID
+          const kycId = kyc.id || kyc.kycId;
+          const customerId = kyc.customerId || kyc.customer?.id;
+          
+          // Use KYC ID as primary identifier for the detail page
+          const displayId = kycId || customerId;
+          
+          return {
+            id: displayId ? String(displayId) : "N/A",
+            kycId: kycId ? String(kycId) : null,
+            customerId: customerId ? String(customerId) : null,
+            name: kyc.customer?.fullName || kyc.fullName || kyc.name || "N/A",
+            date: kyc.createdAt ? new Date(kyc.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "N/A",
+            staff: kyc.assignedStaff || kyc.staff || "Admin",
+            status: kyc.status ? kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1) : "Pending",
+            docType: kyc.idType || kyc.documentType || "Aadhaar Card",
+          };
+        });
+
+        setRequests(mappedRequests);
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || "Failed to fetch KYC requests";
+        setToast({ message: errorMessage, type: "error" });
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchKYCRequests();
+  }, [filter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -70,9 +125,15 @@ export default function KYCManagement() {
     return matchesSearch && req.status === filter;
   });
 
-  const handleQuickApprove = (id, name) => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
-    setToast({ message: `KYC for ${name} approved successfully`, type: "success" });
+  const handleQuickApprove = async (id, name) => {
+    try {
+      await AdminKYCService.updateKYCStatus(id, "approved", "Quick approved by admin");
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
+      setToast({ message: `KYC for ${name} approved successfully`, type: "success" });
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to approve KYC";
+      setToast({ message: errorMessage, type: "error" });
+    }
   };
 
   return (
@@ -153,9 +214,16 @@ export default function KYCManagement() {
 
       {/* Table Section - Mobile Card View / Desktop Table View */}
       <div className="bg-card rounded-lg sm:rounded-xl border border-border shadow-sm overflow-hidden">
-        {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-border">
-          {filteredRequests.length > 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <p className="text-sm">Loading KYC requests...</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-border">
+              {filteredRequests.length > 0 ? (
             filteredRequests.map((req) => (
               <div key={req.id} className="p-3 hover:bg-muted/20 transition-colors">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -217,7 +285,6 @@ export default function KYCManagement() {
                 <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer</th>
                 <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Document Type</th>
                 <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Upload Date</th>
-                <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Assigned Staff</th>
                 <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
                 <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
               </tr>
@@ -238,11 +305,7 @@ export default function KYCManagement() {
                         <Clock size={14} className="lg:w-4 lg:h-4" /> {req.date}
                       </div>
                     </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <User size={14} className="lg:w-4 lg:h-4" /> {req.staff}
-                      </div>
-                    </td>
+                    
                     <td className="px-4 lg:px-6 py-3 lg:py-4">
                       <StatusBadge status={req.status} />
                     </td>
@@ -276,6 +339,8 @@ export default function KYCManagement() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
