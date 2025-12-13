@@ -1,35 +1,39 @@
 "use client";
-import { useState } from "react";
-import { 
-  ArrowDownCircle, 
-  QrCode, 
-  Upload, 
-  Copy, 
-  CheckCircle2, 
+import { useState, useEffect } from "react";
+import {
+  ArrowDownCircle,
+  QrCode,
+  Copy,
+  CheckCircle2,
   Clock,
   X,
   Image as ImageIcon,
-  Loader2
+  Loader2,
+  History,
 } from "lucide-react";
 import Toast from "@/components/Toast";
-
-// --- Mock Data ---
-const depositHistory = [
-  { id: "DEP-001", amount: 50000, date: "Today, 2:30 PM", status: "Pending", gold: 6.54, screenshot: null },
-  { id: "DEP-002", amount: 25000, date: "Yesterday, 10:15 AM", status: "Approved", gold: 3.27, screenshot: "screenshot1.jpg" },
-  { id: "DEP-003", amount: 100000, date: "01 Dec, 3:45 PM", status: "Approved", gold: 13.08, screenshot: "screenshot2.jpg" },
-  { id: "DEP-004", amount: 30000, date: "30 Nov, 11:20 AM", status: "Approved", gold: 3.92, screenshot: null },
-];
+import DepositService from "@/services/customer/deposit.service";
 
 const StatusBadge = ({ status }) => {
+  // Normalize status to handle both lowercase and capitalized versions
+  const normalizedStatus = status ? (status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()) : "Pending";
+  
   const styles = {
     Pending: "text-secondary-foreground bg-secondary border-secondary",
     Approved: "text-primary bg-primary/10 border-primary/20",
+    Rejected: "text-destructive bg-destructive/10 border-destructive/20",
   };
+  
+  const getIcon = () => {
+    if (normalizedStatus === "Pending") return <Clock size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
+    if (normalizedStatus === "Rejected") return <X size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
+    return <CheckCircle2 size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
+  };
+  
   return (
-    <span className={`px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${styles[status] || styles.Pending}`}>
-      {status === "Pending" ? <Clock size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" /> : <CheckCircle2 size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />}
-      {status}
+    <span className={`px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${styles[normalizedStatus] || styles.Pending}`}>
+      {getIcon()}
+      {normalizedStatus}
     </span>
   );
 };
@@ -37,14 +41,115 @@ const StatusBadge = ({ status }) => {
 export default function DepositPage() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [amount, setAmount] = useState("");
   const [upiReference, setUpiReference] = useState("");
+  const [depositDate, setDepositDate] = useState("");
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [depositHistory, setDepositHistory] = useState([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [fetchingAllHistory, setFetchingAllHistory] = useState(false);
+  const [allDepositHistory, setAllDepositHistory] = useState([]);
 
   const upiId = "kampomido@paytm";
   const qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(upiId);
+
+  // Set default deposit date to today
+  useEffect(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setDepositDate(now.toISOString().slice(0, 10));
+  }, []);
+
+  // Fetch deposit history on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setFetching(true);
+      try {
+        const response = await DepositService.getDepositHistory();
+
+        // Handle different response structures
+        let historyData = [];
+        if (response.data && Array.isArray(response.data)) {
+          historyData = response.data;
+        } else if (Array.isArray(response)) {
+          historyData = response;
+        } else if (response.deposits && Array.isArray(response.deposits)) {
+          historyData = response.deposits;
+        }
+
+        // Format history data
+        const formattedHistory = historyData.map((item, index) => ({
+          id: item.transactionId || item.id || item.depositId || `DEP-${index + 1}`,
+          amount: item.amount || 0,
+          date: item.depositDate || item.date || item.createdAt
+            ? new Date(item.depositDate || item.date || item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+            : "N/A",
+          status: item.status || "pending",
+          gold: item.goldAmount || item.gold || item.goldGrams || 0,
+          screenshot: item.screenshot || null,
+          // Only show gold if deposit has been processed (converted)
+          isConverted: item.isConverted || (item.goldAmount || item.gold || item.goldGrams) > 0
+        }));
+
+        setDepositHistory(formattedHistory);
+      } catch (error) {
+        console.error("Error fetching deposit history:", error);
+        const errorMessage = error.response?.data?.message || error.message || "Failed to fetch deposit history";
+        setToast({ message: errorMessage, type: "error" });
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  // Fetch all deposit history for modal
+  const fetchAllDepositHistory = async () => {
+    setFetchingAllHistory(true);
+    try {
+      const response = await DepositService.getDepositHistory();
+
+      // Handle different response structures
+      let historyData = [];
+      if (response.data && Array.isArray(response.data)) {
+        historyData = response.data;
+      } else if (Array.isArray(response)) {
+        historyData = response;
+      } else if (response.deposits && Array.isArray(response.deposits)) {
+        historyData = response.deposits;
+      }
+
+      // Format history data
+        const formattedHistory = historyData.map((item, index) => ({
+          id: item.transactionId || item.id || item.depositId || `DEP-${index + 1}`,
+          amount: item.amount || 0,
+          date: item.depositDate || item.date || item.createdAt
+            ? new Date(item.depositDate || item.date || item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+            : "N/A",
+          status: item.status || "pending",
+          gold: item.goldAmount || item.gold || item.goldGrams || 0,
+          screenshot: item.screenshot || null,
+          upiReference: item.upiReference || item.upiRef || "N/A",
+          mode: item.mode || "UPI",
+          rateUsed: item.rateUsed || item.rate || 0,
+          adminNotes: item.adminNotes || item.notes || "",
+          isConverted: item.isConverted || (item.goldAmount || item.gold || item.goldGrams) > 0,
+          fullData: item
+        }));
+
+      setAllDepositHistory(formattedHistory);
+    } catch (error) {
+      console.error("Error fetching all deposit history:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to fetch deposit history";
+      setToast({ message: errorMessage, type: "error" });
+    } finally {
+      setFetchingAllHistory(false);
+    }
+  };
 
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(upiId);
@@ -78,22 +183,87 @@ export default function DepositPage() {
     setScreenshotPreview(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) {
       setToast({ message: "Please enter a valid amount", type: "error" });
       return;
     }
+    if (!depositDate) {
+      setToast({ message: "Please select a deposit date", type: "error" });
+      return;
+    }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Convert depositDate to ISO string format
+      const depositDateISO = new Date(depositDate).toISOString();
+
+      // Prepare deposit data
+      const depositData = {
+        amount: Number(amount),
+        depositDate: depositDateISO,
+      };
+
+      // Add optional fields only if provided
+      if (upiReference && upiReference.trim()) {
+        depositData.upiReference = upiReference.trim();
+      }
+
+      if (screenshot) {
+        depositData.screenshot = screenshot;
+      }
+
+      // Submit deposit request
+      await DepositService.submitDeposit(depositData);
+
       setToast({ message: "Deposit request submitted! Admin will verify and approve.", type: "success" });
+
+      // Clear form
       setAmount("");
       setUpiReference("");
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      setDepositDate(now.toISOString().slice(0, 10));
       setScreenshot(null);
       setScreenshotPreview(null);
-    }, 1500);
+
+      // Refresh deposit history
+      try {
+        const response = await DepositService.getDepositHistory();
+        let historyData = [];
+        if (response.data && Array.isArray(response.data)) {
+          historyData = response.data;
+        } else if (Array.isArray(response)) {
+          historyData = response;
+        } else if (response.deposits && Array.isArray(response.deposits)) {
+          historyData = response.deposits;
+        }
+
+        const formattedHistory = historyData.map((item, index) => ({
+          id: item.transactionId || item.id || item.depositId || `DEP-${index + 1}`,
+          amount: item.amount || 0,
+          date: item.depositDate || item.date || item.createdAt
+            ? new Date(item.depositDate || item.date || item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+            : "N/A",
+          status: item.status || "pending",
+          gold: item.goldAmount || item.gold || item.goldGrams || 0,
+          screenshot: item.screenshot || null,
+          isConverted: item.isConverted || (item.goldAmount || item.gold || item.goldGrams) > 0
+        }));
+
+        setDepositHistory(formattedHistory);
+      } catch (historyError) {
+        console.error("Error refreshing deposit history:", historyError);
+      }
+
+    } catch (error) {
+      console.error("Error submitting deposit:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to submit deposit request";
+      setToast({ message: errorMessage, type: "error" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatINR = (amount) => {
@@ -106,7 +276,7 @@ export default function DepositPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -118,24 +288,24 @@ export default function DepositPage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-        
+
         {/* LEFT COLUMN: Deposit Form (Span 2) */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
-          
+
           {/* UPI Payment Section */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
               <QrCode size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
               <h3 className="text-base sm:text-lg font-semibold text-foreground">UPI Payment</h3>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               {/* QR Code */}
               <div className="space-y-3 sm:space-y-4">
                 <div className="bg-background p-3 sm:p-4 md:p-6 rounded-lg border border-border flex items-center justify-center">
-                  <img 
-                    src={qrCodeUrl} 
-                    alt="UPI QR Code" 
+                  <img
+                    src={qrCodeUrl}
+                    alt="UPI QR Code"
                     className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48"
                   />
                 </div>
@@ -182,7 +352,7 @@ export default function DepositPage() {
               <ArrowDownCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Submit Deposit Request</h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Amount Deposited (₹)</label>
@@ -210,15 +380,29 @@ export default function DepositPage() {
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Help us verify your payment faster</p>
               </div>
 
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Deposit Date</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={depositDate}
+                    onChange={(e) => setDepositDate(e.target.value)}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
+                    required
+                  />
+                </div>
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Select the date when you made the payment</p>
+              </div>
+
               {/* Screenshot Upload */}
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Payment Screenshot (Optional)</label>
                 {screenshotPreview ? (
                   <div className="relative">
                     <div className="border border-border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30">
-                      <img 
-                        src={screenshotPreview} 
-                        alt="Payment screenshot" 
+                      <img
+                        src={screenshotPreview}
+                        alt="Payment screenshot"
                         className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md"
                       />
                     </div>
@@ -251,8 +435,8 @@ export default function DepositPage() {
 
               <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> After submitting, admin will verify your payment and approve the deposit. 
-                  Gold will be credited to your wallet once approved.
+                  <strong className="text-foreground">Note:</strong> After submitting, admin will verify your payment, approve the deposit, and then process it to convert to gold.
+                  Gold will be credited to your wallet once the deposit is processed.
                 </p>
               </div>
 
@@ -279,35 +463,56 @@ export default function DepositPage() {
 
         {/* RIGHT COLUMN: Deposit History (Span 1) */}
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
-          
+
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 md:mb-6">Deposit History</h3>
-            
+
             <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
-              {depositHistory.map((deposit) => (
-                <div key={deposit.id} className="p-2.5 sm:p-3 md:p-4 bg-muted/30 border border-border rounded-lg hover:border-primary/50 transition-colors">
-                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                    <span className="text-[9px] sm:text-[10px] md:text-xs font-medium text-muted-foreground truncate flex-1 pr-2">{deposit.id}</span>
-                    <StatusBadge status={deposit.status} />
-                  </div>
-                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                    <p className="text-base sm:text-lg font-bold text-foreground wrap-break-word">{formatINR(deposit.amount)}</p>
-                    <p className="text-[11px] sm:text-xs md:text-sm text-muted-foreground shrink-0 ml-2">{deposit.gold} g</p>
-                  </div>
-                  <div className="flex items-center justify-between text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                    <span className="truncate flex-1 pr-2">{deposit.date}</span>
-                    {deposit.screenshot && (
-                      <span className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                        <ImageIcon size={10} className="sm:w-3 sm:h-3" /> <span className="hidden sm:inline">Screenshot</span>
-                      </span>
-                    )}
-                  </div>
+              {fetching ? (
+                <div className="p-3 sm:p-4 flex items-center justify-center">
+                  <Loader2 size={20} className="animate-spin text-muted-foreground" />
                 </div>
-              ))}
+              ) : depositHistory.length > 0 ? (
+                depositHistory.map((deposit) => (
+                  <div key={deposit.id} className="p-2.5 sm:p-3 md:p-4 bg-muted/30 border border-border rounded-lg hover:border-primary/50 transition-colors">
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                      <span className="text-[9px] sm:text-[10px] md:text-xs font-medium text-muted-foreground truncate flex-1 pr-2">{deposit.id}</span>
+                      <StatusBadge status={deposit.status} />
+                    </div>
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                      <p className="text-base sm:text-lg font-bold text-foreground wrap-break-word">{formatINR(deposit.amount)}</p>
+                      {deposit.isConverted && deposit.gold > 0 && (
+                        <p className="text-[11px] sm:text-xs md:text-sm text-primary font-medium shrink-0 ml-2">{deposit.gold} g</p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                      <span className="truncate flex-1 pr-2">{deposit.date}</span>
+                      {deposit.screenshot && (
+                        <span className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                          <ImageIcon size={10} className="sm:w-3 sm:h-3" /> <span className="hidden sm:inline">Screenshot</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 sm:p-4 text-center text-sm text-muted-foreground">
+                  No deposit history available
+                </div>
+              )}
             </div>
 
-            <button className="w-full mt-3 sm:mt-4 py-1.5 sm:py-2 text-[10px] sm:text-xs md:text-sm border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors">
-              View All Deposits
+            <button
+              onClick={() => {
+                if (!showAllHistory) {
+                  fetchAllDepositHistory();
+                }
+                setShowAllHistory(!showAllHistory);
+              }}
+              className="w-full mt-3 sm:mt-4 py-1.5 sm:py-2 text-[10px] sm:text-xs md:text-sm border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
+            >
+              <History size={12} className="sm:w-4 sm:h-4" />
+              <span>{showAllHistory ? "Hide All Deposits" : "View All Deposits"}</span>
             </button>
           </div>
 
@@ -325,6 +530,116 @@ export default function DepositPage() {
         </div>
 
       </div>
+
+      {/* All Deposit History Section */}
+      {showAllHistory && (
+        <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center gap-2">
+              <History size={18} className="sm:w-5 sm:h-5 text-primary" />
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold">All Deposit History</h3>
+            </div>
+            <button
+              onClick={() => setShowAllHistory(false)}
+              className="p-1.5 hover:bg-muted rounded-full transition-colors"
+            >
+              <X size={18} className="sm:w-5 sm:h-5" />
+            </button>
+          </div>
+
+          {fetchingAllHistory ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : allDepositHistory.length > 0 ? (
+            <div className="space-y-3">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {allDepositHistory.map((deposit) => (
+                  <div key={deposit.id} className="p-3 sm:p-4 bg-muted/30 border border-border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-foreground">{deposit.id}</span>
+                      <StatusBadge status={deposit.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Amount</p>
+                        <p className="text-sm font-semibold text-foreground">{formatINR(deposit.amount)}</p>
+                      </div>
+                      {deposit.isConverted && deposit.gold > 0 && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Gold</p>
+                          <p className="text-sm font-medium text-primary">{deposit.gold} g</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Date</p>
+                        <p className="text-xs text-foreground">{deposit.date}</p>
+                      </div>
+                      {deposit.rateUsed > 0 && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Rate</p>
+                          <p className="text-xs text-foreground">₹ {deposit.rateUsed.toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                    {deposit.upiReference && deposit.upiReference !== "N/A" && (
+                      <div className="mb-2">
+                        <p className="text-[10px] text-muted-foreground">UPI Reference</p>
+                        <p className="text-xs text-foreground">{deposit.upiReference}</p>
+                      </div>
+                    )}
+                    {deposit.screenshot && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <ImageIcon size={12} />
+                        <span>Screenshot available</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-left">
+                  <thead className="bg-muted/50 text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Transaction ID</th>
+                      <th className="px-4 py-2 font-medium">Amount</th>
+                      <th className="px-4 py-2 font-medium">Gold</th>
+                      <th className="px-4 py-2 font-medium">Date</th>
+                      <th className="px-4 py-2 font-medium">Rate</th>
+                      <th className="px-4 py-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {allDepositHistory.map((deposit) => (
+                      <tr key={deposit.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3 font-medium text-foreground">{deposit.id}</td>
+                        <td className="px-4 py-3 font-semibold">{formatINR(deposit.amount)}</td>
+                        <td className="px-4 py-3 text-primary font-medium">
+                          {deposit.isConverted && deposit.gold > 0 ? `${deposit.gold} g` : "N/A"}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{deposit.date}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {deposit.rateUsed > 0 ? `₹ ${deposit.rateUsed.toLocaleString()}` : "N/A"}
+                        </td>
+                        <td className="px-4 py-3"><StatusBadge status={deposit.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">No deposit history available</p>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

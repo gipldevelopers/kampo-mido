@@ -1,28 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
-import { 
-  TrendingUp, 
-  History, 
-  Save, 
-  Clock, 
+import {
+  TrendingUp,
+  History,
+  Save,
+  Clock,
   AlertCircle,
   Calendar,
   FileText,
   Loader2
 } from "lucide-react";
 import Toast from "@/components/Toast";
-
-// --- Mock History Data ---
-const initialHistory = [
-  { id: 1, rate: 7645, effective: "Today, 09:00 AM", updatedBy: "Admin", notes: "Market adjustment" },
-  { id: 2, rate: 7600, effective: "Yesterday, 09:00 AM", updatedBy: "System", notes: "Daily update" },
-  { id: 3, rate: 7550, effective: "01 Dec, 09:00 AM", updatedBy: "Admin", notes: "Weekend closing rate" },
-];
+import GoldRateService from "@/services/admin/gold-rate.service";
 
 export default function GoldRateManagement() {
-  const [currentRate, setCurrentRate] = useState(7645);
-  const [history, setHistory] = useState(initialHistory);
+  const [currentRate, setCurrentRate] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [toast, setToast] = useState(null);
 
   // Form State
@@ -30,18 +25,70 @@ export default function GoldRateManagement() {
   const [effectiveDate, setEffectiveDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  // FIX: Wrapped in setTimeout to avoid synchronous state update error
+  // Fetch current rate and history on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      setEffectiveDate(now.toISOString().slice(0, 16));
-    }, 0);
+    const fetchData = async () => {
+      setFetching(true);
+      try {
+        // Fetch current rate
+        const currentRateResponse = await GoldRateService.getCurrentRate();
+        if (currentRateResponse.data) {
+          setCurrentRate(currentRateResponse.data.ratePerGram || currentRateResponse.data.rate || null);
+        } else if (currentRateResponse.ratePerGram || currentRateResponse.rate) {
+          setCurrentRate(currentRateResponse.ratePerGram || currentRateResponse.rate);
+        }
 
-    return () => clearTimeout(timer);
+        // Fetch history
+        const historyResponse = await GoldRateService.getHistory();
+        if (historyResponse.data && Array.isArray(historyResponse.data)) {
+          const formattedHistory = historyResponse.data.map((item, index) => ({
+            id: item.id || index + 1,
+            rate: item.ratePerGram || item.rate,
+            effective: item.effectiveDate
+              ? new Date(item.effectiveDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+              : item.effective || "N/A",
+            updatedBy: item.updatedBy || item.updated_by || "Admin",
+            notes: item.notes || ""
+          }));
+          setHistory(formattedHistory);
+        } else if (Array.isArray(historyResponse)) {
+          const formattedHistory = historyResponse.map((item, index) => ({
+            id: item.id || index + 1,
+            rate: item.ratePerGram || item.rate,
+            effective: item.effectiveDate
+              ? new Date(item.effectiveDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+              : item.effective || "N/A",
+            updatedBy: item.updatedBy || item.updated_by || "Admin",
+            notes: item.notes || ""
+          }));
+          setHistory(formattedHistory);
+        }
+      } catch (error) {
+        console.error("Error fetching gold rate data:", error);
+        const errorMessage = error.response?.data?.message || error.message || "Failed to fetch gold rate data";
+        setToast({ message: errorMessage, type: "error" });
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleUpdate = (e) => {
+  // Set default effective date
+  useEffect(() => {
+    if (!effectiveDate) {
+      const timer = setTimeout(() => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        setEffectiveDate(now.toISOString().slice(0, 16));
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [effectiveDate]);
+
+  const handleUpdate = async (e) => {
     e.preventDefault();
     if (!newRate || !effectiveDate) {
       setToast({ message: "Please fill in all required fields", type: "error" });
@@ -50,41 +97,88 @@ export default function GoldRateManagement() {
 
     setLoading(true);
 
-    // Simulate Backend Process sequence
-    setTimeout(() => {
-      // Step 1: Update Rate
-      setCurrentRate(Number(newRate));
-      
-      // Step 2: Add to History
-      const newEntry = {
-        id: Date.now(),
-        rate: Number(newRate),
-        effective: new Date(effectiveDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
-        updatedBy: "Admin",
-        notes: notes || "Manual update"
+    try {
+      // Convert effectiveDate to ISO string
+      const effectiveDateISO = new Date(effectiveDate).toISOString();
+
+      // Prepare payload
+      const payload = {
+        ratePerGram: Number(newRate),
+        effectiveDate: effectiveDateISO,
       };
-      setHistory([newEntry, ...history]);
-      
-      // Step 3: Trigger System Logic Simulations via Toasts
+
+      // Add notes only if provided
+      if (notes && notes.trim()) {
+        payload.notes = notes.trim();
+      }
+
+      // Call API
+      const response = await GoldRateService.updateRate(payload);
+
+      // Update current rate
+      if (response.data) {
+        setCurrentRate(response.data.ratePerGram || response.data.rate || Number(newRate));
+      } else {
+        setCurrentRate(Number(newRate));
+      }
+
+      // Refresh history
+      try {
+        const historyResponse = await GoldRateService.getHistory();
+        if (historyResponse.data && Array.isArray(historyResponse.data)) {
+          const formattedHistory = historyResponse.data.map((item, index) => ({
+            id: item.id || index + 1,
+            rate: item.ratePerGram || item.rate,
+            effective: item.effectiveDate
+              ? new Date(item.effectiveDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+              : item.effective || "N/A",
+            updatedBy: item.updatedBy || item.updated_by || "Admin",
+            notes: item.notes || ""
+          }));
+          setHistory(formattedHistory);
+        } else if (Array.isArray(historyResponse)) {
+          const formattedHistory = historyResponse.map((item, index) => ({
+            id: item.id || index + 1,
+            rate: item.ratePerGram || item.rate,
+            effective: item.effectiveDate
+              ? new Date(item.effectiveDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+              : item.effective || "N/A",
+            updatedBy: item.updatedBy || item.updated_by || "Admin",
+            notes: item.notes || ""
+          }));
+          setHistory(formattedHistory);
+        }
+      } catch (historyError) {
+        console.error("Error fetching updated history:", historyError);
+      }
+
       setToast({ message: "Rate updated successfully", type: "success" });
-      
+
+      // Clear form
+      setNewRate("");
+      setNotes("");
+
+      // Show system messages
       setTimeout(() => {
         setToast({ message: "System: Recalculating all customer wallets...", type: "success" });
       }, 1500);
 
       setTimeout(() => {
         setToast({ message: "System: Ledger revaluation entries created.", type: "success" });
-        setLoading(false);
-        setNewRate("");
-        setNotes("");
       }, 3000);
 
-    }, 1000);
+    } catch (error) {
+      console.error("Error updating gold rate:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update gold rate";
+      setToast({ message: errorMessage, type: "error" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -96,18 +190,27 @@ export default function GoldRateManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-        
+
         {/* LEFT COLUMN: Update Form (Span 2) */}
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
-          
+
           {/* Current Rate Display */}
           <div className="bg-primary/5 border border-primary/20 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl flex items-center justify-between shadow-sm gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground mb-1">Current Active Rate</p>
-              <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-                <span className="break-words">₹ {currentRate.toLocaleString()}</span>
-                <span className="text-xs sm:text-sm md:text-lg font-medium text-muted-foreground">/ gram</span>
-              </h3>
+              {fetching ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 size={20} className="animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Loading...</span>
+                </div>
+              ) : currentRate !== null ? (
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="break-words">₹ {currentRate.toLocaleString()}</span>
+                  <span className="text-xs sm:text-sm md:text-lg font-medium text-muted-foreground">/ gram</span>
+                </h3>
+              ) : (
+                <p className="text-sm text-muted-foreground">No rate set</p>
+              )}
             </div>
             <div className="p-2 sm:p-3 md:p-4 bg-background rounded-full border border-primary/20 shadow-sm shrink-0">
               <TrendingUp size={20} className="sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary" />
@@ -119,13 +222,13 @@ export default function GoldRateManagement() {
             <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4 md:mb-6 flex items-center gap-1.5 sm:gap-2">
               <Clock size={16} className="sm:w-[18px] sm:h-[18px] text-muted-foreground shrink-0" /> <span>Update Today&apos;s Rate</span>
             </h3>
-            
+
             <form onSubmit={handleUpdate} className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs sm:text-sm font-medium text-foreground">New Gold Rate (₹/g)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={newRate}
                     onChange={(e) => setNewRate(e.target.value)}
                     placeholder="e.g. 7650"
@@ -136,21 +239,20 @@ export default function GoldRateManagement() {
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs sm:text-sm font-medium text-foreground">Effective Date & Time</label>
                   <div className="relative">
-                    <input 
-                      type="datetime-local" 
+                    <input
+                      type="datetime-local"
                       value={effectiveDate}
                       onChange={(e) => setEffectiveDate(e.target.value)}
                       className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
                       required
                     />
-                    <Calendar className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground pointer-events-none" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Rate Notes (Optional)</label>
-                <textarea 
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Reason for update (e.g., Market fluctuation)"
@@ -172,8 +274,8 @@ export default function GoldRateManagement() {
               </div>
 
               <div className="flex justify-end">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading}
                   className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                 >
@@ -200,25 +302,35 @@ export default function GoldRateManagement() {
             </h3>
           </div>
           <div className="divide-y divide-border">
-            {history.map((item) => (
-              <div key={item.id} className="p-3 sm:p-4 hover:bg-muted/20 transition-colors">
-                <div className="flex justify-between items-center mb-1 gap-2">
-                  <span className="text-base sm:text-lg font-bold text-foreground break-words">₹ {item.rate.toLocaleString()}</span>
-                  <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border shrink-0 whitespace-nowrap">
-                    {item.updatedBy}
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                  <Clock size={10} className="sm:w-3 sm:h-3 shrink-0" /> <span className="break-words">{item.effective}</span>
-                </p>
-                {item.notes && (
-                  <div className="flex items-start gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground bg-muted/30 p-1.5 sm:p-2 rounded-md">
-                    <FileText size={10} className="sm:w-3 sm:h-3 mt-0.5 shrink-0" />
-                    <span className="break-words">{item.notes}</span>
-                  </div>
-                )}
+            {fetching ? (
+              <div className="p-3 sm:p-4 flex items-center justify-center">
+                <Loader2 size={20} className="animate-spin text-muted-foreground" />
               </div>
-            ))}
+            ) : history.length > 0 ? (
+              history.map((item) => (
+                <div key={item.id} className="p-3 sm:p-4 hover:bg-muted/20 transition-colors">
+                  <div className="flex justify-between items-center mb-1 gap-2">
+                    <span className="text-base sm:text-lg font-bold text-foreground break-words">₹ {item.rate?.toLocaleString() || item.rate}</span>
+                    <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border shrink-0 whitespace-nowrap">
+                      {item.updatedBy}
+                    </span>
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                    <Clock size={10} className="sm:w-3 sm:h-3 shrink-0" /> <span className="break-words">{item.effective}</span>
+                  </p>
+                  {item.notes && (
+                    <div className="flex items-start gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground bg-muted/30 p-1.5 sm:p-2 rounded-md">
+                      <FileText size={10} className="sm:w-3 sm:h-3 mt-0.5 shrink-0" />
+                      <span className="break-words">{item.notes}</span>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 sm:p-4 text-center text-sm text-muted-foreground">
+                No history available
+              </div>
+            )}
           </div>
           <div className="p-3 sm:p-4 border-t border-border">
             <button className="w-full py-1.5 sm:py-2 text-xs sm:text-sm text-primary font-medium hover:bg-primary/5 rounded-md transition-colors">
