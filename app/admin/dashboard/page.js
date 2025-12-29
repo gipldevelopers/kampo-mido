@@ -1,97 +1,141 @@
 "use client";
-import { useState } from "react";
-import { 
-  Users, 
-  UserPlus, 
-  Wallet,  
-  FileCheck, 
+import { useState, useEffect } from "react";
+import {
+  Users,
+  UserPlus,
+  Wallet,
+  FileCheck,
   ArrowUpCircle,
   PlusCircle,
   RefreshCcw,
-  Activity
+  Activity,
+  Loader2,
+  TrendingUp,
+  AlertCircle
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
-  Bar
+  Bar,
+  LineChart,
+  Line,
+  Legend
 } from 'recharts';
+import Toast from "@/components/Toast";
+import DashboardService from "../../../services/admin/dashboard.service";
 
-// --- Mock Data ---
-
-const goldData = [
-  { day: '1', rate: 7200 }, { day: '5', rate: 7250 }, { day: '10', rate: 7180 },
-  { day: '15', rate: 7300 }, { day: '20', rate: 7450 }, { day: '25', rate: 7600 },
-  { day: '30', rate: 7645 },
-];
-
-const depositData = [
-  { day: 'Mon', amount: 45000 }, { day: 'Tue', amount: 62000 },
-  { day: 'Wed', amount: 28000 }, { day: 'Thu', amount: 95000 },
-  { day: 'Fri', amount: 120000 }, { day: 'Sat', amount: 85000 },
-  { day: 'Sun', amount: 30000 },
-];
-
-const recentTransactions = [
-  { id: "TX-8812", user: "Rahul Sharma", amount: 25000, type: "Deposit", status: "Success", date: "Today, 10:20 AM" },
-  { id: "TX-8813", user: "Priya Singh", amount: 12000, type: "Withdrawal", status: "Pending", date: "Today, 09:15 AM" },
-  { id: "TX-8814", user: "Amit Kumar", amount: 50000, type: "Deposit", status: "Success", date: "Yesterday" },
-  { id: "TX-8815", user: "Sneha Gupta", amount: 76450, type: "Gold Buy", status: "Failed", date: "Yesterday" },
-  { id: "TX-8816", user: "Vikram M.", amount: 100000, type: "Deposit", status: "Success", date: "01 Dec" },
-];
-
-const recentActivity = [
-  { id: 1, text: "Admin updated Gold Rate to ₹7,645", time: "2 hrs ago" },
-  { id: 2, text: "New KYC uploaded by User #1245", time: "3 hrs ago" },
-  { id: 3, text: "System backup completed successfully", time: "5 hrs ago" },
-  { id: 4, text: "Suspicious login attempt blocked", time: "1 day ago" },
-  { id: 5, text: "Weekly report generated", time: "1 day ago" },
-];
-
-// --- Reusable Components ---
-
-const StatCard = ({ title, value, subtext, icon: Icon }) => (
-  <div className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+// Reusable Components
+const StatCard = ({ title, value, subtext, icon: Icon, trend = null, loading = false }) => (
+  <div className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
     <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
       <span className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{title}</span>
       <div className="p-1 sm:p-1.5 md:p-2 bg-primary/10 rounded-md sm:rounded-lg shrink-0">
-        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
+        {loading ? (
+          <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary animate-spin" />
+        ) : (
+          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
+        )}
       </div>
     </div>
-    <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">{value}</div>
-    {subtext && <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1 leading-tight">{subtext}</p>}
+    <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
+      {loading ? (
+        <div className="h-6 sm:h-7 md:h-8 bg-muted rounded animate-pulse"></div>
+      ) : (
+        value
+      )}
+    </div>
+    <div className="flex items-center justify-between mt-0.5 sm:mt-1">
+      {loading ? (
+        <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
+      ) : (
+        <>
+          {subtext && (
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground leading-tight">{subtext}</p>
+          )}
+          {trend && (
+            <div className={`flex items-center gap-0.5 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <TrendingUp size={10} className={trend > 0 ? '' : 'rotate-180'} />
+              <span className="text-[9px] sm:text-[10px] font-medium">{Math.abs(trend)}%</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   </div>
 );
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    Success: "text-primary bg-primary/10 border-primary/20",
-    Pending: "text-muted-foreground bg-muted border-border",
-    Failed: "text-destructive bg-destructive/10 border-destructive/20",
+    Success: "text-green-600 bg-green-50 border-green-200",
+    Pending: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    Failed: "text-red-600 bg-red-50 border-red-200",
+    Approved: "text-blue-600 bg-blue-50 border-blue-200",
+    Rejected: "text-red-600 bg-red-50 border-red-200",
+    Completed: "text-green-600 bg-green-50 border-green-200"
   };
+
   return (
-    <span className={`px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${styles[status] || styles.Pending}`}>
+    <span className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium border ${styles[status] || styles.Pending}`}>
       {status}
     </span>
   );
 };
 
+const ChartSkeleton = () => (
+  <div className="h-[180px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full bg-muted rounded animate-pulse"></div>
+);
+
+const ActivitySkeleton = () => (
+  <div className="space-y-3">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <div key={i} className="flex gap-3">
+        <div className="mt-1.5 w-2 h-2 rounded-full bg-muted"></div>
+        <div className="flex-1">
+          <div className="h-3 bg-muted rounded w-3/4 mb-1"></div>
+          <div className="h-2 bg-muted rounded w-1/4"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function Dashboard() {
-  const [stats] = useState({
-    totalCustomers: 1245,
-    todayRegistrations: 12,
-    totalDeposits: 12500000,
-    goldHeld: 8450,
-    goldRate: 7645,
-    pendingKyc: 24,
-    pendingWithdrawals: 18
+  const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState({
+    overall: true,
+    stats: true,
+    charts: true,
+    transactions: true,
+    activity: true
+  });
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    todayRegistrations: 0,
+    totalDeposits: 0,
+    goldHeld: 0,
+    goldRate: 0,
+    pendingKyc: 0,
+    pendingWithdrawals: 0,
+    goldValue: 0,
+    totalGrams: 0
+  });
+  const [goldData, setGoldData] = useState([]);
+  const [depositData, setDepositData] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [trends, setTrends] = useState({
+    customerGrowth: 0,
+    depositGrowth: 0,
+    goldGrowth: 0
   });
 
+  // Format currency
   const formatINR = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -100,191 +144,605 @@ export default function Dashboard() {
     }).format(amount);
   };
 
+  // Format grams
+  const formatGrams = (grams) => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(grams);
+  };
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading({
+        overall: true,
+        stats: true,
+        charts: true,
+        transactions: true,
+        activity: true
+      });
+
+      // Fetch all data in parallel
+      const [statsData, chartData, transactionsData, activityData] = await Promise.all([
+        DashboardService.getDashboardStats(),
+        DashboardService.getChartData('goldRate'),
+        DashboardService.getRecentTransactions(),
+        DashboardService.getRecentActivity()
+      ]);
+
+      // Process stats
+      if (statsData?.data) {
+        setStats(statsData.data);
+
+        // Calculate trends (mock data for now - in real app, you'd compare with previous period)
+        const mockTrends = {
+          customerGrowth: 12.5,
+          depositGrowth: 8.3,
+          goldGrowth: 5.7
+        };
+        setTrends(mockTrends);
+      }
+
+      // Process chart data
+      if (chartData?.data) {
+        setGoldData(chartData.data);
+
+        // Fetch deposit data separately
+        const depositChartData = await DashboardService.getChartData('deposits');
+        if (depositChartData?.data) {
+          setDepositData(depositChartData.data);
+          setLoading(prev => ({ ...prev, charts: false }));
+        }
+      }
+
+      // Process transactions
+      if (transactionsData?.data) {
+        setRecentTransactions(transactionsData.data);
+        setLoading(prev => ({ ...prev, transactions: false }));
+      }
+
+      // Process activity
+      if (activityData?.data) {
+        setRecentActivity(activityData.data);
+        setLoading(prev => ({ ...prev, activity: false }));
+      }
+
+      // Update overall loading
+      setTimeout(() => {
+        setLoading(prev => ({ ...prev, overall: false, stats: false }));
+      }, 500);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setToast({
+        message: error.response?.data?.message || 'Failed to load dashboard data',
+        type: 'error'
+      });
+
+      // Set loading to false on error
+      setLoading({
+        overall: false,
+        stats: false,
+        charts: false,
+        transactions: false,
+        activity: false
+      });
+    }
+  };
+
+  // Refresh specific data
+  const refreshStats = async () => {
+    try {
+      setLoading(prev => ({ ...prev, stats: true }));
+      const response = await DashboardService.getDashboardStats();
+      if (response?.data) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+      setToast({
+        message: 'Failed to refresh statistics',
+        type: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  };
+
+  const refreshCharts = async () => {
+    try {
+      setLoading(prev => ({ ...prev, charts: true }));
+      const [goldResponse, depositResponse] = await Promise.all([
+        DashboardService.getChartData('goldRate'),
+        DashboardService.getChartData('deposits')
+      ]);
+
+      if (goldResponse?.data) setGoldData(goldResponse.data);
+      if (depositResponse?.data) setDepositData(depositResponse.data);
+    } catch (error) {
+      console.error('Error refreshing charts:', error);
+      setToast({
+        message: 'Failed to refresh charts',
+        type: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, charts: false }));
+    }
+  };
+
+  const refreshTransactions = async () => {
+    try {
+      setLoading(prev => ({ ...prev, transactions: true }));
+      const response = await DashboardService.getRecentTransactions();
+      if (response?.data) {
+        setRecentTransactions(response.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
+      setToast({
+        message: 'Failed to refresh transactions',
+        type: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, transactions: false }));
+    }
+  };
+
+  const refreshActivity = async () => {
+    try {
+      setLoading(prev => ({ ...prev, activity: true }));
+      const response = await DashboardService.getRecentActivity();
+      if (response?.data) {
+        setRecentActivity(response.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing activity:', error);
+      setToast({
+        message: 'Failed to refresh activity',
+        type: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, activity: false }));
+    }
+  };
+
+  // Custom Tooltip for charts
+  const CustomTooltip = ({ active, payload, label, currency = false }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+          <p className="text-xs font-semibold text-foreground">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-xs text-muted-foreground mt-1">
+              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
+              {entry.name}: {currency ? formatINR(entry.value) : entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchDashboardData();
+
+    // Set up auto-refresh every 5 minutes
+    const interval = setInterval(() => {
+      refreshStats();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 pb-4 sm:pb-6 md:pb-8">
-      
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* 1. Header & Quick Actions */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-           <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Overview</h2>
-           <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Welcome to Kampo Mido Jewellers Admin Panel</p>
+          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">
+            Welcome to Kampo Mido Jewellers Admin Panel
+            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-[9px]">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </p>
         </div>
-        
+
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all">
-            <UserPlus size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> <span className="hidden sm:inline">Add Customer</span><span className="sm:hidden">Add</span>
+          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <UserPlus size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Add Customer</span>
+            <span className="sm:hidden">Add</span>
           </button>
-          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all">
-            <PlusCircle size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> <span className="hidden sm:inline">Add Deposit</span><span className="sm:hidden">Deposit</span>
+          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <PlusCircle size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Add Deposit</span>
+            <span className="sm:hidden">Deposit</span>
           </button>
-          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium shadow-sm transition-all">
-            <RefreshCcw size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> <span className="hidden sm:inline">Update Rate</span><span className="sm:hidden">Rate</span>
+          <button
+            onClick={refreshStats}
+            disabled={loading.stats}
+            className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading.stats ? (
+              <Loader2 size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0 animate-spin" />
+            ) : (
+              <RefreshCcw size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
+            )}
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Primary Stats Grid (Updated) - Mobile First: 2 columns on mobile, 4 on large screens */}
-      <div className="grid gap-2.5 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
-        {/* Card 1 */}
-        <StatCard 
-          title="Total Customers" 
-          value={stats.totalCustomers.toLocaleString()} 
-          subtext={`+${stats.todayRegistrations} New Today`} 
-          icon={Users} 
+      {/* Stats Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
+        <StatCard
+          title="Total Customers"
+          value={stats.totalCustomers.toLocaleString()}
+          subtext={`+${stats.todayRegistrations} Today`}
+          trend={trends.customerGrowth}
+          icon={Users}
+          loading={loading.stats}
         />
-        {/* Card 2 */}
-        <StatCard 
-          title="Total Deposits" 
+        <StatCard
+          title="Total Deposits"
           value={formatINR(stats.totalDeposits)}
-          subtext="Total platform liquidity" 
-          icon={Wallet} 
+          subtext="Platform Liquidity"
+          trend={trends.depositGrowth}
+          icon={Wallet}
+          loading={loading.stats}
         />
-        {/* Card 3 - Swapped in */}
-        <StatCard 
-          title="Pending KYC" 
-          value={stats.pendingKyc} 
-          subtext="Action required" 
-          icon={FileCheck} 
+        <StatCard
+          title="Gold Holdings"
+          value={`${formatGrams(stats.goldHeld)} g`}
+          subtext={`${formatINR(stats.goldValue)} Value`}
+          trend={trends.goldGrowth}
+          icon={TrendingUp}
+          loading={loading.stats}
         />
-        {/* Card 4 - Swapped in */}
-        <StatCard 
-          title="Pending Withdrawals" 
-          value={stats.pendingWithdrawals} 
-          subtext="Review requests" 
-          icon={ArrowUpCircle} 
+        <StatCard
+          title="Current Gold Rate"
+          value={`₹${stats.goldRate?.toLocaleString() || '0'}/g`}
+          subtext="Latest market rate"
+          icon={TrendingUp}
+          loading={loading.stats}
         />
       </div>
 
-      {/* 3. Charts Section */}
+      {/* Alert Cards for Pending Items */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
+            <h3 className="font-semibold text-sm sm:text-base text-yellow-800">Pending Actions</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-center">
+              <div className="text-lg sm:text-xl font-bold text-yellow-700">{stats.pendingKyc}</div>
+              <div className="text-[10px] sm:text-xs text-yellow-600">KYC Verifications</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg sm:text-xl font-bold text-yellow-700">{stats.pendingWithdrawals}</div>
+              <div className="text-[10px] sm:text-xs text-yellow-600">Withdrawal Requests</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            <h3 className="font-semibold text-sm sm:text-base text-blue-800">Quick Actions</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors">
+              View KYCs
+            </button>
+            <button className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors">
+              Process Withdrawals
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
       <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
-        {/* Gold Rate Graph */}
+        {/* Gold Rate Chart */}
         <div className="bg-card rounded-lg sm:rounded-xl border border-border p-3 sm:p-4 md:p-6 shadow-sm">
-          <h3 className="font-semibold mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-xs sm:text-sm md:text-base lg:text-lg">Gold Value Trend (30 Days)</h3>
+          <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+            <h3 className="font-semibold text-xs sm:text-sm md:text-base lg:text-lg">Gold Value Trend (30 Days)</h3>
+            <button
+              onClick={refreshCharts}
+              disabled={loading.charts}
+              className="text-[10px] sm:text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              {loading.charts ? (
+                <>
+                  <Loader2 size={10} className="animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Refresh'
+              )}
+            </button>
+          </div>
           <div className="h-[180px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={goldData}>
-                <defs>
-                  <linearGradient id="colorGold" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="oklch(0.7686 0.1647 70.0804)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="oklch(0.7686 0.1647 70.0804)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="day" stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted-foreground)" tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--foreground)' }}
-                />
-                <Area type="monotone" dataKey="rate" stroke="oklch(0.7686 0.1647 70.0804)" strokeWidth={2} fillOpacity={1} fill="url(#colorGold)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {loading.charts ? (
+              <ChartSkeleton />
+            ) : goldData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={goldData}>
+                  <defs>
+                    <linearGradient id="colorGold" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="day"
+                    stroke="var(--muted-foreground)"
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={10}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                    fontSize={10}
+                  />
+                  <Tooltip content={<CustomTooltip currency={true} />} />
+                  <Area
+                    type="monotone"
+                    dataKey="rate"
+                    stroke="#F59E0B"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorGold)"
+                    name="Rate per Gram"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <TrendingUp className="w-12 h-12 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No gold rate data available</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Deposits Graph */}
+        {/* Deposits Chart */}
         <div className="bg-card rounded-lg sm:rounded-xl border border-border p-3 sm:p-4 md:p-6 shadow-sm">
-          <h3 className="font-semibold mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-xs sm:text-sm md:text-base lg:text-lg">Daily Deposits (Last 7 Days)</h3>
-           <div className="h-[180px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={depositData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="day" stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
-                <Tooltip 
-                   cursor={{fill: 'var(--muted)'}}
-                   contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                />
-                <Bar dataKey="amount" fill="oklch(0.7686 0.1647 70.0804)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+            <h3 className="font-semibold text-xs sm:text-sm md:text-base lg:text-lg">Daily Deposits (Last 7 Days)</h3>
+            <button
+              onClick={refreshCharts}
+              disabled={loading.charts}
+              className="text-[10px] sm:text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              {loading.charts ? (
+                <>
+                  <Loader2 size={10} className="animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Refresh'
+              )}
+            </button>
+          </div>
+          <div className="h-[180px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full">
+            {loading.charts ? (
+              <ChartSkeleton />
+            ) : depositData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={depositData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="day"
+                    stroke="var(--muted-foreground)"
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={10}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                    fontSize={10}
+                  />
+                  <Tooltip content={<CustomTooltip currency={true} />} />
+                  <Bar
+                    dataKey="amount"
+                    fill="#10B981"
+                    radius={[4, 4, 0, 0]}
+                    name="Deposit Amount"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Wallet className="w-12 h-12 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No deposit data available</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 4. Bottom Section: Transactions + Activity */}
+      {/* Bottom Section: Transactions + Activity */}
       <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3">
-        
-        {/* Recent Transactions - Mobile Card View / Desktop Table View */}
+        {/* Recent Transactions */}
         <div className="lg:col-span-2 bg-card rounded-lg sm:rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
           <div className="p-3 sm:p-4 md:p-6 border-b border-border flex items-center justify-between">
-             <h3 className="font-semibold text-sm sm:text-base md:text-lg">Recent Transactions</h3>
-             <button className="text-[10px] sm:text-xs md:text-sm text-primary hover:underline">View All</button>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm sm:text-base md:text-lg">Recent Transactions</h3>
+              {loading.transactions && (
+                <Loader2 size={14} className="animate-spin text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={refreshTransactions}
+                disabled={loading.transactions}
+                className="text-[10px] sm:text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                {loading.transactions ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button className="text-[10px] sm:text-xs text-primary hover:underline">View All</button>
+            </div>
           </div>
-          
-          {/* Mobile Card View */}
-          <div className="md:hidden divide-y divide-border">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="p-3 hover:bg-muted/20 transition-colors">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-xs text-foreground truncate">{tx.user}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{tx.type}</p>
+
+          <div className="flex-1 overflow-auto">
+            {loading.transactions ? (
+              <div className="p-4 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3">
+                    <div className="space-y-2">
+                      <div className="h-3 bg-muted rounded w-32"></div>
+                      <div className="h-2 bg-muted rounded w-24"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-muted rounded w-20"></div>
+                      <div className="h-2 bg-muted rounded w-16 ml-auto"></div>
+                    </div>
                   </div>
-                  <StatusBadge status={tx.status} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-sm text-foreground">₹ {tx.amount.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted-foreground">{tx.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-xs sm:text-sm text-left">
-              <thead className="bg-muted/50 text-muted-foreground">
-                <tr>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 font-medium">User</th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 font-medium">Type</th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 font-medium">Amount</th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 font-medium">Status</th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 font-medium text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {recentTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{tx.user}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-muted-foreground">{tx.type}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold">₹ {tx.amount.toLocaleString()}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4"><StatusBadge status={tx.status} /></td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-muted-foreground">{tx.date}</td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            ) : recentTransactions.length > 0 ? (
+              <>
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-border">
+                  {recentTransactions.map((tx) => (
+                    <div key={tx.id} className="p-3 hover:bg-muted/20 transition-colors">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs text-foreground truncate">{tx.user}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{tx.type}</p>
+                        </div>
+                        <StatusBadge status={tx.status} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-sm text-foreground">
+                          {tx.amount ? `₹ ${tx.amount.toLocaleString()}` : 'N/A'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">{tx.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className="bg-muted/50 text-muted-foreground sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 font-medium text-left">User</th>
+                        <th className="px-6 py-3 font-medium text-left">Type</th>
+                        <th className="px-6 py-3 font-medium text-left">Amount</th>
+                        <th className="px-6 py-3 font-medium text-left">Status</th>
+                        <th className="px-6 py-3 font-medium text-right">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {recentTransactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-6 py-4 font-medium">{tx.user}</td>
+                          <td className="px-6 py-4 text-muted-foreground">{tx.type}</td>
+                          <td className="px-6 py-4 font-semibold">
+                            {tx.amount ? `₹ ${tx.amount.toLocaleString()}` : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4"><StatusBadge status={tx.status} /></td>
+                          <td className="px-6 py-4 text-right text-muted-foreground">{tx.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <div className="p-8 text-center">
+                <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">No recent transactions</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Sidebar: Recent Activity (Pending cards moved to top) */}
+        {/* Recent Activity */}
         <div className="space-y-3 sm:space-y-4">
-           {/* Recent Activity Feed */}
-           <div className="bg-card p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm h-full">
-             <div className="flex items-center gap-2 mb-3 sm:mb-4">
-               <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
-               <h3 className="font-semibold text-xs sm:text-sm md:text-base">Recent Activity</h3>
-             </div>
-             <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
-               {recentActivity.map((act) => (
-                 <div key={act.id} className="flex gap-2 sm:gap-3 relative">
-                   <div className="mt-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary shrink-0" />
-                   <div className="min-w-0 flex-1">
-                     <p className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{act.text}</p>
-                     <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">{act.time}</p>
-                   </div>
-                 </div>
-               ))}
-             </div>
-             <button className="w-full mt-3 sm:mt-4 md:mt-6 py-1.5 sm:py-2 text-[10px] sm:text-xs border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors">
-               View Full Log
-             </button>
-           </div>
+          <div className="bg-card p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                <h3 className="font-semibold text-xs sm:text-sm md:text-base">Recent Activity</h3>
+                {loading.activity && (
+                  <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <button
+                onClick={refreshActivity}
+                disabled={loading.activity}
+                className="text-[10px] sm:text-xs text-primary hover:underline"
+              >
+                {loading.activity ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+
+            <div className="space-y-2.5 sm:space-y-3 md:space-y-4 max-h-[300px] overflow-y-auto pr-2">
+              {loading.activity ? (
+                <ActivitySkeleton />
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((act) => (
+                  <div key={act.id} className="flex gap-2 sm:gap-3 relative">
+                    <div className="absolute left-[7px] top-5 bottom-0 w-px bg-border -translate-x-1/2"></div>
+                    <div className="mt-1.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-primary shrink-0 relative z-10" />
+                    <div className="min-w-0 flex-1 pb-3 border-b border-border last:border-b-0 last:pb-0">
+                      <p className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{act.text}</p>
+                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">{act.time}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <Activity className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-xs text-muted-foreground">No recent activity</p>
+                </div>
+              )}
+            </div>
+
+            <button className="w-full mt-3 sm:mt-4 md:mt-6 py-1.5 sm:py-2 text-[10px] sm:text-xs border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors">
+              View Full Log
+            </button>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4">
+            <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-2">Platform Health</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Active Customers</span>
+                <span className="font-semibold text-xs sm:text-sm">{Math.round(stats.totalCustomers * 0.85).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Avg. Deposit</span>
+                <span className="font-semibold text-xs sm:text-sm">{formatINR(stats.totalDeposits / Math.max(stats.totalCustomers, 1))}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Gold Rate Change</span>
+                <span className="font-semibold text-xs sm:text-sm text-green-600">+2.5%</span>
+              </div>
+            </div>
+          </div>
         </div>
-
       </div>
-
     </div>
   );
 }

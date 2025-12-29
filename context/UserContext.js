@@ -21,7 +21,11 @@ export function UserProvider({ children }) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("user");
+    // Clear both user and token from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    }
   };
 
   return (

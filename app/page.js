@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
@@ -9,12 +9,41 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useUser();
+  const { login, user } = useUser();
   const [loginInput, setLoginInput] = useState(""); // Can be email or phone
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Check if user is already authenticated on mount
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const storedUser = AuthService.getStoredUser();
+        const isAuthenticated = AuthService.isAuthenticated();
+
+        if (storedUser && isAuthenticated) {
+          // User is already logged in, redirect to appropriate dashboard
+          const role = storedUser.role?.toLowerCase();
+          if (role === "admin") {
+            router.push("/admin/dashboard");
+          } else if (role === "customer") {
+            router.push("/customers/dashboard");
+          }
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        // If there's an error, clear invalid data
+        AuthService.logout();
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -64,6 +93,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
