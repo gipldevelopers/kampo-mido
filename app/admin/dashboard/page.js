@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   UserPlus,
@@ -7,11 +9,11 @@ import {
   FileCheck,
   ArrowUpCircle,
   PlusCircle,
-  RefreshCcw,
   Activity,
   Loader2,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert
 } from "lucide-react";
 import {
   AreaChart,
@@ -22,10 +24,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   BarChart,
-  Bar,
-  LineChart,
-  Line,
-  Legend
+  Bar
 } from 'recharts';
 import Toast from "@/components/Toast";
 import DashboardService from "../../../services/admin/dashboard.service";
@@ -106,7 +105,9 @@ const ActivitySkeleton = () => (
 );
 
 export default function Dashboard() {
+  const router = useRouter();
   const [toast, setToast] = useState(null);
+  const [authError, setAuthError] = useState(false);
   const [loading, setLoading] = useState({
     overall: true,
     stats: true,
@@ -152,6 +153,29 @@ export default function Dashboard() {
     }).format(grams);
   };
 
+  // Handle authentication error
+  const handleAuthError = (error) => {
+    const errorMessage = error.message || error.response?.data?.message || 'Access denied';
+
+    if (error.response?.status === 403) {
+      setAuthError(true);
+      setToast({
+        message: "Access denied. Please check if you have admin permissions or try logging in again.",
+        type: "error"
+      });
+
+      // You can redirect to login page if needed
+      // setTimeout(() => {
+      //   router.push('/admin/login');
+      // }, 3000);
+    } else {
+      setToast({
+        message: errorMessage,
+        type: "error"
+      });
+    }
+  };
+
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
@@ -162,63 +186,50 @@ export default function Dashboard() {
         transactions: true,
         activity: true
       });
+      setAuthError(false);
 
-      // Fetch all data in parallel
-      const [statsData, chartData, transactionsData, activityData] = await Promise.all([
-        DashboardService.getDashboardStats(),
-        DashboardService.getChartData('goldRate'),
-        DashboardService.getRecentTransactions(),
-        DashboardService.getRecentActivity()
-      ]);
+      // Use the main endpoint that returns all data at once
+      try {
+        const dashboardData = await DashboardService.getDashboardData();
 
-      // Process stats
-      if (statsData?.data) {
-        setStats(statsData.data);
+        if (dashboardData?.data) {
+          const { overview, charts, recentTransactions, recentActivity } = dashboardData.data;
 
-        // Calculate trends (mock data for now - in real app, you'd compare with previous period)
-        const mockTrends = {
-          customerGrowth: 12.5,
-          depositGrowth: 8.3,
-          goldGrowth: 5.7
-        };
-        setTrends(mockTrends);
-      }
+          // Process stats
+          setStats(overview || {});
 
-      // Process chart data
-      if (chartData?.data) {
-        setGoldData(chartData.data);
+          // Calculate trends (mock data for now)
+          const mockTrends = {
+            customerGrowth: 12.5,
+            depositGrowth: 8.3,
+            goldGrowth: 5.7
+          };
+          setTrends(mockTrends);
 
-        // Fetch deposit data separately
-        const depositChartData = await DashboardService.getChartData('deposits');
-        if (depositChartData?.data) {
-          setDepositData(depositChartData.data);
-          setLoading(prev => ({ ...prev, charts: false }));
+          // Process chart data
+          if (charts) {
+            setGoldData(charts.goldRateTrend || []);
+            setDepositData(charts.dailyDeposits || []);
+          }
+
+          // Process transactions
+          setRecentTransactions(recentTransactions || []);
+
+          // Process activity
+          setRecentActivity(recentActivity || []);
         }
-      }
-
-      // Process transactions
-      if (transactionsData?.data) {
-        setRecentTransactions(transactionsData.data);
-        setLoading(prev => ({ ...prev, transactions: false }));
-      }
-
-      // Process activity
-      if (activityData?.data) {
-        setRecentActivity(activityData.data);
-        setLoading(prev => ({ ...prev, activity: false }));
+      } catch (error) {
+        handleAuthError(error);
+        throw error;
       }
 
       // Update overall loading
       setTimeout(() => {
-        setLoading(prev => ({ ...prev, overall: false, stats: false }));
+        setLoading(prev => ({ ...prev, overall: false, stats: false, charts: false, transactions: false, activity: false }));
       }, 500);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setToast({
-        message: error.response?.data?.message || 'Failed to load dashboard data',
-        type: 'error'
-      });
 
       // Set loading to false on error
       setLoading({
@@ -231,41 +242,15 @@ export default function Dashboard() {
     }
   };
 
-  // Refresh specific data
-  const refreshStats = async () => {
-    try {
-      setLoading(prev => ({ ...prev, stats: true }));
-      const response = await DashboardService.getDashboardStats();
-      if (response?.data) {
-        setStats(response.data);
-      }
-    } catch (error) {
-      console.error('Error refreshing stats:', error);
-      setToast({
-        message: 'Failed to refresh statistics',
-        type: 'error'
-      });
-    } finally {
-      setLoading(prev => ({ ...prev, stats: false }));
-    }
-  };
-
   const refreshCharts = async () => {
     try {
       setLoading(prev => ({ ...prev, charts: true }));
-      const [goldResponse, depositResponse] = await Promise.all([
-        DashboardService.getChartData('goldRate'),
-        DashboardService.getChartData('deposits')
-      ]);
-
-      if (goldResponse?.data) setGoldData(goldResponse.data);
-      if (depositResponse?.data) setDepositData(depositResponse.data);
+      const response = await DashboardService.getChartData('goldRate');
+      if (response?.data) {
+        setGoldData(response.data);
+      }
     } catch (error) {
-      console.error('Error refreshing charts:', error);
-      setToast({
-        message: 'Failed to refresh charts',
-        type: 'error'
-      });
+      handleAuthError(error);
     } finally {
       setLoading(prev => ({ ...prev, charts: false }));
     }
@@ -279,11 +264,7 @@ export default function Dashboard() {
         setRecentTransactions(response.data);
       }
     } catch (error) {
-      console.error('Error refreshing transactions:', error);
-      setToast({
-        message: 'Failed to refresh transactions',
-        type: 'error'
-      });
+      handleAuthError(error);
     } finally {
       setLoading(prev => ({ ...prev, transactions: false }));
     }
@@ -297,11 +278,7 @@ export default function Dashboard() {
         setRecentActivity(response.data);
       }
     } catch (error) {
-      console.error('Error refreshing activity:', error);
-      setToast({
-        message: 'Failed to refresh activity',
-        type: 'error'
-      });
+      handleAuthError(error);
     } finally {
       setLoading(prev => ({ ...prev, activity: false }));
     }
@@ -331,11 +308,43 @@ export default function Dashboard() {
 
     // Set up auto-refresh every 5 minutes
     const interval = setInterval(() => {
-      refreshStats();
+      fetchDashboardData();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
+
+  // If authentication error, show a different UI
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
+        <div className="bg-card border border-border rounded-lg sm:rounded-xl p-6 sm:p-8 md:p-12 max-w-md w-full text-center">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <ShieldAlert className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Access Denied</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
+            You don't have permission to access the admin dashboard.
+            Please check if you have admin privileges or contact your system administrator.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push('/admin/login')}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity"
+            >
+              Go to Login
+            </button>
+            <button
+              onClick={fetchDashboardData}
+              className="w-full px-4 py-2 border border-input bg-background hover:bg-accent rounded-md font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 pb-4 sm:pb-6 md:pb-8">
@@ -354,29 +363,30 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <Link
+            href="/admin/customers/add"
+            className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
             <UserPlus size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Add Customer</span>
             <span className="sm:hidden">Add</span>
-          </button>
-          <button className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+          </Link>
+          <Link
+            href="/admin/deposits/add"
+            className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
             <PlusCircle size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Add Deposit</span>
             <span className="sm:hidden">Deposit</span>
-          </button>
-          <button
-            onClick={refreshStats}
-            disabled={loading.stats}
-            className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          </Link>
+          <Link
+            href="/admin/gold-rates/update"
+            className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {loading.stats ? (
-              <Loader2 size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0 animate-spin" />
-            ) : (
-              <RefreshCcw size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
-            )}
-            <span className="hidden sm:inline">Refresh</span>
-            <span className="sm:hidden">Refresh</span>
-          </button>
+            <TrendingUp size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Update Rate</span>
+            <span className="sm:hidden">Rate</span>
+          </Link>
         </div>
       </div>
 
@@ -432,6 +442,20 @@ export default function Dashboard() {
               <div className="text-[10px] sm:text-xs text-yellow-600">Withdrawal Requests</div>
             </div>
           </div>
+          <div className="mt-3 flex gap-2">
+            <Link
+              href="/admin/kyc/pending"
+              className="flex-1 text-center px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded text-xs font-medium transition-colors"
+            >
+              View KYCs
+            </Link>
+            <Link
+              href="/admin/withdrawals/pending"
+              className="flex-1 text-center px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded text-xs font-medium transition-colors"
+            >
+              Process Withdrawals
+            </Link>
+          </div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -439,12 +463,18 @@ export default function Dashboard() {
             <h3 className="font-semibold text-sm sm:text-base text-blue-800">Quick Actions</h3>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors">
-              View KYCs
-            </button>
-            <button className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors">
-              Process Withdrawals
-            </button>
+            <Link
+              href="/admin/reports"
+              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors text-center"
+            >
+              View Reports
+            </Link>
+            <Link
+              href="/admin/transactions"
+              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors text-center"
+            >
+              All Transactions
+            </Link>
           </div>
         </div>
       </div>
@@ -596,7 +626,12 @@ export default function Dashboard() {
               >
                 {loading.transactions ? 'Refreshing...' : 'Refresh'}
               </button>
-              <button className="text-[10px] sm:text-xs text-primary hover:underline">View All</button>
+              <Link
+                href="/admin/transactions"
+                className="text-[10px] sm:text-xs text-primary hover:underline"
+              >
+                View All
+              </Link>
             </div>
           </div>
 
@@ -718,9 +753,12 @@ export default function Dashboard() {
               )}
             </div>
 
-            <button className="w-full mt-3 sm:mt-4 md:mt-6 py-1.5 sm:py-2 text-[10px] sm:text-xs border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors">
+            <Link
+              href="/admin/activity-logs"
+              className="w-full mt-3 sm:mt-4 md:mt-6 py-1.5 sm:py-2 text-[10px] sm:text-xs border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors text-center block"
+            >
               View Full Log
-            </button>
+            </Link>
           </div>
 
           {/* Quick Stats */}
@@ -739,6 +777,12 @@ export default function Dashboard() {
                 <span className="text-[10px] sm:text-xs text-muted-foreground">Gold Rate Change</span>
                 <span className="font-semibold text-xs sm:text-sm text-green-600">+2.5%</span>
               </div>
+              <Link
+                href="/admin/reports/analytics"
+                className="w-full mt-3 py-1.5 text-[10px] sm:text-xs border border-primary/20 rounded text-primary hover:bg-primary/5 transition-colors text-center block"
+              >
+                View Detailed Analytics
+              </Link>
             </div>
           </div>
         </div>

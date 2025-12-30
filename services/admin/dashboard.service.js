@@ -5,7 +5,7 @@ class DashboardService {
   // Get complete dashboard data
   async getDashboardData() {
     try {
-      const response = await API.get('/admin/dashboard');
+      const response = await API.get('/admin/dashboard/get-data');
       return response.data;
     } catch (error) {
       console.error('Get dashboard error:', error);
@@ -53,37 +53,6 @@ class DashboardService {
       return response.data;
     } catch (error) {
       console.error('Get recent activity error:', error);
-      throw error;
-    }
-  }
-
-  // Quick actions
-  async addCustomer(customerData) {
-    try {
-      const response = await API.post('/admin/customers', customerData);
-      return response.data;
-    } catch (error) {
-      console.error('Add customer error:', error);
-      throw error;
-    }
-  }
-
-  async addDeposit(depositData) {
-    try {
-      const response = await API.post('/admin/deposits', depositData);
-      return response.data;
-    } catch (error) {
-      console.error('Add deposit error:', error);
-      throw error;
-    }
-  }
-
-  async updateGoldRate(rateData) {
-    try {
-      const response = await API.post('/admin/gold-rates', rateData);
-      return response.data;
-    } catch (error) {
-      console.error('Update gold rate error:', error);
       throw error;
     }
   }
