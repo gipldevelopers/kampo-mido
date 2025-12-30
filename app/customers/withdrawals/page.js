@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpCircle,
   Wallet,
@@ -45,6 +46,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function WithdrawalsPage() {
+  const router = useRouter();
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [withdrawalType, setWithdrawalType] = useState("money");
@@ -328,8 +330,8 @@ export default function WithdrawalsPage() {
                     type="button"
                     onClick={() => setWithdrawalType("money")}
                     className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "money"
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background border-input hover:bg-muted"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-background border-input hover:bg-muted"
                       }`}
                   >
                     <Wallet size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
@@ -340,8 +342,8 @@ export default function WithdrawalsPage() {
                     type="button"
                     onClick={() => setWithdrawalType("physical")}
                     className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "physical"
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background border-input hover:bg-muted"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-background border-input hover:bg-muted"
                       }`}
                   >
                     <Coins size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
@@ -352,8 +354,8 @@ export default function WithdrawalsPage() {
                     type="button"
                     onClick={() => setWithdrawalType("jewellery")}
                     className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "jewellery"
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background border-input hover:bg-muted"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-background border-input hover:bg-muted"
                       }`}
                   >
                     <Gem size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
@@ -545,7 +547,7 @@ export default function WithdrawalsPage() {
             </div>
 
             <button
-              onClick={() => window.location.href = '/customer/withdrawals/history'}
+              onClick={() => router.push('/customers/withdrawals/history')}
               className="w-full mt-3 sm:mt-4 py-1.5 sm:py-2 text-[10px] sm:text-xs md:text-sm border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors"
             >
               View All Withdrawals
