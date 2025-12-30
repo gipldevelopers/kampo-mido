@@ -6,8 +6,6 @@ import {
   Users,
   UserPlus,
   Wallet,
-  FileCheck,
-  ArrowUpCircle,
   PlusCircle,
   Activity,
   Loader2,
@@ -425,59 +423,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Alert Cards for Pending Items */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
-            <h3 className="font-semibold text-sm sm:text-base text-yellow-800">Pending Actions</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="text-center">
-              <div className="text-lg sm:text-xl font-bold text-yellow-700">{stats.pendingKyc}</div>
-              <div className="text-[10px] sm:text-xs text-yellow-600">KYC Verifications</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg sm:text-xl font-bold text-yellow-700">{stats.pendingWithdrawals}</div>
-              <div className="text-[10px] sm:text-xs text-yellow-600">Withdrawal Requests</div>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Link
-              href="/admin/kyc/pending"
-              className="flex-1 text-center px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded text-xs font-medium transition-colors"
-            >
-              View KYCs
-            </Link>
-            <Link
-              href="/admin/withdrawals/pending"
-              className="flex-1 text-center px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded text-xs font-medium transition-colors"
-            >
-              Process Withdrawals
-            </Link>
-          </div>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            <h3 className="font-semibold text-sm sm:text-base text-blue-800">Quick Actions</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href="/admin/reports"
-              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors text-center"
-            >
-              View Reports
-            </Link>
-            <Link
-              href="/admin/transactions"
-              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors text-center"
-            >
-              All Transactions
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* Charts Section */}
       <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
@@ -711,57 +656,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Quick Stats */}
         <div className="space-y-3 sm:space-y-4">
-          <div className="bg-card p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2">
-                <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
-                <h3 className="font-semibold text-xs sm:text-sm md:text-base">Recent Activity</h3>
-                {loading.activity && (
-                  <Loader2 size={14} className="animate-spin text-muted-foreground" />
-                )}
-              </div>
-              <button
-                onClick={refreshActivity}
-                disabled={loading.activity}
-                className="text-[10px] sm:text-xs text-primary hover:underline"
-              >
-                {loading.activity ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-
-            <div className="space-y-2.5 sm:space-y-3 md:space-y-4 max-h-[300px] overflow-y-auto pr-2">
-              {loading.activity ? (
-                <ActivitySkeleton />
-              ) : recentActivity.length > 0 ? (
-                recentActivity.map((act) => (
-                  <div key={act.id} className="flex gap-2 sm:gap-3 relative">
-                    <div className="absolute left-[7px] top-5 bottom-0 w-px bg-border -translate-x-1/2"></div>
-                    <div className="mt-1.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-primary shrink-0 relative z-10" />
-                    <div className="min-w-0 flex-1 pb-3 border-b border-border last:border-b-0 last:pb-0">
-                      <p className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{act.text}</p>
-                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">{act.time}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <Activity className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-xs text-muted-foreground">No recent activity</p>
-                </div>
-              )}
-            </div>
-
-            <Link
-              href="/admin/activity-logs"
-              className="w-full mt-3 sm:mt-4 md:mt-6 py-1.5 sm:py-2 text-[10px] sm:text-xs border border-border rounded-md text-muted-foreground hover:bg-muted transition-colors text-center block"
-            >
-              View Full Log
-            </Link>
-          </div>
-
-          {/* Quick Stats */}
           <div className="bg-primary/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4">
             <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-2">Platform Health</p>
             <div className="space-y-2">

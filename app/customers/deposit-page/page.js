@@ -12,24 +12,25 @@ import {
   History,
 } from "lucide-react";
 import Toast from "@/components/Toast";
-import DepositService from "@/services/customer/deposit.service";
+import DepositService from "../../../services/customer/deposit.service";
+import UPIService from "../../../services/upi.service"; // Add this import
 
 const StatusBadge = ({ status }) => {
   // Normalize status to handle both lowercase and capitalized versions
   const normalizedStatus = status ? (status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()) : "Pending";
-  
+
   const styles = {
     Pending: "text-secondary-foreground bg-secondary border-secondary",
     Approved: "text-primary bg-primary/10 border-primary/20",
     Rejected: "text-destructive bg-destructive/10 border-destructive/20",
   };
-  
+
   const getIcon = () => {
     if (normalizedStatus === "Pending") return <Clock size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
     if (normalizedStatus === "Rejected") return <X size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
     return <CheckCircle2 size={10} className="sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />;
   };
-  
+
   return (
     <span className={`px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${styles[normalizedStatus] || styles.Pending}`}>
       {getIcon()}
@@ -53,14 +54,77 @@ export default function DepositPage() {
   const [fetchingAllHistory, setFetchingAllHistory] = useState(false);
   const [allDepositHistory, setAllDepositHistory] = useState([]);
 
-  const upiId = "kampomido@paytm";
-  const qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(upiId);
+  // UPI related states
+  const [upiId, setUpiId] = useState("kampomido@paytm"); // Default UPI ID
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [fetchingUPI, setFetchingUPI] = useState(true);
+  const [qrCodeError, setQrCodeError] = useState(false);
 
   // Set default deposit date to today
   useEffect(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     setDepositDate(now.toISOString().slice(0, 10));
+  }, []);
+
+  // Fetch UPI QR code on mount
+  useEffect(() => {
+    const fetchUPIQR = async () => {
+      setFetchingUPI(true);
+      try {
+        const response = await UPIService.getUPIQR();
+
+        console.log("UPI QR Response:", response); // Debug log
+
+        if (response.success && response.data) {
+          const { upiId: apiUpiId, qrCode: apiQrCode, merchantName } = response.data;
+
+          console.log("UPI Data:", { apiUpiId, hasQrCode: !!apiQrCode, merchantName }); // Debug log
+
+          if (apiUpiId) {
+            setUpiId(apiUpiId);
+          }
+
+          if (apiQrCode) {
+            // Backend returns base64 data URL - use it directly!
+            setQrCodeUrl(apiQrCode);
+            setQrCodeError(false);
+          } else {
+            // If no QR code from backend, show error
+            setQrCodeError(true);
+            setToast({
+              message: "QR code not available. Please contact support.",
+              type: "error"
+            });
+          }
+        } else {
+          // Handle no data case
+          setQrCodeError(true);
+          setToast({
+            message: response.data?.message || "UPI details not configured",
+            type: "warning"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching UPI QR:", error);
+        setQrCodeError(true);
+        // Fallback to default values if API fails
+        const generatedQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiId)}`;
+        setQrCodeUrl(generatedQrUrl);
+
+        // Show toast only if it's not a network error or if you want to show all errors
+        if (error.response?.status !== 401) {
+          setToast({
+            message: "Unable to load UPI details. Using default values.",
+            type: "warning"
+          });
+        }
+      } finally {
+        setFetchingUPI(false);
+      }
+    };
+
+    fetchUPIQR();
   }, []);
 
   // Fetch deposit history on mount
@@ -124,22 +188,22 @@ export default function DepositPage() {
       }
 
       // Format history data
-        const formattedHistory = historyData.map((item, index) => ({
-          id: item.transactionId || item.id || item.depositId || `DEP-${index + 1}`,
-          amount: item.amount || 0,
-          date: item.depositDate || item.date || item.createdAt
-            ? new Date(item.depositDate || item.date || item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
-            : "N/A",
-          status: item.status || "pending",
-          gold: item.goldAmount || item.gold || item.goldGrams || 0,
-          screenshot: item.screenshot || null,
-          upiReference: item.upiReference || item.upiRef || "N/A",
-          mode: item.mode || "UPI",
-          rateUsed: item.rateUsed || item.rate || 0,
-          adminNotes: item.adminNotes || item.notes || "",
-          isConverted: item.isConverted || (item.goldAmount || item.gold || item.goldGrams) > 0,
-          fullData: item
-        }));
+      const formattedHistory = historyData.map((item, index) => ({
+        id: item.transactionId || item.id || item.depositId || `DEP-${index + 1}`,
+        amount: item.amount || 0,
+        date: item.depositDate || item.date || item.createdAt
+          ? new Date(item.depositDate || item.date || item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+          : "N/A",
+        status: item.status || "pending",
+        gold: item.goldAmount || item.gold || item.goldGrams || 0,
+        screenshot: item.screenshot || null,
+        upiReference: item.upiReference || item.upiRef || "N/A",
+        mode: item.mode || "UPI",
+        rateUsed: item.rateUsed || item.rate || 0,
+        adminNotes: item.adminNotes || item.notes || "",
+        isConverted: item.isConverted || (item.goldAmount || item.gold || item.goldGrams) > 0,
+        fullData: item
+      }));
 
       setAllDepositHistory(formattedHistory);
     } catch (error) {
@@ -303,11 +367,34 @@ export default function DepositPage() {
               {/* QR Code */}
               <div className="space-y-3 sm:space-y-4">
                 <div className="bg-background p-3 sm:p-4 md:p-6 rounded-lg border border-border flex items-center justify-center">
-                  <img
-                    src={qrCodeUrl}
-                    alt="UPI QR Code"
-                    className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48"
-                  />
+                  {fetchingUPI ? (
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex items-center justify-center">
+                      <Loader2 size={32} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : qrCodeError ? (
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex flex-col items-center justify-center">
+                      <QrCode size={48} className="text-destructive mb-2" />
+                      <p className="text-xs text-muted-foreground text-center">Failed to load QR</p>
+                    </div>
+                  ) : (
+                    <img
+                      src={qrCodeUrl}
+                      alt="UPI QR Code"
+                      className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48"
+                      onError={(e) => {
+                        console.error("Failed to load QR code image");
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `
+                          <div class="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex flex-col items-center justify-center">
+                            <svg class="w-12 h-12 text-destructive mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <p class="text-xs text-muted-foreground text-center">QR code unavailable</p>
+                          </div>
+                        `;
+                      }}
+                    />
+                  )}
                 </div>
                 <p className="text-[10px] sm:text-xs text-center text-muted-foreground">Scan QR code to pay</p>
               </div>
@@ -319,16 +406,26 @@ export default function DepositPage() {
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <input
                       type="text"
-                      value={upiId}
+                      value={fetchingUPI ? "Loading..." : upiId}
                       readOnly
                       className="flex-1 px-2.5 sm:px-3 py-2 bg-muted border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground"
+                      disabled={fetchingUPI}
                     />
                     <button
                       onClick={handleCopyUPI}
-                      className="px-3 sm:px-4 py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 shrink-0"
+                      disabled={fetchingUPI || !upiId}
+                      className="px-3 sm:px-4 py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {copied ? <CheckCircle2 size={14} className="sm:w-4 sm:h-4" /> : <Copy size={14} className="sm:w-4 sm:h-4" />}
-                      <span>{copied ? "Copied!" : "Copy"}</span>
+                      {fetchingUPI ? (
+                        <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" />
+                      ) : copied ? (
+                        <CheckCircle2 size={14} className="sm:w-4 sm:h-4" />
+                      ) : (
+                        <Copy size={14} className="sm:w-4 sm:h-4" />
+                      )}
+                      <span>
+                        {fetchingUPI ? "Loading" : copied ? "Copied!" : "Copy"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -346,6 +443,7 @@ export default function DepositPage() {
             </div>
           </div>
 
+          {/* Rest of the component remains the same */}
           {/* Deposit Form */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
@@ -644,4 +742,3 @@ export default function DepositPage() {
     </div>
   );
 }
-
