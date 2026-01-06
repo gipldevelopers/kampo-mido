@@ -52,6 +52,11 @@ class WithdrawalRequestService {
                 status: statusData.status,
             };
 
+            // Add grams if provided (important for money withdrawals)
+            if (statusData.grams !== undefined) {
+                payload.grams = statusData.grams;
+            }
+
             // Add admin notes only if provided
             if (statusData.adminNotes && statusData.adminNotes.trim()) {
                 payload.adminNotes = statusData.adminNotes.trim();

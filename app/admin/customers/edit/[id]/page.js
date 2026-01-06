@@ -72,7 +72,7 @@ export default function EditCustomer({ params }) {
               <label className="text-xs sm:text-sm font-medium text-foreground">Mobile Number</label>
               <input 
                 type="tel" 
-                defaultValue="+91 98765 43210" 
+                defaultValue="9876543210" 
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
               />
             </div>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { 
-  ShieldCheck, 
+import {
+  ShieldCheck,
   Upload,
   User,
   FileText,
@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Loader2
+  Loader2,
+  RefreshCcw
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import KYCService from "@/services/customer/kyc.service";
@@ -21,11 +22,13 @@ const StatusBadge = ({ status }) => {
     Pending: "text-secondary-foreground bg-secondary border-secondary",
     Verified: "text-primary bg-primary/10 border-primary/20",
     Rejected: "text-destructive bg-destructive/10 border-destructive/20",
+    "Re-upload Requested": "text-orange-600 bg-orange-50 border-orange-200",
   };
   const icons = {
     Pending: Clock,
     Verified: CheckCircle2,
     Rejected: XCircle,
+    "Re-upload Requested": RefreshCcw, // I should add RefreshCcw to imports
   };
   const Icon = icons[status] || Clock;
   return (
@@ -42,7 +45,7 @@ export default function KYCPage() {
   const [fetchingStatus, setFetchingStatus] = useState(true);
   const [kycStatus, setKycStatus] = useState("Pending");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+
   // Document uploads
   const [aadhaarFront, setAadhaarFront] = useState(null);
   const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState(null);
@@ -65,50 +68,85 @@ export default function KYCPage() {
   const [nomineeAddress, setNomineeAddress] = useState("");
   const [nomineePhone, setNomineePhone] = useState("");
 
+  // Re-upload / Rejection info
+  const [adminNotes, setAdminNotes] = useState("");
+  const [requestedDocs, setRequestedDocs] = useState([]);
+
   // Fetch KYC status on mount
   useEffect(() => {
     const fetchKYCStatus = async () => {
       setFetchingStatus(true);
       try {
         const response = await KYCService.getKYCStatus();
-        
-        // Handle different response structures
+
         let status = "Pending";
-        if (response.data) {
-          status = response.data.status || response.data.kycStatus || "Pending";
-        } else if (response.status) {
-          status = response.status;
-        } else if (response.kycStatus) {
-          status = response.kycStatus;
-        }
-        
-        // Normalize status to match UI (Pending, Verified, Rejected)
-        const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-        if (normalizedStatus === "Approved") {
-          setKycStatus("Verified");
-        } else {
-          setKycStatus(normalizedStatus);
-        }
-        
-        // Check if KYC is already submitted (if status is not Pending, it's been submitted)
-        if (normalizedStatus !== "Pending") {
-          setIsSubmitted(true);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("kycSubmitted", "true");
+        let data = response.data || response;
+
+        if (data) {
+          status = data.status || data.kycStatus || "Pending";
+
+          // Populate existing data if available
+          if (data.idType) setIdType(data.idType);
+          if (data.idNumber) setIdNumber(data.idNumber);
+          if (data.panNumber) setPanNumber(data.panNumber);
+
+          // Nominee data
+          if (data.nominee) {
+            setNomineeName(data.nominee.name || "");
+            setNomineeRelation(data.nominee.relation || data.nominee.relationship || "");
+            setNomineeDob(data.nominee.dob || "");
+            setNomineeAddress(data.nominee.address || "");
+            setNomineePhone(data.nominee.phone || "");
           }
-        } else {
-          // Check localStorage for submission status
-          if (typeof window !== "undefined") {
-            const submitted = localStorage.getItem("kycSubmitted");
-            if (submitted === "true") {
-              setIsSubmitted(true);
-            }
+
+          // Re-upload info
+          setAdminNotes(data.notes || data.rejectionReason || "");
+          setRequestedDocs(data.documentsToReupload || []);
+
+          // Populate existing document previews if available
+          if (data.documents && Array.isArray(data.documents)) {
+            const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
+            data.documents.forEach(doc => {
+              const name = doc.name?.toLowerCase() || "";
+              const url = doc.url ? `${baseURL}${doc.url}` : null;
+              if (url) {
+                if (name.includes("aadhaar") && name.includes("front")) setAadhaarFrontPreview(url);
+                else if (name.includes("aadhaar") && name.includes("back")) setAadhaarBackPreview(url);
+                else if (name.includes("pan")) setPanCardPreview(url);
+                else if (name.includes("selfie")) setSelfiePreview(url);
+              }
+            });
           }
         }
+
+        // Normalize status
+        const rawStatus = status.toLowerCase();
+        let finalStatus = "Pending";
+        let locked = false;
+
+        if (rawStatus === "approved" || rawStatus === "verified") {
+          finalStatus = "Verified";
+          locked = true;
+        } else if (rawStatus === "rejected") {
+          finalStatus = "Rejected";
+          locked = false; // Allow fix
+        } else if (rawStatus === "reupload_requested" || rawStatus === "action_required") {
+          finalStatus = "Re-upload Requested";
+          locked = false; // Allow fix
+        } else if (rawStatus === "pending") {
+          finalStatus = "Pending";
+          // Only lock if we have documents in local storage indicating an active submission
+          const submitted = typeof window !== "undefined" ? localStorage.getItem("kycSubmitted") : null;
+          if (submitted === "true") {
+            locked = true;
+          }
+        }
+
+        setKycStatus(finalStatus);
+        setIsSubmitted(locked);
+
       } catch (error) {
         console.error("Error fetching KYC status:", error);
-        // Don't show error toast for status fetch - just use default "Pending"
-        // If it's a 404 or similar, KYC might not exist yet, which is fine
       } finally {
         setFetchingStatus(false);
       }
@@ -117,9 +155,10 @@ export default function KYCPage() {
     fetchKYCStatus();
   }, []);
 
-  const handleFileUpload = (file, setFile, setPreview, maxSize = 5) => {
-    // Prevent file upload if already submitted
-    if (isSubmitted) {
+  const handleFileUpload = (file, setFile, setPreview, fieldKey, maxSize = 5) => {
+    // Prevent file upload if already submitted, unless this specific field is requested for re-upload
+    const isRequested = requestedDocs.includes(fieldKey);
+    if (isSubmitted && !isRequested) {
       setToast({ message: "KYC has already been submitted. You cannot modify the documents.", type: "error" });
       return;
     }
@@ -141,9 +180,10 @@ export default function KYCPage() {
     }
   };
 
-  const handleRemoveFile = (setFile, setPreview) => {
-    // Prevent file removal if already submitted
-    if (isSubmitted) {
+  const handleRemoveFile = (setFile, setPreview, fieldKey) => {
+    // Prevent file removal if already submitted, unless this specific field is requested for re-upload
+    const isRequested = requestedDocs.includes(fieldKey);
+    if (isSubmitted && !isRequested) {
       setToast({ message: "KYC has already been submitted. You cannot remove documents.", type: "error" });
       return;
     }
@@ -153,8 +193,11 @@ export default function KYCPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!aadhaarFront || !aadhaarBack || !panCard || !selfie) {
+
+    if (!(aadhaarFront || aadhaarFrontPreview) ||
+      !(aadhaarBack || aadhaarBackPreview) ||
+      !(panCard || panCardPreview) ||
+      !(selfie || selfiePreview)) {
       setToast({ message: "Please upload all required documents", type: "error" });
       return;
     }
@@ -192,7 +235,7 @@ export default function KYCPage() {
       ]);
 
       setToast({ message: "KYC documents and nominee details submitted successfully! Admin will verify and approve.", type: "success" });
-      
+
       // Mark as submitted and save to localStorage
       setIsSubmitted(true);
       if (typeof window !== "undefined") {
@@ -206,55 +249,65 @@ export default function KYCPage() {
     }
   };
 
-  const FileUploadSection = ({ title, description, file, preview, setFile, setPreview, required = true }) => (
-    <div className="space-y-1.5 sm:space-y-2">
-      <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-        {title} {required && <span className="text-destructive">*</span>}
-      </label>
-      {preview ? (
-        <div className="relative">
-          <div className="border border-border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30">
-            <img 
-              src={preview} 
-              alt={title} 
-              className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md mx-auto"
-            />
-          </div>
-          {!isSubmitted && (
-            <button
-              type="button"
-              onClick={() => handleRemoveFile(setFile, setPreview)}
-              className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-opacity"
-              aria-label="Remove file"
-            >
-              <X size={12} className="sm:w-4 sm:h-4" />
-            </button>
+  const FileUploadSection = ({ title, description, file, preview, setFile, setPreview, required = true, fieldKey }) => {
+    const isRequested = requestedDocs.includes(fieldKey);
+    const isDisabled = isSubmitted && !isRequested;
+
+    return (
+      <div className={`space-y-1.5 sm:space-y-2 p-2 rounded-lg transition-all duration-300 ${isRequested ? "bg-orange-50/50 border border-orange-200 ring-1 ring-orange-200" : "border border-transparent"}`}>
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+            {title} {required && <span className="text-destructive">*</span>}
+          </label>
+          {isRequested && (
+            <span className="text-[9px] sm:text-[10px] font-bold text-orange-600 uppercase tracking-wider bg-orange-100 px-1.5 py-0.5 rounded">Action Required</span>
           )}
         </div>
-      ) : (
-        <label className={isSubmitted ? "cursor-not-allowed" : "cursor-pointer"}>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e.target.files[0], setFile, setPreview)}
-            disabled={isSubmitted}
-            className="hidden"
-            required={required}
-          />
-          <div className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed border-border rounded-lg transition-colors ${isSubmitted ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"}`}>
-            <ImageIcon size={24} className="sm:w-8 sm:h-8 text-muted-foreground mb-1.5 sm:mb-2" />
-            <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload {title.toLowerCase()}</p>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
+        {preview ? (
+          <div className="relative">
+            <div className={`border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30 ${isRequested ? "border-orange-300 shadow-sm" : "border-border"}`}>
+              <img
+                src={preview}
+                alt={title}
+                className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md mx-auto"
+              />
+            </div>
+            {!isDisabled && (
+              <button
+                type="button"
+                onClick={() => handleRemoveFile(setFile, setPreview, fieldKey)}
+                className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-all shadow-md group"
+                aria-label="Remove file"
+              >
+                <X size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
+              </button>
+            )}
           </div>
-        </label>
-      )}
-      {description && <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{description}</p>}
-    </div>
-  );
+        ) : (
+          <label className={isDisabled ? "cursor-not-allowed" : "cursor-pointer"}>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e.target.files[0], setFile, setPreview, fieldKey)}
+              disabled={isDisabled}
+              className="hidden"
+              required={required && !preview}
+            />
+            <div className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed rounded-lg transition-all ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"} ${isRequested ? "border-orange-400 bg-orange-50/30 ring-1 ring-orange-100" : "border-border"}`}>
+              <ImageIcon size={24} className={`sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${isRequested ? "text-orange-500 animate-pulse" : "text-muted-foreground"}`} />
+              <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload {title.toLowerCase()}</p>
+              <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
+            </div>
+          </label>
+        )}
+        {description && <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{description}</p>}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4 sm:space-y-5 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -277,17 +330,17 @@ export default function KYCPage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-        
+
         {/* LEFT COLUMN: KYC Form (Span 2) */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
-          
+
           {/* ID Documents */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
               <FileText size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
               <h3 className="text-base sm:text-lg font-semibold text-foreground">ID Documents</h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
               {/* ID Information */}
               <div className="pb-3 sm:pb-4 border-b border-border">
@@ -350,6 +403,7 @@ export default function KYCPage() {
                     preview={aadhaarFrontPreview}
                     setFile={setAadhaarFront}
                     setPreview={setAadhaarFrontPreview}
+                    fieldKey="idFront"
                   />
                   <FileUploadSection
                     title="Aadhaar Back"
@@ -358,6 +412,7 @@ export default function KYCPage() {
                     preview={aadhaarBackPreview}
                     setFile={setAadhaarBack}
                     setPreview={setAadhaarBackPreview}
+                    fieldKey="idBack"
                   />
                 </div>
 
@@ -369,6 +424,7 @@ export default function KYCPage() {
                     preview={panCardPreview}
                     setFile={setPanCard}
                     setPreview={setPanCardPreview}
+                    fieldKey="panFile"
                   />
                 </div>
               </div>
@@ -381,7 +437,7 @@ export default function KYCPage() {
               <User size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Selfie Verification</h3>
             </div>
-            
+
             <FileUploadSection
               title="Selfie Photo"
               description="Take a clear selfie holding your Aadhaar card next to your face"
@@ -389,6 +445,7 @@ export default function KYCPage() {
               preview={selfiePreview}
               setFile={setSelfie}
               setPreview={setSelfiePreview}
+              fieldKey="selfie"
             />
           </div>
 
@@ -398,7 +455,7 @@ export default function KYCPage() {
               <User size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Nominee Details</h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
@@ -483,7 +540,7 @@ export default function KYCPage() {
 
               <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> All documents must be clear and readable. 
+                  <strong className="text-foreground">Note:</strong> All documents must be clear and readable.
                   Ensure all information is visible and not blurred. Admin will verify your documents and approve your KYC.
                 </p>
               </div>
@@ -511,11 +568,11 @@ export default function KYCPage() {
 
         {/* RIGHT COLUMN: KYC Status & Info (Span 1) */}
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
-          
+
           {/* KYC Status Card */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4">KYC Status</h3>
-            
+
             <div className="space-y-3 sm:space-y-4">
               <div className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
@@ -530,76 +587,81 @@ export default function KYCPage() {
                   )}
                 </div>
                 {!fetchingStatus && (
-                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                    {kycStatus === "Pending" && "Your KYC is under review. Please wait for admin approval."}
-                    {kycStatus === "Verified" && "Your KYC has been verified. You can use all platform features."}
-                    {kycStatus === "Rejected" && "Your KYC was rejected. Please re-upload documents."}
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                      {kycStatus === "Pending" && (isSubmitted ? "Your KYC is under review. Please wait for admin approval." : "Please upload your documents to start the verification process.")}
+                      {kycStatus === "Verified" && "Your KYC has been verified. You can use all platform features."}
+                      {kycStatus === "Rejected" && "Your KYC was rejected. Please review the notes and re-upload documents."}
+                      {kycStatus === "Re-upload Requested" && "Admin has requested a re-upload of specific documents."}
+                    </p>
+                    {adminNotes && (kycStatus === "Rejected" || kycStatus === "Re-upload Requested") && (
+                      <div className="p-2 bg-destructive/5 border border-destructive/20 rounded-md">
+                        <p className="text-[9px] sm:text-[10px] font-semibold text-destructive mb-0.5">Admin Note:</p>
+                        <p className="text-[9px] sm:text-[10px] text-foreground italic">"{adminNotes}"</p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
               <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Aadhaar</span>
-                  <span className={`font-medium ${
-                    kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "text-primary" 
-                      : aadhaarFront && aadhaarBack 
-                        ? "text-foreground" 
-                        : "text-muted-foreground"
-                  }`}>
-                    {kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "✓ Approved" 
-                      : aadhaarFront && aadhaarBack 
-                        ? "✓ Uploaded" 
+                  <span className={`font-medium ${kycStatus === "Verified" || kycStatus === "Approved"
+                    ? "text-primary"
+                    : aadhaarFront && aadhaarBack
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                    }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved"
+                      ? "✓ Approved"
+                      : aadhaarFront && aadhaarBack
+                        ? "✓ Uploaded"
                         : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">PAN Card</span>
-                  <span className={`font-medium ${
-                    kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "text-primary" 
-                      : panCard 
-                        ? "text-foreground" 
-                        : "text-muted-foreground"
-                  }`}>
-                    {kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "✓ Approved" 
-                      : panCard 
-                        ? "✓ Uploaded" 
+                  <span className={`font-medium ${kycStatus === "Verified" || kycStatus === "Approved"
+                    ? "text-primary"
+                    : panCard
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                    }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved"
+                      ? "✓ Approved"
+                      : panCard
+                        ? "✓ Uploaded"
                         : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Selfie</span>
-                  <span className={`font-medium ${
-                    kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "text-primary" 
-                      : selfie 
-                        ? "text-foreground" 
-                        : "text-muted-foreground"
-                  }`}>
-                    {kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "✓ Approved" 
-                      : selfie 
-                        ? "✓ Uploaded" 
+                  <span className={`font-medium ${kycStatus === "Verified" || kycStatus === "Approved"
+                    ? "text-primary"
+                    : selfie
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                    }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved"
+                      ? "✓ Approved"
+                      : selfie
+                        ? "✓ Uploaded"
                         : "Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm">
                   <span className="text-muted-foreground">Nominee</span>
-                  <span className={`font-medium ${
-                    kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "text-primary" 
-                      : nomineeName 
-                        ? "text-foreground" 
-                        : "text-muted-foreground"
-                  }`}>
-                    {kycStatus === "Verified" || kycStatus === "Approved" 
-                      ? "✓ Approved" 
-                      : nomineeName 
-                        ? "✓ Added" 
+                  <span className={`font-medium ${kycStatus === "Verified" || kycStatus === "Approved"
+                    ? "text-primary"
+                    : nomineeName
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                    }`}>
+                    {kycStatus === "Verified" || kycStatus === "Approved"
+                      ? "✓ Approved"
+                      : nomineeName
+                        ? "✓ Added"
                         : "Pending"}
                   </span>
                 </div>

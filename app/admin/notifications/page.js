@@ -100,7 +100,7 @@ export default function NotificationManagement() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [whatsappApiKey, setWhatsappApiKey] = useState("wapi_********************");
   const [whatsappApiSecret, setWhatsappApiSecret] = useState("wsec_********************");
-  const [whatsappPhoneNumber, setWhatsappPhoneNumber] = useState("+91 98765 43210");
+  const [whatsappPhoneNumber, setWhatsappPhoneNumber] = useState("9876543210");
   
   const [smsEnabled, setSmsEnabled] = useState(true);
   const [smsApiKey, setSmsApiKey] = useState("sms_********************");
@@ -273,7 +273,7 @@ export default function NotificationManagement() {
                       type="text"
                       value={whatsappPhoneNumber}
                       onChange={(e) => setWhatsappPhoneNumber(e.target.value)}
-                      placeholder="+91 98765 43210"
+                      placeholder="9876543210"
                       className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     />
                   </div>

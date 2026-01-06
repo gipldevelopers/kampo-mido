@@ -6,7 +6,6 @@ import { useUser } from "@/context/UserContext";
 import AuthService from "@/services/auth.service";
 import Toast from "@/components/Toast";
 import { Eye, EyeOff, Shield, Gem, Lock, User, Mail, Phone, ArrowRight, Sparkles, TrendingUp, Award } from "lucide-react";
-import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +17,12 @@ export default function LoginPage() {
   const [toast, setToast] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState("email");
+
+  // Clear input when switching tabs
+  useEffect(() => {
+    setLoginInput("");
+    setToast(null);
+  }, [activeTab]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -55,9 +60,9 @@ export default function LoginPage() {
       };
 
       if (activeTab === "email") {
-        credentials.email = loginInput;
+        credentials.email = loginInput.trim().toLowerCase();
       } else {
-        credentials.phone = loginInput;
+        credentials.phone = loginInput.trim();
       }
 
       const { user, token } = await AuthService.login(credentials);
@@ -288,7 +293,7 @@ export default function LoginPage() {
                       required
                       disabled={isLoading}
                       className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all duration-300 placeholder:text-gray-400"
-                      placeholder={activeTab === "email" ? "you@example.com" : "+91 98765 43210"}
+                      placeholder={activeTab === "email" ? "you@example.com" : "9876543210"}
                     />
                   </div>
                 </div>

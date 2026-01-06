@@ -1,15 +1,15 @@
 "use client";
 import { useState, use } from "react";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  Download, 
-  CheckCircle2, 
-  XCircle, 
-  RefreshCcw, 
-  FileText, 
-  ScanLine, 
-  User, 
+import {
+  ArrowLeft,
+  Download,
+  CheckCircle2,
+  XCircle,
+  RefreshCcw,
+  FileText,
+  ScanLine,
+  User,
   PenTool,
   X,
   ZoomIn,
@@ -38,7 +38,7 @@ export default function KYCDetail({ params }) {
         // Ensure ID is a valid number or string
         // Remove any non-numeric characters if it's a formatted ID like "KYC-2001"
         let kycId = id && id !== "N/A" && id !== "null" ? String(id) : null;
-        
+
         // If ID contains non-numeric characters, try to extract numeric part
         if (kycId && !/^\d+$/.test(kycId)) {
           // Extract numeric part from strings like "KYC-2001" or "2001"
@@ -51,7 +51,7 @@ export default function KYCDetail({ params }) {
             return;
           }
         }
-        
+
         if (!kycId || kycId === "N/A" || kycId === "null") {
           setToast({ message: "Invalid KYC ID", type: "error" });
           setLoading(false);
@@ -80,12 +80,12 @@ export default function KYCDetail({ params }) {
         if (kyc) {
           // Separate selfie from other documents
           const allDocuments = kyc.documents || [];
-          const selfieDoc = allDocuments.find(doc => 
-            doc.name?.toLowerCase().includes("selfie") || 
+          const selfieDoc = allDocuments.find(doc =>
+            doc.name?.toLowerCase().includes("selfie") ||
             doc.name?.toLowerCase() === "selfie"
           );
-          const otherDocuments = allDocuments.filter(doc => 
-            !doc.name?.toLowerCase().includes("selfie") && 
+          const otherDocuments = allDocuments.filter(doc =>
+            !doc.name?.toLowerCase().includes("selfie") &&
             doc.name?.toLowerCase() !== "selfie"
           );
 
@@ -151,8 +151,8 @@ export default function KYCDetail({ params }) {
   };
 
   const toggleDocumentSelection = (docName) => {
-    setSelectedDocuments(prev => 
-      prev.includes(docName) 
+    setSelectedDocuments(prev =>
+      prev.includes(docName)
         ? prev.filter(d => d !== docName)
         : [...prev, docName]
     );
@@ -161,7 +161,7 @@ export default function KYCDetail({ params }) {
   const handleAction = async (action) => {
     // Ensure ID is valid and extract numeric KYC ID
     let kycId = id && id !== "N/A" && id !== "null" ? String(id) : null;
-    
+
     // Extract numeric part if ID is formatted (e.g., "KYC-2001")
     if (kycId && !/^\d+$/.test(kycId)) {
       const numericMatch = kycId.match(/\d+/);
@@ -172,15 +172,15 @@ export default function KYCDetail({ params }) {
         return;
       }
     }
-    
+
     if (!kycId || kycId === "N/A" || kycId === "null") {
       setToast({ message: "Invalid KYC ID", type: "error" });
       return;
     }
-    
+
     // Use the KYC ID from kycData if available (more reliable)
     const finalKycId = kycData?.id ? String(kycData.id) : kycId;
-    
+
     console.log("Action:", action, "KYC ID:", finalKycId);
 
     if (action === "approve") {
@@ -213,8 +213,8 @@ export default function KYCDetail({ params }) {
           .filter(Boolean);
 
         await AdminKYCService.updateKYCStatus(
-          finalKycId, 
-          "rejected", 
+          finalKycId,
+          "rejected",
           notes,
           documentsToReupload.length > 0 ? documentsToReupload : undefined
         );
@@ -243,11 +243,14 @@ export default function KYCDetail({ params }) {
           .filter(Boolean);
 
         await AdminKYCService.requestReupload(
-          finalKycId, 
-          documentsToReupload, 
+          finalKycId,
+          documentsToReupload,
           notes || "Please re-upload the selected documents with better quality."
         );
         setToast({ message: "Re-upload request sent to customer", type: "success" });
+        if (kycData) {
+          setKycData({ ...kycData, status: "Re-upload Requested" });
+        }
         setNotes("");
         setSelectedDocuments([]);
         setShowDocumentSelector(false);
@@ -281,7 +284,7 @@ export default function KYCDetail({ params }) {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative pb-24 sm:pb-28 md:pb-20">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -303,14 +306,14 @@ export default function KYCDetail({ params }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-        
+
         {/* LEFT COLUMN: Documents Viewer */}
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
               <FileText size={16} className="sm:w-[18px] sm:h-[18px] text-primary shrink-0" /> <span>Uploaded Documents</span>
             </h3>
-            
+
             <div className="space-y-2 sm:space-y-3">
               {kycData.documents.map((doc, index) => (
                 <div key={index} className="flex items-center justify-between p-2.5 sm:p-3 md:p-4 bg-muted/30 border border-border rounded-lg group hover:border-primary/50 transition-colors">
@@ -324,7 +327,7 @@ export default function KYCDetail({ params }) {
                     </div>
                   </div>
                   <div className="flex gap-1.5 sm:gap-2 shrink-0">
-                    <button 
+                    <button
                       onClick={() => {
                         if (doc.url) {
                           setPreviewDocument(doc);
@@ -335,17 +338,17 @@ export default function KYCDetail({ params }) {
                     >
                       Preview
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         if (doc.url) {
                           try {
                             const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
                             const fullUrl = `${baseURL}${doc.url}`;
-                            
+
                             // Fetch the file as blob
                             const response = await fetch(fullUrl);
                             const blob = await response.blob();
-                            
+
                             // Create download link
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
@@ -373,7 +376,7 @@ export default function KYCDetail({ params }) {
 
           {/* Selfie Preview */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
               <PenTool size={16} className="sm:w-[18px] sm:h-[18px] text-primary shrink-0" /> <span>Selfie</span>
             </h3>
             {kycData.selfie ? (
@@ -389,7 +392,7 @@ export default function KYCDetail({ params }) {
                     </div>
                   </div>
                   <div className="flex gap-1.5 sm:gap-2 shrink-0">
-                    <button 
+                    <button
                       onClick={() => {
                         if (kycData.selfie?.url) {
                           const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
@@ -400,17 +403,17 @@ export default function KYCDetail({ params }) {
                     >
                       Preview
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         if (kycData.selfie?.url) {
                           try {
                             const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
                             const fullUrl = `${baseURL}${kycData.selfie.url}`;
-                            
+
                             // Fetch the file as blob
                             const response = await fetch(fullUrl);
                             const blob = await response.blob();
-                            
+
                             // Create download link
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
@@ -434,7 +437,7 @@ export default function KYCDetail({ params }) {
                 </div>
                 {kycData.selfie.url && (
                   <div className="border border-border rounded-lg overflow-hidden bg-muted/30">
-                    <img 
+                    <img
                       src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${kycData.selfie.url}`}
                       alt="Selfie"
                       className="w-full h-auto max-h-64 sm:max-h-80 md:max-h-96 object-contain"
@@ -460,7 +463,7 @@ export default function KYCDetail({ params }) {
 
         {/* RIGHT COLUMN: Data Verification */}
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
-          
+
           {/* OCR Data Extraction */}
           <div className="bg-primary/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -525,7 +528,7 @@ export default function KYCDetail({ params }) {
                   <div>
                     <p className="text-muted-foreground">Submitted:</p>
                     <p className="font-medium">
-                      {kycData.kycDetails.submittedAt 
+                      {kycData.kycDetails.submittedAt
                         ? new Date(kycData.kycDetails.submittedAt).toLocaleDateString()
                         : "N/A"}
                     </p>
@@ -541,7 +544,7 @@ export default function KYCDetail({ params }) {
               <User size={16} className="sm:w-[18px] sm:h-[18px] text-primary shrink-0" /> <span>Nominee Details</span>
             </h3>
             <div className="space-y-3 sm:space-y-4">
-              
+
               <div className="pt-2 border-t border-border">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1">
@@ -606,7 +609,7 @@ export default function KYCDetail({ params }) {
           {/* Staff Notes */}
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Staff Notes</h3>
-            <textarea 
+            <textarea
               className="w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y"
               placeholder="Add verification notes here..."
               value={notes}
@@ -621,7 +624,7 @@ export default function KYCDetail({ params }) {
       <div className="fixed bottom-0 left-0 md:left-64 right-0 p-2.5 sm:p-3 md:p-4 bg-card border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 z-20 shadow-lg">
         <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground hidden md:block">Action required for verification</p>
         <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <button 
+          <button
             onClick={() => {
               if (selectedDocuments.length > 0) {
                 handleAction('reupload');
@@ -634,7 +637,7 @@ export default function KYCDetail({ params }) {
           >
             <RefreshCcw size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Request Re-upload</span><span className="sm:hidden">Re-upload</span>
           </button>
-          <button 
+          <button
             onClick={() => {
               // Allow reject with or without document selection
               handleAction('reject');
@@ -643,7 +646,7 @@ export default function KYCDetail({ params }) {
           >
             <XCircle size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Reject</span>
           </button>
-          <button 
+          <button
             onClick={() => handleAction('approve')}
             className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm"
           >
@@ -654,11 +657,11 @@ export default function KYCDetail({ params }) {
 
       {/* Document Preview Modal */}
       {previewDocument && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           onClick={() => setPreviewDocument(null)}
         >
-          <div 
+          <div
             className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -696,11 +699,11 @@ export default function KYCDetail({ params }) {
                       try {
                         const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
                         const fullUrl = `${baseURL}${previewDocument.url}`;
-                        
+
                         // Fetch the file as blob
                         const response = await fetch(fullUrl);
                         const blob = await response.blob();
-                        
+
                         // Create download link
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
@@ -731,7 +734,7 @@ export default function KYCDetail({ params }) {
                 </button>
               </div>
             </div>
-            
+
             {/* Image Preview */}
             <div className="flex-1 overflow-auto p-4 bg-muted/20 flex items-center justify-center">
               {previewDocument.url ? (

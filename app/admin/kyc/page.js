@@ -25,6 +25,7 @@ const StatusBadge = ({ status }) => {
   if (status === 'Approved') styles = "text-primary bg-primary/10 border-primary/20";
   if (status === 'Pending') styles = "text-secondary-foreground bg-secondary border-secondary";
   if (status === 'Rejected') styles = "text-destructive bg-destructive/10 border-destructive/20";
+  if (status === 'Re-upload Requested') styles = "text-orange-600 bg-orange-50 border-orange-200";
 
   return (
     <span className={`px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${styles}`}>

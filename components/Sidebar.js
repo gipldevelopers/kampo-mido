@@ -32,7 +32,7 @@ const menuItems = [
   { name: "Aprrove deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
   { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
   { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
-  { name: "Notifications", href: "/admin/notifications", icon: Bell },
+  // { name: "Notifications", href: "/admin/notifications", icon: Bell },
   { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
 ];
 

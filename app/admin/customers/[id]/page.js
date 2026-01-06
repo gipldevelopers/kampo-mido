@@ -2,19 +2,11 @@
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import { 
-  ArrowLeft, 
-  Wallet, 
-  Coins, 
-  TrendingUp, 
-  TrendingDown,
-  Download,
+  ArrowLeft,
   AlertTriangle,
   Mail,
   Edit,
   Plus,
-  CheckCircle2,
-  XCircle,
-  FileText
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import CustomerService from "@/services/admin/customer.service";
@@ -174,7 +166,7 @@ export default function CustomerDetail({ params }) {
       {/* 2. Tabs Navigation */}
       <div className="border-b border-border">
         <nav className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
-          {['overview', 'wallet', 'ledger'].map((tab) => (
+          {['overview'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -275,18 +267,18 @@ export default function CustomerDetail({ params }) {
         )}
 
         {/* --- Tab B: Wallet Summary --- */}
-        {activeTab === 'wallet' && (
+        {/* {activeTab === 'wallet' && (
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-6 sm:p-8 md:p-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
             <p className="text-sm sm:text-base text-muted-foreground text-center">Wallet details will be available soon.</p>
           </div>
-        )}
+        )} */}
 
         {/* --- Tab C: Ledger History --- */}
-        {activeTab === 'ledger' && (
+        {/* {activeTab === 'ledger' && (
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-6 sm:p-8 md:p-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
             <p className="text-sm sm:text-base text-muted-foreground text-center">Ledger history will be available soon.</p>
           </div>
-        )}
+        )} */}
 
       </div>
     </div>

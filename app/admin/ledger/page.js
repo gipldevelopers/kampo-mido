@@ -341,6 +341,8 @@ export default function LedgerAndReports() {
   const renderCell = (val) => {
     if (val === null || val === undefined) return "-";
     if (typeof val === 'object') {
+      // Handle empty objects by returning "-" instead of "{}"
+      if (Object.keys(val).length === 0) return "-";
       return val.name || val.title || val.username || val.id || JSON.stringify(val);
     }
     return val;
@@ -481,7 +483,7 @@ export default function LedgerAndReports() {
                             <p className="text-[10px] text-muted-foreground">Amount</p>
                             <p className="text-xs sm:text-sm font-medium text-foreground">
                               {(typeof row.amount === 'number' || typeof row.amount === 'string')
-                                ? (Number(row.amount) > 0 ? `₹ ${Number(row.amount).toLocaleString()}` : "-")
+                                ? (Number(row.amount) !== 0 ? `₹ ${Math.abs(Number(row.amount)).toLocaleString()}` : "-")
                                 : renderCell(row.amount)}
                             </p>
                           </div>
@@ -492,7 +494,7 @@ export default function LedgerAndReports() {
                               }`}>
                               {row.impact === 'Credit' ? '+' : row.impact === 'Debit' ? '-' : ''}
                               {(typeof row.gold === 'number' || typeof row.gold === 'string')
-                                ? (Number(row.gold) > 0 ? `${row.gold} g` : '-')
+                                ? (Number(row.gold) !== 0 ? `${Math.abs(Number(row.gold)).toFixed(4)} g` : '-')
                                 : renderCell(row.gold)}
                             </p>
                           </div>
@@ -516,7 +518,7 @@ export default function LedgerAndReports() {
                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer/Source</th>
                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Type</th>
                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Amount (₹)</th>
-                        <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Rate</th>
+                        {/* <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Rate</th> */}
                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Gold Impact</th>
                       </tr>
                     </thead>
@@ -532,16 +534,16 @@ export default function LedgerAndReports() {
                             </td>
                             <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium">
                               {(typeof row.amount === 'number' || typeof row.amount === 'string')
-                                ? (Number(row.amount) > 0 ? `₹ ${Number(row.amount).toLocaleString()}` : "-")
+                                ? (Number(row.amount) !== 0 ? `₹ ${Math.abs(Number(row.amount)).toLocaleString()}` : "-")
                                 : renderCell(row.amount)}
                             </td>
-                            <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">₹ {renderCell(row.rate)}</td>
+                            {/* <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">₹ {renderCell(row.rate)}</td> */}
                             <td className={`px-4 lg:px-6 py-3 lg:py-4 text-right font-bold ${row.impact === 'Credit' ? 'text-green-600' :
                               row.impact === 'Debit' ? 'text-destructive' : 'text-muted-foreground'
                               }`}>
                               {row.impact === 'Credit' ? '+' : row.impact === 'Debit' ? '-' : ''}
                               {(typeof row.gold === 'number' || typeof row.gold === 'string')
-                                ? (Number(row.gold) > 0 ? `${row.gold} g` : '-')
+                                ? (Number(row.gold) !== 0 ? `${Math.abs(Number(row.gold)).toFixed(4)} g` : '-')
                                 : renderCell(row.gold)}
                             </td>
                           </tr>

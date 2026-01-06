@@ -30,10 +30,10 @@ class AuthService {
 
       if (credentials.email) {
         payload.email = credentials.email;
-      } else if (credentials.phone) {
-        payload.phone = credentials.phone;
+      } else if (credentials.mobile) {
+        payload.mobile = credentials.mobile;
       } else {
-        throw new Error("Either email or phone is required");
+        throw new Error("Either email or mobile is required");
       }
 
       payload.password = credentials.password;

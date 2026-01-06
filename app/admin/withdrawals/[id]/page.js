@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import withdrawalRequestService from "../../../../services/admin/withdrawal-request.service";
+import GoldRateService from "../../../../services/admin/gold-rate.service";
 
 export default function WithdrawalDetail() {
   const params = useParams(); // Use useParams hook
@@ -45,13 +46,27 @@ export default function WithdrawalDetail() {
     balanceAfterWithdrawal: 0
   });
 
-  // Fetch withdrawal details
-  useEffect(() => {
-    const fetchWithdrawalDetails = async () => {
-      try {
-        if (!id) return; // Don't fetch if no id
+  const [currentGoldRate, setCurrentGoldRate] = useState(0);
 
+  // Fetch withdrawal details and gold rate
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!id) return;
         setLoading(true);
+
+        // Fetch current gold rate
+        try {
+          const rateResponse = await GoldRateService.getCurrentRate();
+          if (rateResponse.success && rateResponse.data) {
+            const rate = parseFloat(rateResponse.data.ratePerGram);
+            setCurrentGoldRate(rate);
+            console.log("Current Gold Rate fetched:", rate);
+          }
+        } catch (rateError) {
+          console.error("Error fetching gold rate:", rateError);
+        }
+
         const response = await withdrawalRequestService.getWithdrawalById(id);
 
         if (response.success) {
@@ -91,21 +106,50 @@ export default function WithdrawalDetail() {
       }
     };
 
-    fetchWithdrawalDetails();
+    fetchData();
   }, [id]);
+
+  // Recalculate grams if it's a money withdrawal and we have a gold rate
+  useEffect(() => {
+    // We calculate if it's money type AND (grams is not set OR it's 0) AND we have rate/amount
+    const shouldCalculate = request.type === "money" && (!request.grams || request.grams === 0);
+
+    if (shouldCalculate && currentGoldRate > 0 && request.amount > 0) {
+      const calculatedGrams = parseFloat(request.amount) / currentGoldRate;
+      const balanceAfter = parseFloat(request.customer.walletBalance) - calculatedGrams;
+
+      console.log("Calculating grams for money withdrawal:", { amount: request.amount, rate: currentGoldRate, grams: calculatedGrams });
+
+      setRequest(prev => ({
+        ...prev,
+        grams: calculatedGrams,
+        balanceAfterWithdrawal: balanceAfter,
+        hasInsufficientBalance: balanceAfter < 0
+      }));
+    }
+  }, [currentGoldRate, request.type, request.amount, request.grams, request.customer.walletBalance]);
 
   const handleAction = async (action) => {
     try {
       setProcessing(true);
 
       if (action === "approve") {
-        const response = await withdrawalRequestService.updateWithdrawalStatus(id, {
+        // Prepare payload for approval
+        const approvalData = {
           status: 'approved',
-          adminNotes: notes
-        });
+          adminNotes: notes,
+          // Explicitly pass grams for money withdrawals to ensure backend records it
+          grams: request.grams
+        };
+
+        const response = await withdrawalRequestService.updateWithdrawalStatus(id, approvalData);
+
         if (response.success) {
           setRequest(prev => ({ ...prev, status: "approved", statusDisplay: "Approved" }));
-          setToast({ message: "Request Approved. Ready for processing.", type: "success" });
+          setToast({ message: "Request Approved and Gold Deducted successfully.", type: "success" });
+
+          // Note: Automatic completion removed to avoid "must be approved before marking as completed" 500 error.
+          // The admin can now click "Mark Completed" after the status refresh.
         }
       }
 

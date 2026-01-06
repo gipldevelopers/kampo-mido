@@ -359,7 +359,7 @@ export default function CustomerProfile() {
                       type="tel"
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
-                      placeholder="+91 98765 43210"
+                      placeholder="9876543210"
                       className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                       required
                     />
