@@ -362,11 +362,11 @@ export default function Dashboard() {
 
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Link
-            href="/admin/customers/add"
+            href="/admin/users/add"
             className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium hover:opacity-90 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <UserPlus size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
-            <span className="hidden sm:inline">Add Customer</span>
+            <span className="hidden sm:inline">Add User</span>
             <span className="sm:hidden">Add</span>
           </Link>
           <Link
@@ -378,7 +378,7 @@ export default function Dashboard() {
             <span className="sm:hidden">Deposit</span>
           </Link>
           <Link
-            href="/admin/gold-rates/update"
+            href="/admin/gold-rate"
             className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-[10px] sm:text-xs md:text-sm font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <TrendingUp size={12} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />

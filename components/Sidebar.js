@@ -1,17 +1,18 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
   Coins,
   CheckCircle2,
-  ArrowDownCircle, 
-  ArrowUpCircle, 
+  ArrowDownCircle,
+  ArrowUpCircle,
   BookOpen,
-  Bell, 
+  Bell,
   UserCircle,
   ChevronLeft,
   ChevronRight,
@@ -48,7 +49,7 @@ export default function Sidebar({ onClose }) {
   };
 
   return (
-    <aside 
+    <aside
       className={clsx(
         "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-300 ease-in-out md:sticky top-0 z-30 overflow-hidden shadow-lg md:shadow-none",
         "w-64",
@@ -62,19 +63,24 @@ export default function Sidebar({ onClose }) {
       )}>
         {!isCollapsed ? (
           <div className="flex items-center justify-between px-3 h-full">
-            {/* Logo / Name Area - Expanded */}
-            <div className="flex items-center gap-2 overflow-hidden transition-all duration-300 w-40 opacity-100">
-              <div className="bg-primary/10 p-1.5 rounded-md shrink-0 text-primary">
-                <Gem size={20} />
+            {/* Logo Area - Expanded */}
+            <div className="flex items-center gap-2 overflow-hidden transition-all duration-300 w-44 opacity-100">
+              <div className="relative w-8 h-8 md:w-10 md:h-10 shrink-0 overflow-hidden rounded-md border border-sidebar-border/50">
+                <Image
+                  src="/logo/logo.jpeg"
+                  alt="Kampo Mido Logo"
+                  fill
+                  className="object-cover"
+                />
               </div>
-              <span className="font-bold text-base md:text-lg text-sidebar-foreground tracking-tight whitespace-nowrap">
+              <span className="font-bold text-sm md:text-base text-sidebar-foreground tracking-tight whitespace-nowrap">
                 Kampo Mido
               </span>
             </div>
 
             {/* Mobile Close Button */}
             {onClose && (
-              <button 
+              <button
                 onClick={onClose}
                 className="md:hidden p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
                 aria-label="Close menu"
@@ -84,7 +90,7 @@ export default function Sidebar({ onClose }) {
             )}
 
             {/* Desktop Toggle Button */}
-            <button 
+            <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="hidden md:flex items-center justify-center p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
             >
@@ -93,12 +99,17 @@ export default function Sidebar({ onClose }) {
           </div>
         ) : (
           <div className="hidden md:flex flex-col items-center justify-center gap-2 px-0">
-            {/* Logo Icon - Collapsed */}
-            <div className="bg-primary/10 p-1.5 rounded-md shrink-0 text-primary">
-              <Gem size={20} />
+            {/* Logo Area - Collapsed */}
+            <div className="relative w-8 h-8 shrink-0 overflow-hidden rounded-md border border-sidebar-border/50">
+              <Image
+                src="/logo/logo.jpeg"
+                alt="Logo"
+                fill
+                className="object-cover"
+              />
             </div>
             {/* Desktop Toggle Button - Collapsed */}
-            <button 
+            <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="flex items-center justify-center p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors shrink-0"
             >
@@ -114,8 +125,8 @@ export default function Sidebar({ onClose }) {
         isCollapsed ? "px-2" : "px-2"
       )}>
         {menuItems.map((item) => {
-          const isActive = item.href === "/admin/dashboard" 
-            ? pathname === item.href 
+          const isActive = item.href === "/admin/dashboard"
+            ? pathname === item.href
             : pathname.startsWith(item.href);
 
           const handleClick = () => {
@@ -126,17 +137,17 @@ export default function Sidebar({ onClose }) {
           };
 
           return (
-            <Link 
-              key={item.name} 
+            <Link
+              key={item.name}
               href={item.href}
               onClick={handleClick}
               className={clsx(
                 "flex items-center rounded-md transition-all group whitespace-nowrap relative overflow-hidden",
-                isCollapsed 
-                  ? "justify-center px-2 py-2.5" 
+                isCollapsed
+                  ? "justify-center px-2 py-2.5"
                   : "gap-3 px-3 py-2.5",
-                isActive 
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" 
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
               title={isCollapsed ? item.name : ""}
@@ -157,19 +168,19 @@ export default function Sidebar({ onClose }) {
         "border-t border-sidebar-border bg-sidebar overflow-hidden",
         isCollapsed ? "p-2" : "p-4"
       )}>
-         <button 
-            onClick={handleLogout}
-            className={clsx(
+        <button
+          onClick={handleLogout}
+          className={clsx(
             "flex items-center py-2 rounded-md text-destructive hover:bg-destructive/10 transition-all w-full whitespace-nowrap",
-             isCollapsed ? "justify-center px-2" : "gap-3 px-3"
+            isCollapsed ? "justify-center px-2" : "gap-3 px-3"
           )}>
-            <LogOut size={20} className="shrink-0" />
-            {!isCollapsed && (
-              <span className="text-sm font-medium transition-all duration-300 ease-in-out">
-                Logout
-              </span>
-            )}
-         </button>
+          <LogOut size={20} className="shrink-0" />
+          {!isCollapsed && (
+            <span className="text-sm font-medium transition-all duration-300 ease-in-out">
+              Logout
+            </span>
+          )}
+        </button>
       </div>
     </aside>
   );
