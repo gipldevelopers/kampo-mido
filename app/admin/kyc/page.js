@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import AdminKYCService from "@/services/admin/admin-kyc.service";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- Components ---
 const StatusBadge = ({ status }) => {
@@ -69,11 +73,6 @@ export default function KYCManagement() {
           kycList = response;
         }
 
-        // Debug: Log the response to understand structure
-        if (kycList.length > 0) {
-          console.log("KYC List Sample:", kycList[0]);
-        }
-
         // Map API data to UI format
         const mappedRequests = kycList.map((kyc) => {
           // The API endpoint /admin/kyc/view/{id} expects the KYC record ID (not customer ID)
@@ -81,13 +80,8 @@ export default function KYCManagement() {
           const kycId = kyc.id || kyc.kycId;
           const customerId = kyc.customerId || kyc.customer?.id;
 
-          // Only use KYC ID - if it doesn't exist, skip this entry or handle error
-          if (!kycId) {
-            console.warn("KYC entry missing ID:", kyc);
-          }
-
           return {
-            id: kycId ? String(kycId) : null, // Only use KYC ID
+            id: kycId ? String(kycId) : null,
             kycId: kycId ? String(kycId) : null,
             customerId: customerId ? String(customerId) : null,
             name: kyc.customer?.fullName || kyc.fullName || kyc.name || "N/A",
@@ -96,7 +90,7 @@ export default function KYCManagement() {
             status: kyc.status ? kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1) : "Pending",
             docType: kyc.idType || kyc.documentType || "Aadhaar Card",
           };
-        }).filter(req => req.id !== null); // Filter out entries without KYC ID
+        }).filter(req => req.id !== null);
 
         setRequests(mappedRequests);
       } catch (error) {
@@ -127,6 +121,49 @@ export default function KYCManagement() {
     if (filter === "All") return matchesSearch;
     return matchesSearch && req.status === filter;
   });
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("KYC Requests Report", 14, 20);
+
+    const tableColumn = ["Customer", "ID", "Document Type", "Staff", "Date", "Status"];
+    const tableRows = filteredRequests.map(req => [
+      req.name,
+      req.id,
+      req.docType,
+      req.staff,
+      req.date,
+      req.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("kyc_requests_report.pdf");
+    setIsExportOpen(false);
+  };
+
+  const exportToExcel = () => {
+    const workSheet = XLSX.utils.json_to_sheet(filteredRequests.map(req => ({
+      Customer: req.name,
+      ID: req.id,
+      "Document Type": req.docType,
+      Staff: req.staff,
+      Date: req.date,
+      Status: req.status
+    })));
+
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workBook, workSheet, "KYC Requests");
+
+    const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(data, "kyc_requests_report.xlsx");
+    setIsExportOpen(false);
+  };
 
   const handleQuickApprove = async (id, name) => {
     if (!id || id === "N/A" || id === "null") {
@@ -220,10 +257,10 @@ export default function KYCManagement() {
             {isExportOpen && (
               <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-1">
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
+                  <button onClick={exportToPDF} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
                     <FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF
                   </button>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
+                  <button onClick={exportToExcel} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left">
                     <FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel
                   </button>
                 </div>

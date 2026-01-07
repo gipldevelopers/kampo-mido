@@ -1,12 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Plus, 
-  FileText, 
+import {
+  Search,
+  Filter,
+  Download,
+  Plus,
+  FileText,
   FileSpreadsheet,
   ChevronDown,
   Pencil,
@@ -15,11 +15,15 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import UserService from "@/services/admin/user.service";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- Components ---
 const StatusBadge = ({ status, type }) => {
   let styles = "bg-muted text-muted-foreground border-border";
-  
+
   if (type === 'kyc') {
     if (status === 'Verified') styles = "text-primary bg-primary/10 border-primary/20";
     if (status === 'Pending') styles = "text-secondary-foreground bg-secondary border-secondary";
@@ -41,12 +45,12 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("All"); 
+  const [filter, setFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
-  
+
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportRef = useRef(null);
 
@@ -55,7 +59,7 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const response = await UserService.getAllUsers();
-      
+
       // Handle different response structures
       if (response.data && Array.isArray(response.data)) {
         setUsers(response.data);
@@ -123,21 +127,62 @@ export default function UserManagement() {
     return user.status.charAt(0).toUpperCase() + user.status.slice(1);
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("User Report", 14, 20);
+
+    const tableColumn = ["Name", "Email", "Phone", "Role", "Status"];
+    const tableRows = filteredUsers.map(user => [
+      getUserName(user),
+      getUserEmail(user),
+      getUserPhone(user),
+      getUserRole(user),
+      getUserStatus(user)
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("users_report.pdf");
+    setIsExportOpen(false);
+  };
+
+  const exportToExcel = () => {
+    const workSheet = XLSX.utils.json_to_sheet(filteredUsers.map(user => ({
+      Name: getUserName(user),
+      Email: getUserEmail(user),
+      Phone: getUserPhone(user),
+      Role: getUserRole(user),
+      Status: getUserStatus(user)
+    })));
+
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workBook, workSheet, "Users");
+
+    const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(data, "users_report.xlsx");
+    setIsExportOpen(false);
+  };
+
   const filteredUsers = users.filter(user => {
     const name = getUserName(user).toLowerCase();
     const email = getUserEmail(user).toLowerCase();
     const role = getUserRole(user).toLowerCase();
     const phone = getUserPhone(user);
-    
-    const matchesSearch = name.includes(searchTerm.toLowerCase()) || 
-                          email.includes(searchTerm.toLowerCase()) ||
-                          role.includes(searchTerm.toLowerCase()) ||
-                          phone.includes(searchTerm);
-    
+
+    const matchesSearch = name.includes(searchTerm.toLowerCase()) ||
+      email.includes(searchTerm.toLowerCase()) ||
+      role.includes(searchTerm.toLowerCase()) ||
+      phone.includes(searchTerm);
+
     if (filter === "All") return matchesSearch;
     if (filter === "Active") return matchesSearch && getUserStatus(user) === "Active";
     if (filter === "Inactive") return matchesSearch && getUserStatus(user) === "Inactive";
-    
+
     return matchesSearch;
   });
 
@@ -150,7 +195,7 @@ export default function UserManagement() {
     setDeletingId(id);
     try {
       await UserService.deleteUser(id);
-      
+
       // Remove user from state
       setUsers(prev => prev.filter(u => u.id !== id));
       setToast({ message: `${name} deleted successfully`, type: 'success' });
@@ -181,9 +226,9 @@ export default function UserManagement() {
       <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 md:gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-          <input 
-            type="text" 
-            placeholder="Search by Name, Email, or Role..." 
+          <input
+            type="text"
+            placeholder="Search by Name, Email, or Role..."
             className="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,8 +261,8 @@ export default function UserManagement() {
             {isExportOpen && (
               <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-1">
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
+                  <button onClick={exportToPDF} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
+                  <button onClick={exportToExcel} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
                 </div>
               </div>
             )}
@@ -256,10 +301,10 @@ export default function UserManagement() {
                             <Pencil size={14} />
                           </button>
                         </Link>
-                        <button 
-                          onClick={() => handleDelete(user.id, getUserName(user))} 
+                        <button
+                          onClick={() => handleDelete(user.id, getUserName(user))}
                           disabled={deletingId === user.id}
-                          className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                          className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -326,10 +371,10 @@ export default function UserManagement() {
                                 <Pencil size={14} className="lg:w-4 lg:h-4" />
                               </button>
                             </Link>
-                            <button 
-                              onClick={() => handleDelete(user.id, getUserName(user))} 
+                            <button
+                              onClick={() => handleDelete(user.id, getUserName(user))}
                               disabled={deletingId === user.id}
-                              className="p-1.5 lg:p-2 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                              className="p-1.5 lg:p-2 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Delete User"
                             >
                               <Trash2 size={14} className="lg:w-4 lg:h-4" />

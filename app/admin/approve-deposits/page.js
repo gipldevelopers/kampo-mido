@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import DepositService from "@/services/admin/deposit.service";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- Components ---
 const StatusBadge = ({ status }) => {
@@ -117,6 +121,8 @@ export default function ApproveDeposits() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+
+
     const filteredDeposits = deposits.filter(deposit => {
         const matchesSearch =
             deposit.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,6 +139,51 @@ export default function ApproveDeposits() {
 
         return matchesSearch;
     });
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        doc.text("Approved Deposits Report", 14, 20);
+
+        const tableColumn = ["Customer Name", "Account No", "Amount", "Gold", "Status", "Date", "UPI Reference"];
+        const tableRows = filteredDeposits.map(deposit => [
+            deposit.customerName,
+            deposit.accountNo,
+            `₹ ${deposit.amount.toLocaleString()}`,
+            `${deposit.goldAmount} g`,
+            deposit.status,
+            formatDate(deposit.date),
+            deposit.upiReference
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 25,
+        });
+
+        doc.save("approve_deposits_report.pdf");
+        setIsExportOpen(false);
+    };
+
+    const exportToExcel = () => {
+        const workSheet = XLSX.utils.json_to_sheet(filteredDeposits.map(deposit => ({
+            "Customer Name": deposit.customerName,
+            "Account No": deposit.accountNo,
+            Amount: deposit.amount,
+            Gold: deposit.goldAmount,
+            Status: deposit.status,
+            Date: formatDate(deposit.date),
+            "UPI Reference": deposit.upiReference
+        })));
+
+        const workBook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workBook, workSheet, "Approved Deposits");
+
+        const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+        const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+        saveAs(data, "approve_deposits_report.xlsx");
+        setIsExportOpen(false);
+    };
 
     const openNotesModal = (action, deposit) => {
         setModalAction(action);
@@ -259,8 +310,8 @@ export default function ApproveDeposits() {
                         {isExportOpen && (
                             <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-1">
-                                    <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
-                                    <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
+                                    <button onClick={exportToPDF} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
+                                    <button onClick={exportToExcel} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
                                 </div>
                             </div>
                         )}
@@ -468,8 +519,8 @@ export default function ApproveDeposits() {
                                     onClick={handleSubmitAction}
                                     disabled={processingId === selectedDeposit?.id || !notes.trim()}
                                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${modalAction === 'approve'
-                                            ? 'bg-primary text-primary-foreground hover:opacity-90'
-                                            : 'bg-destructive text-destructive-foreground hover:opacity-90'
+                                        ? 'bg-primary text-primary-foreground hover:opacity-90'
+                                        : 'bg-destructive text-destructive-foreground hover:opacity-90'
                                         }`}
                                 >
                                     {processingId === selectedDeposit?.id ? (

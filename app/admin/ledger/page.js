@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import ledgerReportsService from "../../../services/admin/ledger-report.service";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // Reusable CoinsIcon component using the imported Coins from lucide-react
 function CoinsIcon(props) {
@@ -225,33 +229,68 @@ export default function LedgerAndReports() {
     }
   };
 
-  const handleExport = async (format) => {
-    try {
-      setToast({
-        message: `Exporting Ledger as ${format}...`,
-        type: "info"
-      });
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Ledger Report", 14, 20);
 
-      const exportData = {
-        format: format.toLowerCase(),
-        search: searchTerm,
-        type: filterType === "All" ? undefined : filterType
+    const tableColumn = ["ID", "Customer", "Type", "Date", "Rate", "Amount", "Gold Impact"];
+    const tableRows = filteredLedger.map(row => {
+      let typeStr = row.type;
+      if (typeof row.type === 'object' && row.type !== null) {
+        typeStr = row.type.name || row.type.type || 'Unknown';
+      }
+
+      return [
+        renderCell(row.id),
+        renderCell(row.customer),
+        typeStr,
+        renderCell(row.date),
+        renderCell(row.rate),
+        renderCell(row.amount),
+        `${row.impact === 'Credit' ? '+' : row.impact === 'Debit' ? '-' : ''} ${renderCell(row.gold)}`
+      ];
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("ledger_report.pdf");
+  };
+
+  const exportToExcel = () => {
+    const workSheet = XLSX.utils.json_to_sheet(filteredLedger.map(row => {
+      let typeStr = row.type;
+      if (typeof row.type === 'object' && row.type !== null) {
+        typeStr = row.type.name || row.type.type || 'Unknown';
+      }
+      return {
+        ID: renderCell(row.id),
+        Customer: renderCell(row.customer),
+        Type: typeStr,
+        Date: renderCell(row.date),
+        Rate: renderCell(row.rate),
+        Amount: renderCell(row.amount),
+        "Gold Impact": `${row.impact === 'Credit' ? '+' : row.impact === 'Debit' ? '-' : ''} ${renderCell(row.gold)}`
       };
+    }));
 
-      await ledgerReportsService.downloadExportedLedger(exportData, format.toLowerCase());
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workBook, workSheet, "Ledger");
 
-      setToast({
-        message: `Ledger exported successfully as ${format}!`,
-        type: "success"
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      setToast({
-        message: `Failed to export ledger as ${format}`,
-        type: "error"
-      });
-    } finally {
-      setIsExportOpen(false);
+    const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(data, "ledger_report.xlsx");
+  };
+
+  const handleExport = (format) => {
+    setIsExportOpen(false);
+    if (format === 'PDF' || format === 'pdf') {
+      exportToPDF();
+    } else {
+      exportToExcel();
     }
   };
 

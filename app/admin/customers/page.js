@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import CustomerService from "@/services/admin/customer.service";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- Components ---
 const StatusBadge = ({ status, type }) => {
@@ -110,6 +114,51 @@ export default function CustomerManagement() {
     return matchesSearch;
   });
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Customer Report", 14, 20);
+
+    const tableColumn = ["Name", "Account No", "Mobile", "Deposited", "Gold (g)", "KYC", "Status"];
+    const tableRows = filteredCustomers.map(customer => [
+      customer.name,
+      customer.accountNo,
+      customer.mobile,
+      `₹ ${customer.deposited.toLocaleString()}`,
+      customer.gold,
+      customer.kyc,
+      customer.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("customers_report.pdf");
+    setIsExportOpen(false);
+  };
+
+  const exportToExcel = () => {
+    const workSheet = XLSX.utils.json_to_sheet(filteredCustomers.map(customer => ({
+      Name: customer.name,
+      "Account No": customer.accountNo,
+      Mobile: customer.mobile,
+      Deposited: customer.deposited,
+      "Gold (g)": customer.gold,
+      KYC: customer.kyc,
+      Status: customer.status
+    })));
+
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workBook, workSheet, "Customers");
+
+    const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(data, "customers_report.xlsx");
+    setIsExportOpen(false);
+  };
+
   const handleDelete = async (id, name) => {
     // Confirm deletion
     if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
@@ -179,7 +228,6 @@ export default function CustomerManagement() {
               <ChevronDown size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" />
             </div>
           </div>
-
           <div className="relative" ref={exportRef}>
             <button onClick={() => setIsExportOpen(!isExportOpen)} className="h-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted/80 transition-colors">
               <Download size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Export</span>
@@ -187,8 +235,8 @@ export default function CustomerManagement() {
             {isExportOpen && (
               <div className="absolute right-0 top-11 sm:top-12 w-36 sm:w-40 bg-card text-card-foreground border border-border rounded-lg shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-1">
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
+                  <button onClick={exportToPDF} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileText size={12} className="sm:w-3.5 sm:h-3.5" /> PDF</button>
+                  <button onClick={exportToExcel} className="w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm rounded-md hover:bg-muted text-left"><FileSpreadsheet size={12} className="sm:w-3.5 sm:h-3.5" /> Excel</button>
                 </div>
               </div>
             )}
@@ -274,8 +322,6 @@ export default function CustomerManagement() {
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer Name</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Account No</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Mobile</th>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Total Deposited</th>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Gold (g)</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">KYC</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
@@ -292,8 +338,6 @@ export default function CustomerManagement() {
                         </td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{customer.accountNo}</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4">{customer.mobile}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4 font-semibold">₹ {customer.deposited.toLocaleString()}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4">{customer.gold} g</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={customer.kyc} type="kyc" /></td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={customer.status} type="account" /></td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
@@ -324,6 +368,6 @@ export default function CustomerManagement() {
           </>
         )}
       </div>
-    </div>
+    </div >
   );
 }

@@ -777,24 +777,24 @@ export default function AdminProfile() {
               </div>
 
               {/* SMS Notifications */}
-              <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
+              {/* <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
                 <ToggleSwitch
                   enabled={smsNotifications}
                   onChange={setSmsNotifications}
                   label="SMS Notifications"
                   description="Receive notifications via SMS"
                 />
-              </div>
+              </div> */}
 
               {/* WhatsApp Notifications */}
-              <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
+              {/* <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
                 <ToggleSwitch
                   enabled={whatsappNotifications}
                   onChange={setWhatsappNotifications}
                   label="WhatsApp Notifications"
                   description="Receive notifications via WhatsApp"
                 />
-              </div>
+              </div> */}
 
               {/* Weekly Reports */}
               <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">

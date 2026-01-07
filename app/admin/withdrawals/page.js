@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import adminWithdrawalsService from "../../../services/admin/withdrawal-request.service";
 import Toast from "@/components/Toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- Components ---
 const StatusBadge = ({ status }) => {
@@ -118,27 +122,56 @@ export default function WithdrawalManagement() {
     fetchWithdrawals(true);
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Withdrawal Requests Report", 14, 20);
+
+    const tableColumn = ["ID", "Customer", "Request Type", "Grams", "Value (Approx)", "Date", "Status"];
+    const tableRows = withdrawals.map(w => [
+      w.withdrawalId,
+      w.customer,
+      formatType(w.type),
+      w.grams ? `${w.grams.toFixed(2)} g` : 'N/A',
+      w.approximateValueDisplay || 'N/A',
+      w.date,
+      w.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("withdrawal_requests_report.pdf");
+  };
+
+  const exportToExcel = () => {
+    const workSheet = XLSX.utils.json_to_sheet(withdrawals.map(w => ({
+      ID: w.withdrawalId,
+      Customer: w.customer,
+      "Request Type": formatType(w.type),
+      Grams: w.grams,
+      "Value (Approx)": w.approximateValueDisplay,
+      Date: w.date,
+      Status: w.status
+    })));
+
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workBook, workSheet, "Withdrawals");
+
+    const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(data, "withdrawal_requests_report.xlsx");
+  };
+
   // Handle export
-  const handleExport = async (format) => {
-    try {
-      setIsExportOpen(false);
-
-      // Map filter values for API
-      const status = filter !== 'All' ? filter.toLowerCase() : 'All';
-      const type = typeFilter !== 'All' ? typeFilter.toLowerCase() : 'All';
-
-      await adminWithdrawalsService.exportWithdrawals(format, status, type);
-
-      setToast({
-        message: `Exported to ${format.toUpperCase()} successfully`,
-        type: "success"
-      });
-    } catch (error) {
-      console.error("Error exporting:", error);
-      setToast({
-        message: "Failed to export data",
-        type: "error"
-      });
+  const handleExport = (format) => {
+    setIsExportOpen(false);
+    if (format === 'pdf') {
+      exportToPDF();
+    } else {
+      exportToExcel();
     }
   };
 
