@@ -383,14 +383,14 @@ export default function LoginPage() {
               </div>
 
               {/* Sign Up Link */}
-              <div className="text-center pt-2">
+              {/* <div className="text-center pt-2">
                 <p className="text-gray-600 text-xs">
                   New to Kampo Mido?{" "}
                   <Link href="/auth/register" className="text-amber-600 hover:text-amber-700 font-semibold transition-colors">
                     Create an account
                   </Link>
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
