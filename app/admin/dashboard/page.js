@@ -673,12 +673,6 @@ export default function Dashboard() {
                 <span className="text-[10px] sm:text-xs text-muted-foreground">Gold Rate Change</span>
                 <span className="font-semibold text-xs sm:text-sm text-green-600">+2.5%</span>
               </div>
-              <Link
-                href="/admin/reports/analytics"
-                className="w-full mt-3 py-1.5 text-[10px] sm:text-xs border border-primary/20 rounded text-primary hover:bg-primary/5 transition-colors text-center block"
-              >
-                View Detailed Analytics
-              </Link>
             </div>
           </div>
         </div>
