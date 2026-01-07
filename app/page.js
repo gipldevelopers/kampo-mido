@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import AuthService from "@/services/auth.service";
@@ -125,8 +126,13 @@ export default function LoginPage() {
         <div className="relative p-6 lg:p-8 bg-gradient-to-br from-amber-50 to-rose-50 flex flex-col justify-center">
           {/* Brand Logo */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-1.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg">
-              <Gem className="w-6 h-6 text-white" />
+            <div className="relative w-12 h-12 rounded-lg shadow-lg overflow-hidden">
+              <Image
+                src="/logo/logo.jpeg"
+                alt="Kampo Mido Logo"
+                fill
+                className="object-cover"
+              />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Kampo Mido</h1>
@@ -228,8 +234,13 @@ export default function LoginPage() {
           <div className="max-w-md mx-auto w-full">
             {/* Mobile Brand */}
             <div className="lg:hidden flex items-center gap-2 mb-6">
-              <div className="p-1.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-md">
-                <Gem className="w-5 h-5 text-white" />
+              <div className="relative w-10 h-10 rounded-md overflow-hidden">
+                <Image
+                  src="/logo/logo.jpeg"
+                  alt="Kampo Mido Logo"
+                  fill
+                  className="object-cover"
+                />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">Kampo Mido</h1>
