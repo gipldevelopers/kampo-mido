@@ -145,7 +145,14 @@ export default function LoginPage() {
             <div className="h-40 w-full rounded-xl overflow-hidden shadow-xl border-2 border-white">
               <div className="w-full h-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
                 <div className="text-center p-4">
-                  <Gem className="w-12 h-12 text-white/90 mx-auto mb-2" />
+                  <div className="relative w-16 h-16 mx-auto mb-2 rounded-lg overflow-hidden shadow-sm">
+                    <Image
+                      src="/logo/logo.jpeg"
+                      alt="Kampo Mido Logo"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                   <h3 className="text-lg font-bold text-white mb-1">Pure Gold</h3>
                   <p className="text-white/80 text-xs">Secure & Transparent</p>
                 </div>
