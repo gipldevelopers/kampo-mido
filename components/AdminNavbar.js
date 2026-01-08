@@ -106,7 +106,19 @@ export default function AdminNavbar({ onMenuClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ... (handleLogout, handleProfileClick remain)
+  const handleProfileClick = () => {
+    setIsProfileOpen(false);
+    router.push("/admin/profile");
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (logout) await logout();
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   // getTypeBadge function (unchanged - reusing dummy one if needed or just relying on loop logic)
 

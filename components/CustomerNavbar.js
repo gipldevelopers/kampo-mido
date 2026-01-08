@@ -119,7 +119,19 @@ export default function CustomerNavbar({ onMenuClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ... (handleLogout, handleProfileClick remain)
+  const handleProfileClick = () => {
+    setIsProfileOpen(false);
+    router.push("/customers/profile-page");
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (logout) await logout();
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   // getTypeBadge function (unchanged)
 
