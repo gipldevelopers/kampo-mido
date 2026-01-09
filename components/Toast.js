@@ -1,25 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, X, AlertTriangle, Info } from "lucide-react";
 
-export default function Toast({ message, type, onClose }) {
+export default function Toast({ message, type = 'info', onClose }) {
   const [isVisible, setIsVisible] = useState(false);
 
-  // 1. MOVED UP: Define handleClose before useEffect
   const handleClose = () => {
-    setIsVisible(false); // Trigger exit animation
-    // Wait for animation (500ms) to finish before removing from DOM
+    setIsVisible(false);
     setTimeout(() => {
       onClose();
     }, 500);
   };
 
-  // 2. useEffect can now safely call handleClose
   useEffect(() => {
-    // Trigger entry animation (Fade In Up)
     const entryTimer = setTimeout(() => setIsVisible(true), 10);
-
-    // Trigger exit animation (Fade Out Down)
     const exitTimer = setTimeout(() => {
       handleClose();
     }, 3000);
@@ -28,36 +22,65 @@ export default function Toast({ message, type, onClose }) {
       clearTimeout(entryTimer);
       clearTimeout(exitTimer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getToastConfig = (type) => {
+    switch (type) {
+      case 'success':
+        return {
+          bg: 'bg-green-500',
+          icon: <Check size={20} className="text-white" />,
+          title: 'Success!'
+        };
+      case 'error':
+        return {
+          bg: 'bg-red-500',
+          icon: <X size={20} className="text-white" />,
+          title: 'Error!'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-orange-500',
+          icon: <AlertTriangle size={20} className="text-white" />,
+          title: 'Warning!'
+        };
+      case 'info':
+      default:
+        return {
+          bg: 'bg-blue-500',
+          icon: <Info size={20} className="text-white" />,
+          title: 'Information!'
+        };
+    }
+  };
+
+  const config = getToastConfig(type || 'info');
 
   return (
-    <div 
-      className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out w-[calc(100%-1rem)] sm:w-auto max-w-[calc(100vw-2rem)] sm:max-w-md ${
-        isVisible 
-          ? "opacity-100 translate-y-0" // Visible State
-          : "opacity-0 translate-y-8"   // Hidden State
-      }`}
+    <div
+      className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${isVisible
+        ? "opacity-100 translate-x-0"
+        : "opacity-0 translate-x-8"
+        }`}
     >
-      <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-lg border shadow-xl ${
-        type === 'success' 
-          ? 'bg-background border-primary text-foreground' 
-          : 'bg-background border-destructive text-destructive'
-      }`}>
-        <div className={`p-0.5 sm:p-1 rounded-full shrink-0 ${
-          type === 'success' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
-        }`}>
-          {type === 'success' ? <Check size={14} className="sm:w-4 sm:h-4" /> : <X size={14} className="sm:w-4 sm:h-4" />}
+      <div className={`flex items-center gap-3 px-4 py-3 rounded shadow-lg min-w-[450px] text-white ${config.bg}`}>
+        <div className="shrink-0">
+          {config.icon}
         </div>
-        
-        <p className="text-xs sm:text-sm font-medium break-words flex-1 min-w-0">{message}</p>
-        
-        <button 
-          onClick={handleClose} 
-          className="ml-2 sm:ml-4 p-0.5 sm:p-1 hover:bg-muted rounded-full transition-colors shrink-0"
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm leading-tight">
+            <span className="font-bold">{config.title}</span> <span className="font-medium opacity-90">{message}</span>
+          </p>
+        </div>
+
+        <button
+          onClick={handleClose}
+          className="ml-4 p-1 hover:bg-white/20 rounded transition-colors shrink-0 text-white"
           aria-label="Close notification"
         >
-          <X size={12} className="sm:w-3.5 sm:h-3.5" />
+          <X size={16} />
         </button>
       </div>
     </div>

@@ -61,22 +61,26 @@ export default function WithdrawalManagement() {
       if (!isRefresh) setLoading(true);
       if (isRefresh) setRefreshing(true);
 
-      const response = await adminWithdrawalsService.getWithdrawalRequests(
-        pagination.page,
-        pagination.limit,
-        searchTerm,
-        filter !== 'All' ? filter.toLowerCase() : 'All',
-        typeFilter !== 'All' ? typeFilter.toLowerCase() : 'All'
-      );
+      const response = await adminWithdrawalsService.getWithdrawalRequests({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+        status: filter !== 'All' ? filter.toLowerCase() : 'All',
+        type: typeFilter !== 'All' ? typeFilter.toLowerCase() : 'All'
+      });
 
       if (response.success) {
-        setWithdrawals(response.data.data || []);
-        setPagination(response.data.pagination || {
+        // API response structure: { success: true, data: { data: [...], pagination: {...} } }
+        const withdrawalsData = response.data?.data || [];
+        const paginationData = response.data?.pagination || {
           page: 1,
           limit: 10,
           total: 0,
           totalPages: 0
-        });
+        };
+
+        setWithdrawals(withdrawalsData);
+        setPagination(paginationData);
       }
     } catch (error) {
       console.error("Error fetching withdrawals:", error);
@@ -98,9 +102,7 @@ export default function WithdrawalManagement() {
   // Handle search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm !== '') {
-        fetchWithdrawals();
-      }
+      fetchWithdrawals();
     }, 500);
 
     return () => clearTimeout(timer);
@@ -128,13 +130,13 @@ export default function WithdrawalManagement() {
 
     const tableColumn = ["ID", "Customer", "Request Type", "Grams", "Value (Approx)", "Date", "Status"];
     const tableRows = withdrawals.map(w => [
-      w.withdrawalId,
-      w.customer,
-      formatType(w.type),
-      w.grams ? `${w.grams.toFixed(2)} g` : 'N/A',
+      w.withdrawalId || w.id,
+      w.customer || 'N/A',
+      w.typeDisplay || formatType(w.type),
+      w.gramsDisplay || (w.grams ? `${w.grams.toFixed(2)} g` : 'N/A'),
       w.approximateValueDisplay || 'N/A',
       w.date,
-      w.status
+      w.statusDisplay || w.status
     ]);
 
     autoTable(doc, {
@@ -148,13 +150,13 @@ export default function WithdrawalManagement() {
 
   const exportToExcel = () => {
     const workSheet = XLSX.utils.json_to_sheet(withdrawals.map(w => ({
-      ID: w.withdrawalId,
-      Customer: w.customer,
-      "Request Type": formatType(w.type),
-      Grams: w.grams,
-      "Value (Approx)": w.approximateValueDisplay,
+      ID: w.withdrawalId || w.id,
+      Customer: w.customer || 'N/A',
+      "Request Type": w.typeDisplay || formatType(w.type),
+      Grams: w.gramsDisplay || (w.grams ? `${w.grams.toFixed(2)} g` : 'N/A'),
+      "Value (Approx)": w.approximateValueDisplay || 'N/A',
       Date: w.date,
-      Status: w.status
+      Status: w.statusDisplay || w.status
     })));
 
     const workBook = XLSX.utils.book_new();
@@ -359,11 +361,11 @@ export default function WithdrawalManagement() {
         <div className="md:hidden divide-y divide-border">
           {withdrawals.length > 0 ? (
             withdrawals.map((w) => (
-              <div key={w.withdrawalId} className="p-3 hover:bg-muted/20 transition-colors">
+              <div key={w.withdrawalId || w.id} className="p-3 hover:bg-muted/20 transition-colors">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{w.withdrawalId}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{w.customer}</p>
+                    <p className="text-xs font-medium text-foreground truncate">{w.withdrawalId || w.id}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{w.customer || 'N/A'}</p>
                   </div>
                   <StatusBadge status={w.status} />
                 </div>
@@ -371,12 +373,12 @@ export default function WithdrawalManagement() {
                   <div>
                     <p className="text-[10px] text-muted-foreground">Type</p>
                     <span className="inline-block px-1.5 py-0.5 bg-muted rounded border border-border text-[9px] font-medium mt-0.5">
-                      {formatType(w.type)}
+                      {w.typeDisplay || formatType(w.type)}
                     </span>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Grams</p>
-                    <p className="text-xs font-semibold text-primary">{w.grams ? `${w.grams.toFixed(2)} g` : 'N/A'}</p>
+                    <p className="text-xs font-semibold text-primary">{w.gramsDisplay || (w.grams ? `${w.grams.toFixed(2)} g` : 'N/A')}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-2">
@@ -390,7 +392,7 @@ export default function WithdrawalManagement() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end pt-2 border-t border-border">
-                  <Link href={`/admin/withdrawals/${w.withdrawalId}`}>
+                  <Link href={`/admin/withdrawals/${w.withdrawalId || w.id}`}>
                     <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View">
                       <Eye size={14} />
                     </button>
@@ -423,16 +425,16 @@ export default function WithdrawalManagement() {
             <tbody className="divide-y divide-border">
               {withdrawals.length > 0 ? (
                 withdrawals.map((w) => (
-                  <tr key={w.withdrawalId} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{w.withdrawalId}</td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">{w.customer}</td>
+                  <tr key={w.withdrawalId || w.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{w.withdrawalId || w.id}</td>
+                    <td className="px-4 lg:px-6 py-3 lg:py-4">{w.customer || 'N/A'}</td>
                     <td className="px-4 lg:px-6 py-3 lg:py-4">
                       <span className="px-1.5 sm:px-2 py-0.5 bg-muted rounded border border-border text-[9px] sm:text-[10px] md:text-xs font-medium">
-                        {formatType(w.type)}
+                        {w.typeDisplay || formatType(w.type)}
                       </span>
                     </td>
                     <td className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-primary">
-                      {w.grams ? `${w.grams.toFixed(2)} g` : 'N/A'}
+                      {w.gramsDisplay || (w.grams ? `${w.grams.toFixed(2)} g` : 'N/A')}
                     </td>
                     <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">
                       {w.approximateValueDisplay || 'N/A'}
@@ -442,7 +444,7 @@ export default function WithdrawalManagement() {
                       <StatusBadge status={w.status} />
                     </td>
                     <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
-                      <Link href={`/admin/withdrawals/${w.withdrawalId}`}>
+                      <Link href={`/admin/withdrawals/${w.withdrawalId || w.id}`}>
                         <button className="p-1.5 lg:p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title="View & Process">
                           <Eye size={14} className="lg:w-4 lg:h-4" />
                         </button>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import { 
+import {
   ArrowLeft,
   AlertTriangle,
   Mail,
@@ -25,7 +25,7 @@ export default function CustomerDetail({ params }) {
       setLoading(true);
       try {
         const response = await CustomerService.getCustomerById(id);
-        
+
         // Handle different response structures
         let customer = null;
         if (response.data) {
@@ -93,7 +93,7 @@ export default function CustomerDetail({ params }) {
 
   // Handlers
   const handleAction = (action) => {
-    if (action === "deposit") setToast({ message: "Deposit module opening...", type: "success" });
+
     if (action === "message") setToast({ message: "Message sent to customer!", type: "success" });
     if (action === "suspicious") {
       setIsSuspicious(!isSuspicious);
@@ -125,7 +125,7 @@ export default function CustomerDetail({ params }) {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative pb-4 sm:pb-6 md:pb-10">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* 1. Top Header & Actions */}
@@ -146,20 +146,14 @@ export default function CustomerDetail({ params }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => handleAction('deposit')} className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 shadow-sm transition-all">
+          <Link href="/admin/deposits" className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 shadow-sm transition-all">
             <Plus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Add Deposit</span>
-          </button>
+          </Link>
           <Link href={`/admin/customers/edit/${id}`}>
             <button className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted transition-colors">
               <Edit size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Edit</span>
             </button>
           </Link>
-          <button onClick={() => handleAction('message')} className="p-1.5 sm:p-2 bg-background border border-input rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors">
-            <Mail size={16} className="sm:w-[18px] sm:h-[18px]" />
-          </button>
-          <button onClick={() => handleAction('suspicious')} className={`p-1.5 sm:p-2 border rounded-md transition-colors ${isSuspicious ? 'bg-destructive text-destructive-foreground border-destructive' : 'bg-background border-input text-muted-foreground hover:text-destructive'}`}>
-            <AlertTriangle size={16} className="sm:w-[18px] sm:h-[18px]" />
-          </button>
         </div>
       </div>
 
@@ -170,11 +164,10 @@ export default function CustomerDetail({ params }) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-2 sm:pb-3 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${
-                activeTab === tab 
-                  ? 'text-primary' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`pb-2 sm:pb-3 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${activeTab === tab
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
               {activeTab === tab && (
@@ -187,7 +180,7 @@ export default function CustomerDetail({ params }) {
 
       {/* 3. Tab Content */}
       <div className="min-h-[300px] sm:min-h-[400px]">
-        
+
         {/* --- Tab A: Profile Overview --- */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6 animate-in slide-in-from-bottom-2 duration-300">
@@ -248,37 +241,22 @@ export default function CustomerDetail({ params }) {
             <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm space-y-4 sm:space-y-5 md:space-y-6 h-fit">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <h3 className="font-semibold text-sm sm:text-base md:text-lg">KYC Details</h3>
-                <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${
-                  customerData.kycStatus?.toLowerCase() === 'verified' || customerData.kycStatus?.toLowerCase() === 'approved' 
-                    ? 'bg-primary/10 text-primary border-primary/20' 
-                    : customerData.kycStatus?.toLowerCase() === 'rejected'
+                <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${customerData.kycStatus?.toLowerCase() === 'verified' || customerData.kycStatus?.toLowerCase() === 'approved'
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : customerData.kycStatus?.toLowerCase() === 'rejected'
                     ? 'bg-destructive/10 text-destructive border-destructive/20'
                     : 'bg-secondary text-secondary-foreground border-border'
-                }`}>
+                  }`}>
                   {customerData.kycStatus ? customerData.kycStatus.charAt(0).toUpperCase() + customerData.kycStatus.slice(1) : "Pending"}
                 </span>
               </div>
-              
+
               <div className="space-y-3 sm:space-y-4">
                 <p className="text-xs sm:text-sm text-muted-foreground">KYC details will be available soon.</p>
               </div>
             </div>
           </div>
         )}
-
-        {/* --- Tab B: Wallet Summary --- */}
-        {/* {activeTab === 'wallet' && (
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-6 sm:p-8 md:p-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
-            <p className="text-sm sm:text-base text-muted-foreground text-center">Wallet details will be available soon.</p>
-          </div>
-        )} */}
-
-        {/* --- Tab C: Ledger History --- */}
-        {/* {activeTab === 'ledger' && (
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-6 sm:p-8 md:p-10 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
-            <p className="text-sm sm:text-base text-muted-foreground text-center">Ledger history will be available soon.</p>
-          </div>
-        )} */}
 
       </div>
     </div>

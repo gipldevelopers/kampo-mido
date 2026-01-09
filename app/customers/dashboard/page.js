@@ -273,7 +273,7 @@ export default function CustomerDashboard() {
       <div className="grid gap-2.5 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         {/* Total Deposited */}
         <StatCard
-          title="Total Deposited"
+          title="All Time Deposited"
           value={formatINR(dashboardData.summary.totalDeposited)}
           subtext="Total amount invested"
           icon={Wallet}

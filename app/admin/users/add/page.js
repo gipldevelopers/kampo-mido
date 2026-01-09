@@ -134,7 +134,9 @@ export default function AddUser() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="firstname" className="text-xs sm:text-sm font-medium text-foreground">First Name</label>
+              <label htmlFor="firstname" className="text-xs sm:text-sm font-medium text-foreground">
+                First Name <span className="text-destructive">*</span>
+              </label>
               <input 
                 id="firstname"
                 name="firstname"
@@ -147,11 +149,13 @@ export default function AddUser() {
                 placeholder="Enter first name" 
               />
               {errors.firstname && (
-                <p className="text-xs text-destructive">{errors.firstname}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.firstname}</p>
               )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="lastname" className="text-xs sm:text-sm font-medium text-foreground">Last Name</label>
+              <label htmlFor="lastname" className="text-xs sm:text-sm font-medium text-foreground">
+                Last Name <span className="text-destructive">*</span>
+              </label>
               <input 
                 id="lastname"
                 name="lastname"
@@ -164,14 +168,16 @@ export default function AddUser() {
                 placeholder="Enter last name" 
               />
               {errors.lastname && (
-                <p className="text-xs text-destructive">{errors.lastname}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.lastname}</p>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">Email Address</label>
+              <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
+                Email Address <span className="text-destructive">*</span>
+              </label>
               <input 
                 id="email"
                 name="email"
@@ -184,11 +190,13 @@ export default function AddUser() {
                 placeholder="user@example.com" 
               />
               {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.email}</p>
               )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="phone" className="text-xs sm:text-sm font-medium text-foreground">Phone Number</label>
+              <label htmlFor="phone" className="text-xs sm:text-sm font-medium text-foreground">
+                Phone Number <span className="text-destructive">*</span>
+              </label>
               <input 
                 id="phone"
                 name="phone"
@@ -198,16 +206,18 @@ export default function AddUser() {
                 className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
                   errors.phone ? "border-destructive" : "border-input"
                 }`}
-                placeholder="+91 00000 00000" 
+                placeholder="7894561320" 
               />
               {errors.phone && (
-                <p className="text-xs text-destructive">{errors.phone}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.phone}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-1.5 sm:space-y-2">
-            <label htmlFor="address" className="text-xs sm:text-sm font-medium text-foreground">Address</label>
+            <label htmlFor="address" className="text-xs sm:text-sm font-medium text-foreground">
+              Address <span className="text-destructive">*</span>
+            </label>
             <textarea 
               id="address"
               name="address"
@@ -219,13 +229,15 @@ export default function AddUser() {
               placeholder="Enter full address"
             ></textarea>
             {errors.address && (
-              <p className="text-xs text-destructive">{errors.address}</p>
+              <p className="text-xs text-destructive text-red-500">{errors.address}</p>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="role" className="text-xs sm:text-sm font-medium text-foreground">Role</label>
+              <label htmlFor="role" className="text-xs sm:text-sm font-medium text-foreground">
+                Role <span className="text-destructive">*</span>
+              </label>
               <select 
                 id="role"
                 name="role"
@@ -240,7 +252,7 @@ export default function AddUser() {
                 <option value="customer">Customer</option>
               </select>
               {errors.role && (
-                <p className="text-xs text-destructive">{errors.role}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.role}</p>
               )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">

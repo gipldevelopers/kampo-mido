@@ -212,6 +212,15 @@ export default function KYCPage() {
       return;
     }
 
+    // Validate Nominee DOB (cannot be in future)
+    const selectedDate = new Date(nomineeDob);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate > today) {
+      setToast({ message: "Nominee Date of Birth cannot be in the future", type: "error" });
+      return;
+    }
+
     setLoading(true);
     try {
       // Call both APIs in parallel
@@ -502,6 +511,7 @@ export default function KYCPage() {
                 <input
                   type="date"
                   value={nomineeDob}
+                  max={new Date().toISOString().split('T')[0]} // Prevent future dates
                   onChange={(e) => setNomineeDob(e.target.value)}
                   disabled={isSubmitted}
                   className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"

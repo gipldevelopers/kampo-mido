@@ -73,12 +73,12 @@ export default function WithdrawalDetail() {
           const data = response.data;
           setRequest({
             id: data.id,
-            withdrawalId: data.withdrawalId,
+            withdrawalId: data.transactionId, // Map transactionId as withdrawalId for state compatibility
             customer: {
               name: data.customer.name,
               id: data.customer.id,
-              phone: data.customer.phone,
-              walletBalance: data.customer.walletBalance
+              phone: data.customer.mobile || data.customer.phone, // Handle mobile vs phone differences in specs
+              walletBalance: data.customer.walletBalance || 0 // Ensure fallback
             },
             type: data.type,
             typeDisplay: data.typeDisplay,
@@ -137,9 +137,7 @@ export default function WithdrawalDetail() {
         // Prepare payload for approval
         const approvalData = {
           status: 'approved',
-          adminNotes: notes,
-          // Explicitly pass grams for money withdrawals to ensure backend records it
-          grams: request.grams
+          adminNotes: notes
         };
 
         const response = await withdrawalRequestService.updateWithdrawalStatus(id, approvalData);

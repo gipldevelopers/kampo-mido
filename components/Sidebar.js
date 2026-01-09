@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Gem,
   X
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -25,15 +24,15 @@ import { useUser } from "@/context/UserContext";
 
 const menuItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Customer Management", href: "/admin/customers", icon: Users },
   { name: "User Management", href: "/admin/users", icon: Users },
+  { name: "Customer Management", href: "/admin/customers", icon: Users },
   { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
   { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
   { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
-  { name: "Aprrove deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
+  { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
   { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
   { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
-  // { name: "Notifications", href: "/admin/notifications", icon: Bell },
+  { name: "Notifications", href: "/admin/notification", icon: Bell },
   { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
 ];
 

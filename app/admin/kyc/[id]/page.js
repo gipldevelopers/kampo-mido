@@ -282,8 +282,10 @@ export default function KYCDetail({ params }) {
     );
   }
 
+  const isReadOnly = ['approved', 'verified'].includes(kycData.status?.toLowerCase());
+
   return (
-    <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative pb-24 sm:pb-28 md:pb-20">
+    <div className={`space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative ${isReadOnly ? "pb-6" : "pb-24 sm:pb-28 md:pb-20"}`}>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
@@ -297,7 +299,12 @@ export default function KYCDetail({ params }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">KYC Verification</h2>
-            <span className="px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium bg-secondary text-secondary-foreground border border-secondary shrink-0">
+            <span className={`px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border shrink-0 ${kycData.status?.toLowerCase() === 'approved' || kycData.status?.toLowerCase() === 'verified'
+                ? 'bg-green-100 text-green-700 border-green-200'
+                : kycData.status?.toLowerCase() === 'rejected'
+                  ? 'bg-red-100 text-red-700 border-red-200'
+                  : 'bg-secondary text-secondary-foreground border-secondary'
+              }`}>
               {kycData.status}
             </span>
           </div>
@@ -572,8 +579,8 @@ export default function KYCDetail({ params }) {
             </div>
           </div>
 
-          {/* Document Selection for Re-upload */}
-          {(showDocumentSelector || kycData?.status === "Pending") && (
+          {/* Document Selection for Re-upload - Only show if pending and not read-only */}
+          {((showDocumentSelector || kycData?.status === "Pending") && !isReadOnly) && (
             <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
               <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4">Select Documents to Re-upload</h3>
               <div className="space-y-2 sm:space-y-3">
@@ -610,50 +617,53 @@ export default function KYCDetail({ params }) {
           <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Staff Notes</h3>
             <textarea
-              className="w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y"
-              placeholder="Add verification notes here..."
+              className={`w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y ${isReadOnly ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
+              placeholder={isReadOnly ? "Notes are locked" : "Add verification notes here..."}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              disabled={isReadOnly}
             ></textarea>
           </div>
 
         </div>
       </div>
 
-      {/* Action Footer (Sticky) */}
-      <div className="fixed bottom-0 left-0 md:left-64 right-0 p-2.5 sm:p-3 md:p-4 bg-card border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 z-20 shadow-lg">
-        <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground hidden md:block">Action required for verification</p>
-        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <button
-            onClick={() => {
-              if (selectedDocuments.length > 0) {
-                handleAction('reupload');
-              } else {
-                setShowDocumentSelector(true);
-                setToast({ message: "Please select documents to request re-upload", type: "error" });
-              }
-            }}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-muted rounded-md text-xs sm:text-sm font-medium transition-colors"
-          >
-            <RefreshCcw size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Request Re-upload</span><span className="sm:hidden">Re-upload</span>
-          </button>
-          <button
-            onClick={() => {
-              // Allow reject with or without document selection
-              handleAction('reject');
-            }}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 rounded-md text-xs sm:text-sm font-medium transition-colors"
-          >
-            <XCircle size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Reject</span>
-          </button>
-          <button
-            onClick={() => handleAction('approve')}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm"
-          >
-            <CheckCircle2 size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Approve KYC</span><span className="sm:hidden">Approve</span>
-          </button>
+      {/* Action Footer (Sticky) - Only show if not read-only */}
+      {!isReadOnly && (
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 p-2.5 sm:p-3 md:p-4 bg-card border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 z-20 shadow-lg">
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground hidden md:block">Action required for verification</p>
+          <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
+            <button
+              onClick={() => {
+                if (selectedDocuments.length > 0) {
+                  handleAction('reupload');
+                } else {
+                  setShowDocumentSelector(true);
+                  setToast({ message: "Please select documents to request re-upload", type: "error" });
+                }
+              }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-input bg-background hover:bg-muted rounded-md text-xs sm:text-sm font-medium transition-colors"
+            >
+              <RefreshCcw size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Request Re-upload</span><span className="sm:hidden">Re-upload</span>
+            </button>
+            <button
+              onClick={() => {
+                // Allow reject with or without document selection
+                handleAction('reject');
+              }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 rounded-md text-xs sm:text-sm font-medium transition-colors"
+            >
+              <XCircle size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Reject</span>
+            </button>
+            <button
+              onClick={() => handleAction('approve')}
+              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm"
+            >
+              <CheckCircle2 size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Approve KYC</span><span className="sm:hidden">Approve</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Document Preview Modal */}
       {previewDocument && (

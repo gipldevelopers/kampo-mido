@@ -104,7 +104,7 @@ export default function DepositManagement() {
           mode: deposit.mode || "UPI",
           date: formattedDate,
           rate: deposit.rateUsed || deposit.rate || 0,
-          gold: deposit.gold || deposit.goldAmount || 0,
+          gold: Number(deposit.gold || deposit.goldAmount || 0).toFixed(4),
           status: status,
           fullData: deposit
         };

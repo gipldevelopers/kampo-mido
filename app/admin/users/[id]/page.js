@@ -30,7 +30,13 @@ export default function UserDetail({ params }) {
         const response = await UserService.getUserById(id);
         
         // Handle different response structures
-        const userData = response.data?.user || response.data || response.user || response;
+        // Preferred shape: { success, data: { ...user } }
+        const userData =
+          response.data?.data ||
+          response.data?.user ||
+          response.data ||
+          response.user ||
+          response;
         
         if (userData) {
           setUser(userData);
@@ -65,13 +71,28 @@ export default function UserDetail({ params }) {
     return user?.email || "N/A";
   };
 
-  // Format user phone
+  // Format user phone (prioritize customer.mobile if available)
   const getUserPhone = () => {
-    return user?.phone || user?.mobile || "N/A";
+    return (
+      user?.customer?.mobile ||
+      user?.phone ||
+      user?.mobile ||
+      "N/A"
+    );
   };
 
   // Format user address
   const getUserAddress = () => {
+    if (user?.customer) {
+      const { address, city, state, pincode } = user.customer;
+      const parts = [
+        address || null,
+        city || null,
+        state || null,
+        pincode ? `PIN ${pincode}` : null,
+      ].filter(Boolean);
+      if (parts.length) return parts.join(", ");
+    }
     return user?.address || "N/A";
   };
 
@@ -222,6 +243,24 @@ export default function UserDetail({ params }) {
               </p>
               <p className="font-medium text-foreground break-words">{getUserAddress()}</p>
             </div>
+            {user.customer && (
+              <>
+                <div>
+                  <p className="text-muted-foreground mb-1 text-[10px] sm:text-xs flex items-center gap-1">
+                    <Shield size={12} className="shrink-0" />
+                    Customer Code
+                  </p>
+                  <p className="font-medium text-foreground break-words">{user.customer.customerCode || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1 text-[10px] sm:text-xs flex items-center gap-1">
+                    <Shield size={12} className="shrink-0" />
+                    Account Number
+                  </p>
+                  <p className="font-medium text-foreground break-words">{user.customer.accountNumber || "N/A"}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

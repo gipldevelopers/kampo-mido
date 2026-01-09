@@ -14,7 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Gem,
+  Bell,
   X
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -26,6 +26,7 @@ const menuItems = [
   { name: "Withdrawals", href: "/customers/withdrawals", icon: ArrowUpCircle },
   { name: "Wallet", href: "/customers/wallet-page", icon: Wallet },
   { name: "Statements", href: "/customers/statements", icon: FileText },
+  { name: "Notifications", href: "/customers/notifications", icon: Bell },
   { name: "KYC", href: "/customers/kyc-page", icon: ShieldCheck },
   { name: "Profile", href: "/customers/profile-page", icon: UserCircle },
 ];

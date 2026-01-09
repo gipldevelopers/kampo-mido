@@ -232,7 +232,7 @@ export default function GoldRateManagement() {
                     value={newRate}
                     onChange={(e) => setNewRate(e.target.value)}
                     placeholder="e.g. 7650"
-                    className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     required
                   />
                 </div>
@@ -256,7 +256,7 @@ export default function GoldRateManagement() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Reason for update (e.g., Market fluctuation)"
-                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
+                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
                 ></textarea>
               </div>
 

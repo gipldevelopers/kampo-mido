@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useUser } from "@/context/UserContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import NotificationService from "@/services/notification/notification.service";
 import {
   Sun,
@@ -16,7 +16,9 @@ import {
   ArrowDownLeft,
   RefreshCcw,
   ArrowRightLeft,
-  CheckCircle2
+  CheckCircle2,
+  ChevronRight,
+  Home,
 } from "lucide-react";
 
 // ... (existing helper components)
@@ -25,6 +27,7 @@ export default function CustomerNavbar({ onMenuClick }) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -127,36 +130,106 @@ export default function CustomerNavbar({ onMenuClick }) {
   const handleLogout = async () => {
     try {
       if (logout) await logout();
-      router.push("/auth/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout failed", error);
     }
   };
 
-  // getTypeBadge function (unchanged)
+  // Generate breadcrumbs based on current path
+  const getBreadcrumbs = () => {
+    const breadcrumbs = [];
+    const pathSegments = pathname.split("/").filter(Boolean);
+
+    // Customer routes mapping
+    const routeMap = {
+      customers: "Customer",
+      dashboard: "Dashboard",
+      "deposit-page": "Deposit",
+      withdrawals: "Withdrawals",
+      "wallet-page": "Wallet",
+      statements: "Statements",
+      notifications: "Notifications",
+      "kyc-page": "KYC",
+      "profile-page": "Profile",
+      history: "History",
+    };
+
+    // Always start with Home/Dashboard
+    if (pathname === "/customers/dashboard" || pathname === "/customers") {
+      breadcrumbs.push({ label: "Dashboard", path: "/customers/dashboard" });
+    } else {
+      breadcrumbs.push({ label: "Dashboard", path: "/customers/dashboard" });
+      
+      // Build breadcrumbs from path segments
+      let currentPath = "";
+      pathSegments.forEach((segment, index) => {
+        currentPath += `/${segment}`;
+        const label = routeMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+        
+        // Skip if it's a dynamic ID segment (numeric or UUID-like)
+        if (segment.match(/^\d+$/) || segment.length > 20) {
+          const prevSegment = pathSegments[index - 1];
+          if (prevSegment === "edit") {
+            breadcrumbs.push({ label: "Edit", path: currentPath });
+          }
+        } else if (routeMap[segment]) {
+          breadcrumbs.push({ label, path: currentPath });
+        }
+      });
+    }
+
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs();
 
   return (
     <nav className="h-14 md:h-16 border-b border-border bg-background px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-20">
 
-      {/* Left Side: Mobile Menu + Search Bar */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      {/* Left Side: Mobile Menu + Breadcrumbs */}
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
         {/* Mobile Menu Button */}
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="md:hidden p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+            className="md:hidden p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors shrink-0"
             aria-label="Toggle menu"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-muted/50 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring transition-all">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            className="bg-transparent border-none outline-none text-sm w-32 sm:w-48 md:w-64 text-foreground placeholder:text-muted-foreground"
-          />
+        
+        {/* Breadcrumbs */}
+        <div className="hidden md:flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground flex-1 min-w-0 overflow-hidden">
+          {breadcrumbs.length > 0 && (
+            <>
+              <button
+                onClick={() => router.push("/customers/dashboard")}
+                className="p-1 hover:text-foreground transition-colors shrink-0"
+                aria-label="Home"
+              >
+                <Home className="w-3.5 h-3.5" />
+              </button>
+              {breadcrumbs.map((crumb, index) => (
+                <div key={index} className="flex items-center gap-1.5 shrink-0">
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
+                  {index === breadcrumbs.length - 1 ? (
+                    <span className="text-foreground font-medium truncate max-w-[150px] sm:max-w-[200px]">
+                      {crumb.label}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => router.push(crumb.path)}
+                      className="hover:text-foreground transition-colors truncate max-w-[120px] sm:max-w-[150px]"
+                    >
+                      {crumb.label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
 

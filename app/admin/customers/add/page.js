@@ -162,6 +162,17 @@ export default function AddCustomer() {
       newErrors.address = "Address is required";
     }
 
+    if (formData.dob) {
+      const selectedDate = new Date(formData.dob);
+      const today = new Date();
+      // Reset time for accurate date comparison
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate > today) {
+        newErrors.dob = "Date of Birth cannot be in the future";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -318,7 +329,9 @@ export default function AddCustomer() {
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
 
           <div className="space-y-1.5 sm:space-y-2">
-            <label htmlFor="fullName" className="text-xs sm:text-sm font-medium text-foreground">Full Name</label>
+            <label htmlFor="fullName" className="text-xs sm:text-sm font-medium text-foreground">
+              Full Name <span className="text-destructive">*</span>
+            </label>
             <input
               id="fullName"
               name="fullName"
@@ -330,13 +343,15 @@ export default function AddCustomer() {
               placeholder="Enter full name"
             />
             {errors.fullName && (
-              <p className="text-xs text-destructive">{errors.fullName}</p>
+              <p className="text-xs text-destructive text-red-500">{errors.fullName}</p>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="mobile" className="text-xs sm:text-sm font-medium text-foreground">Mobile Number</label>
+              <label htmlFor="mobile" className="text-xs sm:text-sm font-medium text-foreground">
+                Mobile Number <span className="text-destructive">*</span>
+              </label>
               <input
                 id="mobile"
                 name="mobile"
@@ -345,10 +360,10 @@ export default function AddCustomer() {
                 onChange={handleChange}
                 className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.mobile ? "border-destructive" : "border-input"
                   }`}
-                placeholder="+91 00000 00000"
+                placeholder="7894561320"
               />
               {errors.mobile && (
-                <p className="text-xs text-destructive">{errors.mobile}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.mobile}</p>
               )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
@@ -360,14 +375,16 @@ export default function AddCustomer() {
                 value={formData.whatsapp}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                placeholder="+91 00000 00000"
+                placeholder="7894561320"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">Email Address</label>
+              <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
+                Email Address <span className="text-destructive">*</span>
+              </label>
               <input
                 id="email"
                 name="email"
@@ -379,7 +396,7 @@ export default function AddCustomer() {
                 placeholder="user@example.com"
               />
               {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
+                <p className="text-xs text-destructive text-red-500">{errors.email}</p>
               )}
             </div>
           </div>
@@ -406,15 +423,21 @@ export default function AddCustomer() {
                 id="dob"
                 name="dob"
                 type="date"
+                max={new Date().toISOString().split('T')[0]}
                 value={formData.dob}
                 onChange={handleChange}
-                className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.dob ? "border-destructive" : "border-input"}`}
               />
+              {errors.dob && (
+                <p className="text-xs text-destructive text-red-500">{errors.dob}</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-1.5 sm:space-y-2">
-            <label htmlFor="address" className="text-xs sm:text-sm font-medium text-foreground">Address</label>
+            <label htmlFor="address" className="text-xs sm:text-sm font-medium text-foreground">
+              Address <span className="text-destructive">*</span>
+            </label>
             <textarea
               id="address"
               name="address"
@@ -425,7 +448,7 @@ export default function AddCustomer() {
               placeholder="Enter full address"
             ></textarea>
             {errors.address && (
-              <p className="text-xs text-destructive">{errors.address}</p>
+              <p className="text-xs text-destructive text-red-500">{errors.address}</p>
             )}
           </div>
 

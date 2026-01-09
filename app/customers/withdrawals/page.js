@@ -62,6 +62,24 @@ export default function WithdrawalsPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Derived state: how much gold is required for the current request
+  const requiredGramsForMoney =
+    withdrawalType === "money" && amount && currentGoldRate > 0
+      ? parseFloat(amount) / currentGoldRate
+      : 0;
+
+  const isExceedingForMoney =
+    withdrawalType === "money" &&
+    requiredGramsForMoney > 0 &&
+    requiredGramsForMoney > availableGold;
+
+  const isExceedingForGold =
+    (withdrawalType === "physical" || withdrawalType === "jewellery") &&
+    grams &&
+    parseFloat(grams) > availableGold;
+
+  const isInsufficientGold = isExceedingForMoney || isExceedingForGold;
+
   const formatINR = (amount) => {
     if (!amount) return "₹0";
     return new Intl.NumberFormat('en-IN', {
@@ -388,8 +406,14 @@ export default function WithdrawalsPage() {
                     </button>
                   </div>
                   {amount && currentGoldRate > 0 && (
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                      Will require: {(parseFloat(amount) / currentGoldRate).toFixed(4)}g of gold
+                    <p
+                      className={`text-[9px] sm:text-[10px] md:text-xs ${
+                        isExceedingForMoney ? "text-destructive" : "text-muted-foreground"
+                      }`}
+                    >
+                      Will require: {requiredGramsForMoney.toFixed(4)}g of gold{" "}
+                      {isExceedingForMoney &&
+                        `(available: ${availableGold.toFixed(4)}g, reduce amount)`}
                     </p>
                   )}
                 </div>
@@ -416,8 +440,14 @@ export default function WithdrawalsPage() {
                     </button>
                   </div>
                   {grams && currentGoldRate > 0 && (
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                      Estimated value: {formatINR(parseFloat(grams) * currentGoldRate)}
+                    <p
+                      className={`text-[9px] sm:text-[10px] md:text-xs ${
+                        isExceedingForGold ? "text-destructive" : "text-muted-foreground"
+                      }`}
+                    >
+                      Estimated value: {formatINR(parseFloat(grams) * currentGoldRate)}{" "}
+                      {isExceedingForGold &&
+                        `(available: ${availableGold.toFixed(4)}g, reduce grams)`}
                     </p>
                   )}
                 </div>
@@ -471,7 +501,7 @@ export default function WithdrawalsPage() {
               <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isInsufficientGold}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? (
