@@ -25,7 +25,7 @@ const menuItems = [
   { name: "Deposit", href: "/customers/deposit-page", icon: ArrowDownCircle },
   { name: "Withdrawals", href: "/customers/withdrawals", icon: ArrowUpCircle },
   { name: "Wallet", href: "/customers/wallet-page", icon: Wallet },
-  { name: "Statements", href: "/customers/statements", icon: FileText },
+  // { name: "Statements", href: "/customers/statements", icon: FileText },
   { name: "Notifications", href: "/customers/notifications", icon: Bell },
   { name: "KYC", href: "/customers/kyc-page", icon: ShieldCheck },
   { name: "Profile", href: "/customers/profile-page", icon: UserCircle },

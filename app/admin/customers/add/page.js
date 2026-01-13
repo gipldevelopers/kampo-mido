@@ -152,6 +152,11 @@ export default function AddCustomer() {
       newErrors.mobile = "Please enter a valid phone number";
     }
 
+    // WhatsApp number required
+    if (!formData.whatsapp.trim()) {
+      newErrors.whatsapp = "WhatsApp number is required";
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -162,7 +167,15 @@ export default function AddCustomer() {
       newErrors.address = "Address is required";
     }
 
-    if (formData.dob) {
+    // Gender required
+    if (!formData.gender) {
+      newErrors.gender = "Gender is required";
+    }
+
+    // Date of Birth required and cannot be future
+    if (!formData.dob) {
+      newErrors.dob = "Date of Birth is required";
+    } else {
       const selectedDate = new Date(formData.dob);
       const today = new Date();
       // Reset time for accurate date comparison
@@ -171,6 +184,19 @@ export default function AddCustomer() {
       if (selectedDate > today) {
         newErrors.dob = "Date of Birth cannot be in the future";
       }
+    }
+
+    // City, State, Pincode required
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+
+    if (!formData.state.trim()) {
+      newErrors.state = "State is required";
+    }
+
+    if (!formData.pincode.trim()) {
+      newErrors.pincode = "Pincode is required";
     }
 
     setErrors(newErrors);
@@ -367,7 +393,9 @@ export default function AddCustomer() {
               )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="whatsapp" className="text-xs sm:text-sm font-medium text-foreground">WhatsApp Number</label>
+              <label htmlFor="whatsapp" className="text-xs sm:text-sm font-medium text-foreground">
+                WhatsApp Number <span className="text-destructive">*</span>
+              </label>
               <input
                 id="whatsapp"
                 name="whatsapp"
@@ -377,6 +405,9 @@ export default function AddCustomer() {
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 placeholder="7894561320"
               />
+              {errors.whatsapp && (
+                <p className="text-xs text-destructive text-red-500">{errors.whatsapp}</p>
+              )}
             </div>
           </div>
 
@@ -403,7 +434,9 @@ export default function AddCustomer() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="gender" className="text-xs sm:text-sm font-medium text-foreground">Gender</label>
+              <label htmlFor="gender" className="text-xs sm:text-sm font-medium text-foreground">
+                Gender <span className="text-destructive">*</span>
+              </label>
               <select
                 id="gender"
                 name="gender"
@@ -416,9 +449,14 @@ export default function AddCustomer() {
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+              {errors.gender && (
+                <p className="text-xs text-destructive text-red-500">{errors.gender}</p>
+              )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="dob" className="text-xs sm:text-sm font-medium text-foreground">Date of Birth</label>
+              <label htmlFor="dob" className="text-xs sm:text-sm font-medium text-foreground">
+                Date of Birth <span className="text-destructive">*</span>
+              </label>
               <input
                 id="dob"
                 name="dob"
@@ -454,7 +492,9 @@ export default function AddCustomer() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="city" className="text-xs sm:text-sm font-medium text-foreground">City</label>
+              <label htmlFor="city" className="text-xs sm:text-sm font-medium text-foreground">
+                City <span className="text-destructive">*</span>
+              </label>
               <input
                 id="city"
                 name="city"
@@ -464,9 +504,14 @@ export default function AddCustomer() {
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 placeholder="Enter city"
               />
+              {errors.city && (
+                <p className="text-xs text-destructive text-red-500">{errors.city}</p>
+              )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="state" className="text-xs sm:text-sm font-medium text-foreground">State</label>
+              <label htmlFor="state" className="text-xs sm:text-sm font-medium text-foreground">
+                State <span className="text-destructive">*</span>
+              </label>
               <input
                 id="state"
                 name="state"
@@ -476,9 +521,14 @@ export default function AddCustomer() {
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 placeholder="Enter state"
               />
+              {errors.state && (
+                <p className="text-xs text-destructive text-red-500">{errors.state}</p>
+              )}
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="pincode" className="text-xs sm:text-sm font-medium text-foreground">Pincode</label>
+              <label htmlFor="pincode" className="text-xs sm:text-sm font-medium text-foreground">
+                Pincode <span className="text-destructive">*</span>
+              </label>
               <input
                 id="pincode"
                 name="pincode"
@@ -488,6 +538,9 @@ export default function AddCustomer() {
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 placeholder="Enter pincode"
               />
+              {errors.pincode && (
+                <p className="text-xs text-destructive text-red-500">{errors.pincode}</p>
+              )}
             </div>
           </div>
 

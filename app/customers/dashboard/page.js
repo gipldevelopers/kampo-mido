@@ -355,10 +355,11 @@ export default function CustomerDashboard() {
                   tickLine={false}
                   axisLine={false}
                   domain={['auto', 'auto']}
-                  tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                  // Show actual Rupee values from API (e.g. 83, 90) instead of compressing to \"₹0k\"
+                  tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
                   tick={{ fontSize: 10 }}
                   className="text-[10px] sm:text-xs"
-                  width={45}
+                  width={50}
                 />
                 <Tooltip
                   contentStyle={{
