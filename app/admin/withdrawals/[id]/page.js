@@ -73,7 +73,7 @@ export default function WithdrawalDetail() {
           const data = response.data;
           setRequest({
             id: data.id,
-            withdrawalId: data.transactionId, // Map transactionId as withdrawalId for state compatibility
+            withdrawalId: data.withdrawalId || data.transactionId || data.id, // Use withdrawalId from API
             customer: {
               name: data.customer.name,
               id: data.customer.id,
@@ -94,6 +94,11 @@ export default function WithdrawalDetail() {
             hasInsufficientBalance: data.hasInsufficientBalance,
             balanceAfterWithdrawal: data.balanceAfterWithdrawal
           });
+          
+          // Load existing admin notes if available
+          if (data.adminNotes) {
+            setNotes(data.adminNotes);
+          }
         }
       } catch (error) {
         console.error("Error fetching withdrawal details:", error);
@@ -168,7 +173,9 @@ export default function WithdrawalDetail() {
         });
         if (response.success) {
           setRequest(prev => ({ ...prev, status: "rejected", statusDisplay: "Rejected" }));
-          setToast({ message: "Request Rejected.", type: "error" });
+          // Use the API response message or default success message
+          const successMessage = response.message || "Withdrawal rejected successfully";
+          setToast({ message: successMessage, type: "success" });
         }
       }
 
@@ -270,7 +277,7 @@ export default function WithdrawalDetail() {
               <div className="p-2.5 sm:p-3 bg-primary/5 border border-primary/20 rounded-md">
                 <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Withdrawal Weight</p>
                 <p className="font-bold text-base sm:text-lg text-primary mt-1 break-words">
-                  {request.grams ? `${request.grams.toFixed(2)} g` : 'N/A'}
+                  {request.grams ? `${parseFloat(request.grams).toFixed(4)} g` : 'N/A'}
                 </p>
               </div>
               <div className="p-2.5 sm:p-3 bg-muted/30 rounded-md border border-border">
@@ -340,17 +347,17 @@ export default function WithdrawalDetail() {
             <div className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center p-2.5 sm:p-3 bg-muted/30 rounded-md">
                 <span className="text-xs sm:text-sm text-muted-foreground">Current Gold Balance</span>
-                <span className="font-medium text-xs sm:text-sm break-words">{request.customer.walletBalance.toFixed(2)} g</span>
+                <span className="font-medium text-xs sm:text-sm break-words">{parseFloat(request.customer.walletBalance).toFixed(4)} g</span>
               </div>
               <div className="flex justify-between items-center p-2.5 sm:p-3 bg-muted/30 rounded-md">
                 <span className="text-xs sm:text-sm text-muted-foreground">Requested Withdrawal</span>
-                <span className="font-medium text-xs sm:text-sm text-destructive break-words">-{request.grams ? request.grams.toFixed(2) : '0.00'} g</span>
+                <span className="font-medium text-xs sm:text-sm text-destructive break-words">-{request.grams ? parseFloat(request.grams).toFixed(4) : '0.0000'} g</span>
               </div>
 
               <div className="flex justify-between items-center p-2.5 sm:p-3 bg-primary/5 border border-primary/20 rounded-md">
                 <span className="text-xs sm:text-sm font-medium">Balance After Withdrawal</span>
                 <span className={`font-bold text-xs sm:text-sm break-words ${request.hasInsufficientBalance ? 'text-destructive' : 'text-primary'}`}>
-                  {request.balanceAfterWithdrawal.toFixed(2)} g
+                  {parseFloat(request.balanceAfterWithdrawal).toFixed(4)} g
                 </span>
               </div>
 

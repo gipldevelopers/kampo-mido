@@ -338,6 +338,11 @@ export default function DepositPage() {
     }).format(amount);
   };
 
+  const formatGold = (gold) => {
+    if (!gold || gold === 0) return "0.0000";
+    return parseFloat(gold).toFixed(4);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-5 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
 
@@ -580,7 +585,7 @@ export default function DepositPage() {
                     <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                       <p className="text-base sm:text-lg font-bold text-foreground wrap-break-word">{formatINR(deposit.amount)}</p>
                       {deposit.isConverted && deposit.gold > 0 && (
-                        <p className="text-[11px] sm:text-xs md:text-sm text-primary font-medium shrink-0 ml-2">{deposit.gold} g</p>
+                        <p className="text-[11px] sm:text-xs md:text-sm text-primary font-medium shrink-0 ml-2">{formatGold(deposit.gold)} g</p>
                       )}
                     </div>
                     <div className="flex items-center justify-between text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
@@ -667,7 +672,7 @@ export default function DepositPage() {
                       {deposit.isConverted && deposit.gold > 0 && (
                         <div>
                           <p className="text-[10px] text-muted-foreground">Gold</p>
-                          <p className="text-sm font-medium text-primary">{deposit.gold} g</p>
+                          <p className="text-sm font-medium text-primary">{formatGold(deposit.gold)} g</p>
                         </div>
                       )}
                     </div>
@@ -718,7 +723,7 @@ export default function DepositPage() {
                         <td className="px-4 py-3 font-medium text-foreground">{deposit.id}</td>
                         <td className="px-4 py-3 font-semibold">{formatINR(deposit.amount)}</td>
                         <td className="px-4 py-3 text-primary font-medium">
-                          {deposit.isConverted && deposit.gold > 0 ? `${deposit.gold} g` : "N/A"}
+                          {deposit.isConverted && deposit.gold > 0 ? `${formatGold(deposit.gold)} g` : "N/A"}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{deposit.date}</td>
                         <td className="px-4 py-3 text-muted-foreground">

@@ -3,6 +3,29 @@
 import API from "@/lib/api";
 
 class CustomerService {
+  // Create a new customer
+  async createCustomer(customerData) {
+    try {
+      const response = await API.post("/admin/customers/create-customer", {
+        fullName: customerData.fullName,
+        gender: customerData.gender,
+        dob: customerData.dob,
+        mobile: customerData.mobile,
+        whatsapp: customerData.whatsapp,
+        email: customerData.email,
+        address: customerData.address,
+        city: customerData.city,
+        state: customerData.state,
+        pincode: customerData.pincode,
+        kycStatus: customerData.kycStatus || "pending",
+        userId: customerData.userId,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Get all customers
   async getAllCustomers() {
     try {

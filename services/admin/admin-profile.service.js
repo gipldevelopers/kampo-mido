@@ -1,33 +1,32 @@
-// services/customer/profile.service.js
+// services/admin/admin-profile.service.js
 
 import API from "@/lib/api";
 
-class CustomerProfileService {
-  // Get customer profile
+class AdminProfileService {
+  // Get admin profile
   async getProfile() {
     try {
       const response = await API.get("/admin/profile/get-profile");
       return response.data;
     } catch (error) {
-      console.error('Get profile error:', error.response?.data || error.message);
+      console.error('Get admin profile error:', error.response?.data || error.message);
       throw error;
     }
   }
 
-  // Update customer profile
+  // Update admin profile
   async updateProfile(profileData) {
     try {
       // Create FormData for file upload
       const formData = new FormData();
       
       // Add text fields
-      formData.append('name', profileData.name);
-      formData.append('mobile', profileData.mobile);
-      formData.append('email', profileData.email);
-      formData.append('address', profileData.address);
-      if (profileData.city) formData.append('city', profileData.city);
-      if (profileData.state) formData.append('state', profileData.state);
-      if (profileData.pincode) formData.append('pincode', profileData.pincode);
+      if (profileData.name) formData.append('name', profileData.name);
+      if (profileData.firstname) formData.append('firstname', profileData.firstname);
+      if (profileData.lastname) formData.append('lastname', profileData.lastname);
+      if (profileData.email) formData.append('email', profileData.email);
+      if (profileData.phone) formData.append('phone', profileData.phone);
+      if (profileData.address) formData.append('address', profileData.address);
       
       // Add profile picture if provided
       if (profileData.profilePicture) {
@@ -42,7 +41,7 @@ class CustomerProfileService {
       
       return response.data;
     } catch (error) {
-      console.error('Update profile error:', error.response?.data || error.message);
+      console.error('Update admin profile error:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -58,10 +57,10 @@ class CustomerProfileService {
       
       return response.data;
     } catch (error) {
-      console.error('Change password error:', error.response?.data || error.message);
+      console.error('Change admin password error:', error.response?.data || error.message);
       throw error;
     }
   }
 }
 
-export default new CustomerProfileService();
+export default new AdminProfileService();

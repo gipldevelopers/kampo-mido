@@ -17,7 +17,7 @@ import {
   Copy // Add Copy import
 } from "lucide-react";
 import Toast from "@/components/Toast";
-import CustomerProfileService from "../../../services/admin/admin-profile.service";
+import AdminProfileService from "../../../services/admin/admin-profile.service";
 import UPIService from "../../../services/upi.service";
 
 // --- Toggle Switch Component ---
@@ -87,7 +87,7 @@ export default function AdminProfile() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await CustomerProfileService.getProfile();
+      const response = await AdminProfileService.getProfile();
 
       if (response.success) {
         const userData = response.data;
@@ -236,7 +236,7 @@ export default function AdminProfile() {
         phone: phone || ""
       };
 
-      const response = await CustomerProfileService.updateProfile(profileData);
+      const response = await AdminProfileService.updateProfile(profileData);
 
       if (response.success) {
         setToast({
@@ -289,7 +289,7 @@ export default function AdminProfile() {
         confirmPassword
       };
 
-      const response = await CustomerProfileService.changePassword(passwordData);
+      const response = await AdminProfileService.changePassword(passwordData);
 
       if (response.success) {
         setToast({

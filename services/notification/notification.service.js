@@ -1,113 +1,79 @@
-import axios from "axios";
-import AuthService from "../auth.service";
+// services/notification/notification.service.js
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+import API from "@/lib/api";
 
-const getAuthHeader = () => {
-    const token = AuthService.getStoredToken();
-    return {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    };
-};
-
-const NotificationService = {
-    // Get all notifications with pagination
-    getAllNotifications: async (page = 1, limit = 20) => {
+class NotificationService {
+    // Get all customer notifications with pagination
+    async getAllNotifications(page = 1, limit = 20) {
         try {
-            const response = await axios.get(
-                `${API_URL}/notifications`,
-                {
-                    params: { page, limit },
-                    ...getAuthHeader()
-                }
-            );
+            const response = await API.get("/notifications", {
+                params: { page, limit }
+            });
             return response.data;
         } catch (error) {
-            console.error("Error fetching notifications:", error);
+            console.error("Error fetching customer notifications:", error);
             throw error;
         }
-    },
+    }
 
-    // Mark a specific notification as read
-    markAsRead: async (notificationId) => {
+    // Mark a specific customer notification as read
+    async markAsRead(notificationId) {
         try {
-            const response = await axios.patch(
-                `${API_URL}/notifications/${notificationId}/read`,
-                {},
-                getAuthHeader()
-            );
+            const response = await API.patch(`/notifications/${notificationId}/read`, {});
             return response.data;
         } catch (error) {
             console.error(`Error marking notification ${notificationId} as read:`, error);
             throw error;
         }
-    },
+    }
 
-    // Mark all notifications as read
-    markAllAsRead: async () => {
+    // Mark all customer notifications as read
+    async markAllAsRead() {
         try {
-            const response = await axios.patch(
-                `${API_URL}/notifications/read-all`,
-                {},
-                getAuthHeader()
-            );
+            const response = await API.patch("/notifications/read-all", {});
             return response.data;
         } catch (error) {
-            console.error("Error marking all notifications as read:", error);
+            console.error("Error marking all customer notifications as read:", error);
             throw error;
         }
-    },
+    }
 
     // --- Admin Notification Methods ---
 
     // Get all admin notifications
-    getAdminNotifications: async (page = 1, limit = 20) => {
+    async getAdminNotifications(page = 1, limit = 20) {
         try {
-            const response = await axios.get(
-                `${API_URL}/admin/notifications`,
-                {
-                    params: { page, limit },
-                    ...getAuthHeader()
-                }
-            );
+            const response = await API.get("/admin/notifications", {
+                params: { page, limit }
+            });
             return response.data;
         } catch (error) {
             console.error("Error fetching admin notifications:", error);
             throw error;
         }
-    },
+    }
 
     // Mark specific admin notification as read
-    markAdminNotificationAsRead: async (notificationId) => {
+    async markAdminNotificationAsRead(notificationId) {
         try {
-            const response = await axios.patch(
-                `${API_URL}/admin/notifications/${notificationId}/read`,
-                {},
-                getAuthHeader()
-            );
+            const response = await API.patch(`/admin/notifications/${notificationId}/read`, {});
             return response.data;
         } catch (error) {
             console.error(`Error marking admin notification ${notificationId} as read:`, error);
             throw error;
         }
-    },
+    }
 
     // Mark all admin notifications as read
-    markAllAdminNotificationsAsRead: async () => {
+    async markAllAdminNotificationsAsRead() {
         try {
-            const response = await axios.patch(
-                `${API_URL}/admin/notifications/read-all`,
-                {},
-                getAuthHeader()
-            );
+            const response = await API.patch("/admin/notifications/read-all", {});
             return response.data;
         } catch (error) {
             console.error("Error marking all admin notifications as read:", error);
             throw error;
         }
     }
-};
+}
 
-export default NotificationService;
+export default new NotificationService();
