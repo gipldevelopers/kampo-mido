@@ -10,10 +10,13 @@ import {
   Image as ImageIcon,
   Loader2,
   History,
+  Lock
 } from "lucide-react";
+import Link from "next/link";
 import Toast from "@/components/Toast";
 import DepositService from "../../../services/customer/deposit.service";
-import UPIService from "../../../services/upi.service"; // Add this import
+import UPIService from "../../../services/upi.service";
+import KYCService from "@/services/customer/kyc.service"; // Add this import
 
 const StatusBadge = ({ status }) => {
   // Normalize status to handle both lowercase and capitalized versions
@@ -59,6 +62,31 @@ export default function DepositPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [fetchingUPI, setFetchingUPI] = useState(true);
   const [qrCodeError, setQrCodeError] = useState(false);
+
+  // KYC State
+  const [kycVerified, setKycVerified] = useState(false);
+  const [checkingKYC, setCheckingKYC] = useState(true);
+
+  // Check KYC Status
+  useEffect(() => {
+    const checkKYC = async () => {
+      try {
+        const response = await KYCService.getKYCStatus();
+        const status = response.data?.status || response.data?.kycStatus || "pending";
+        if (status.toLowerCase() === 'approved' || status.toLowerCase() === 'verified') {
+          setKycVerified(true);
+        } else {
+          setKycVerified(false);
+        }
+      } catch (error) {
+        console.error("KYC Check Error", error);
+        setKycVerified(false);
+      } finally {
+        setCheckingKYC(false);
+      }
+    };
+    checkKYC();
+  }, []);
 
   // Set default deposit date to today
   useEffect(() => {
@@ -448,120 +476,141 @@ export default function DepositPage() {
             </div>
           </div>
 
-          {/* Rest of the component remains the same */}
-          {/* Deposit Form */}
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
-              <ArrowDownCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
-              <h3 className="text-base sm:text-lg font-semibold text-foreground">Submit Deposit Request</h3>
+          {/* Deposit Form or KYC Lock */}
+          {checkingKYC ? (
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-8 flex items-center justify-center">
+              <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Amount Deposited (₹)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount transferred"
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                  required
-                  min="1"
-                />
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Enter the exact amount you transferred via UPI</p>
+          ) : !kycVerified ? (
+            <div className="bg-card border border-destructive/20 rounded-lg sm:rounded-xl p-6 md:p-10 text-center space-y-4 shadow-sm">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground">KYC Verification Required</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                To ensure security and compliance, you must complete your KYC verification before making any deposits.
+              </p>
+              <div className="pt-2">
+                <Link href="/customers/kyc-page" className="inline-flex items-center justify-center px-6 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity">
+                  Complete Verification
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* Deposit Form */
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
+                <ArrowDownCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground">Submit Deposit Request</h3>
               </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">UPI Transaction Reference (Optional)</label>
-                <input
-                  type="text"
-                  value={upiReference}
-                  onChange={(e) => setUpiReference(e.target.value)}
-                  placeholder="Transaction ID from your payment app"
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                />
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Help us verify your payment faster</p>
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Deposit Date</label>
-                <div className="relative">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Amount Deposited (₹)</label>
                   <input
-                    type="date"
-                    value={depositDate}
-                    onChange={(e) => setDepositDate(e.target.value)}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Enter amount transferred"
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     required
+                    min="1"
                   />
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Enter the exact amount you transferred via UPI</p>
                 </div>
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Select the date when you made the payment</p>
-              </div>
 
-              {/* Screenshot Upload */}
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Payment Screenshot (Optional)</label>
-                {screenshotPreview ? (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">UPI Transaction Reference (Optional)</label>
+                  <input
+                    type="text"
+                    value={upiReference}
+                    onChange={(e) => setUpiReference(e.target.value)}
+                    placeholder="Transaction ID from your payment app"
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Help us verify your payment faster</p>
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Deposit Date</label>
                   <div className="relative">
-                    <div className="border border-border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30">
-                      <img
-                        src={screenshotPreview}
-                        alt="Payment screenshot"
-                        className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveScreenshot}
-                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-opacity"
-                      aria-label="Remove screenshot"
-                    >
-                      <X size={14} className="sm:w-4 sm:h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="cursor-pointer">
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleScreenshotUpload}
-                      className="hidden"
+                      type="date"
+                      value={depositDate}
+                      onChange={(e) => setDepositDate(e.target.value)}
+                      className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
+                      required
                     />
-                    <div className="flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed border-border rounded-lg hover:border-primary/50 transition-colors">
-                      <ImageIcon size={24} className="sm:w-8 sm:h-8 text-muted-foreground mb-1.5 sm:mb-2" />
-                      <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload screenshot</p>
-                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Select the date when you made the payment</p>
+                </div>
+
+                {/* Screenshot Upload */}
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Payment Screenshot (Optional)</label>
+                  {screenshotPreview ? (
+                    <div className="relative">
+                      <div className="border border-border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30">
+                        <img
+                          src={screenshotPreview}
+                          alt="Payment screenshot"
+                          className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveScreenshot}
+                        className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-opacity"
+                        aria-label="Remove screenshot"
+                      >
+                        <X size={14} className="sm:w-4 sm:h-4" />
+                      </button>
                     </div>
-                  </label>
-                )}
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Upload payment confirmation screenshot for faster verification</p>
-              </div>
-
-              <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> After submitting, admin will verify your payment, approve the deposit, and then process it to convert to gold.
-                  Gold will be credited to your wallet once the deposit is processed.
-                </p>
-              </div>
-
-              <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>Submitting...</span>
-                    </>
                   ) : (
-                    <>
-                      <ArrowDownCircle size={14} className="sm:w-4 sm:h-4" /> <span>Submit Deposit Request</span>
-                    </>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleScreenshotUpload}
+                        className="hidden"
+                      />
+                      <div className="flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed border-border rounded-lg hover:border-primary/50 transition-colors">
+                        <ImageIcon size={24} className="sm:w-8 sm:h-8 text-muted-foreground mb-1.5 sm:mb-2" />
+                        <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload screenshot</p>
+                        <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
+                      </div>
+                    </label>
                   )}
-                </button>
-              </div>
-            </form>
-          </div>
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Upload payment confirmation screenshot for faster verification</p>
+                </div>
+
+                <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                    <strong className="text-foreground">Note:</strong> After submitting, admin will verify your payment, approve the deposit, and then process it to convert to gold.
+                    Gold will be credited to your wallet once the deposit is processed.
+                  </p>
+                </div>
+
+                <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownCircle size={14} className="sm:w-4 sm:h-4" /> <span>Submit Deposit Request</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: Deposit History (Span 1) */}
@@ -635,115 +684,117 @@ export default function DepositPage() {
       </div>
 
       {/* All Deposit History Section */}
-      {showAllHistory && (
-        <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <div className="flex items-center gap-2">
-              <History size={18} className="sm:w-5 sm:h-5 text-primary" />
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold">All Deposit History</h3>
-            </div>
-            <button
-              onClick={() => setShowAllHistory(false)}
-              className="p-1.5 hover:bg-muted rounded-full transition-colors"
-            >
-              <X size={18} className="sm:w-5 sm:h-5" />
-            </button>
-          </div>
-
-          {fetchingAllHistory ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : allDepositHistory.length > 0 ? (
-            <div className="space-y-3">
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-3">
-                {allDepositHistory.map((deposit) => (
-                  <div key={deposit.id} className="p-3 sm:p-4 bg-muted/30 border border-border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-foreground">{deposit.id}</span>
-                      <StatusBadge status={deposit.status} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">Amount</p>
-                        <p className="text-sm font-semibold text-foreground">{formatINR(deposit.amount)}</p>
-                      </div>
-                      {deposit.isConverted && deposit.gold > 0 && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">Gold</p>
-                          <p className="text-sm font-medium text-primary">{formatGold(deposit.gold)} g</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">Date</p>
-                        <p className="text-xs text-foreground">{deposit.date}</p>
-                      </div>
-                      {deposit.rateUsed > 0 && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">Rate</p>
-                          <p className="text-xs text-foreground">₹ {deposit.rateUsed.toLocaleString()}</p>
-                        </div>
-                      )}
-                    </div>
-                    {deposit.upiReference && deposit.upiReference !== "N/A" && (
-                      <div className="mb-2">
-                        <p className="text-[10px] text-muted-foreground">UPI Reference</p>
-                        <p className="text-xs text-foreground">{deposit.upiReference}</p>
-                      </div>
-                    )}
-                    {deposit.screenshot && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <ImageIcon size={12} />
-                        <span>Screenshot available</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
+      {
+        showAllHistory && (
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center gap-2">
+                <History size={18} className="sm:w-5 sm:h-5 text-primary" />
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold">All Deposit History</h3>
               </div>
+              <button
+                onClick={() => setShowAllHistory(false)}
+                className="p-1.5 hover:bg-muted rounded-full transition-colors"
+              >
+                <X size={18} className="sm:w-5 sm:h-5" />
+              </button>
+            </div>
 
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-xs sm:text-sm text-left">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-2 font-medium">Transaction ID</th>
-                      <th className="px-4 py-2 font-medium">Amount</th>
-                      <th className="px-4 py-2 font-medium">Gold</th>
-                      <th className="px-4 py-2 font-medium">Date</th>
-                      <th className="px-4 py-2 font-medium">Rate</th>
-                      <th className="px-4 py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {allDepositHistory.map((deposit) => (
-                      <tr key={deposit.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground">{deposit.id}</td>
-                        <td className="px-4 py-3 font-semibold">{formatINR(deposit.amount)}</td>
-                        <td className="px-4 py-3 text-primary font-medium">
-                          {deposit.isConverted && deposit.gold > 0 ? `${formatGold(deposit.gold)} g` : "N/A"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{deposit.date}</td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {deposit.rateUsed > 0 ? `₹ ${deposit.rateUsed.toLocaleString()}` : "N/A"}
-                        </td>
-                        <td className="px-4 py-3"><StatusBadge status={deposit.status} /></td>
+            {fetchingAllHistory ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : allDepositHistory.length > 0 ? (
+              <div className="space-y-3">
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {allDepositHistory.map((deposit) => (
+                    <div key={deposit.id} className="p-3 sm:p-4 bg-muted/30 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-foreground">{deposit.id}</span>
+                        <StatusBadge status={deposit.status} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Amount</p>
+                          <p className="text-sm font-semibold text-foreground">{formatINR(deposit.amount)}</p>
+                        </div>
+                        {deposit.isConverted && deposit.gold > 0 && (
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Gold</p>
+                            <p className="text-sm font-medium text-primary">{deposit.gold} g</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Date</p>
+                          <p className="text-xs text-foreground">{deposit.date}</p>
+                        </div>
+                        {deposit.rateUsed > 0 && (
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Rate</p>
+                            <p className="text-xs text-foreground">₹ {deposit.rateUsed.toLocaleString()}</p>
+                          </div>
+                        )}
+                      </div>
+                      {deposit.upiReference && deposit.upiReference !== "N/A" && (
+                        <div className="mb-2">
+                          <p className="text-[10px] text-muted-foreground">UPI Reference</p>
+                          <p className="text-xs text-foreground">{deposit.upiReference}</p>
+                        </div>
+                      )}
+                      {deposit.screenshot && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <ImageIcon size={12} />
+                          <span>Screenshot available</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm text-left">
+                    <thead className="bg-muted/50 text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-2 font-medium">Transaction ID</th>
+                        <th className="px-4 py-2 font-medium">Amount</th>
+                        <th className="px-4 py-2 font-medium">Gold</th>
+                        <th className="px-4 py-2 font-medium">Date</th>
+                        <th className="px-4 py-2 font-medium">Rate</th>
+                        <th className="px-4 py-2 font-medium">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {allDepositHistory.map((deposit) => (
+                        <tr key={deposit.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-3 font-medium text-foreground">{deposit.id}</td>
+                          <td className="px-4 py-3 font-semibold">{formatINR(deposit.amount)}</td>
+                          <td className="px-4 py-3 text-primary font-medium">
+                            {deposit.isConverted && deposit.gold > 0 ? `${deposit.gold} g` : "N/A"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{deposit.date}</td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {deposit.rateUsed > 0 ? `₹ ${deposit.rateUsed.toLocaleString()}` : "N/A"}
+                          </td>
+                          <td className="px-4 py-3"><StatusBadge status={deposit.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p className="text-sm">No deposit history available</p>
-            </div>
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-sm">No deposit history available</p>
+              </div>
+            )}
+          </div>
+        )
+      }
 
-    </div>
+    </div >
   );
 }

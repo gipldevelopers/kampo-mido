@@ -158,6 +158,61 @@ class WithdrawalRequestService {
             throw error;
         }
     }
+    // Create batch
+    async createBatch() {
+        try {
+            const response = await API.post('/admin/withdrawals/batch/create');
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Get batches
+    async getBatches(params = {}) {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page);
+            if (params.limit) queryParams.append('limit', params.limit);
+
+            const response = await API.get(`/admin/withdrawals/batch/list?${queryParams.toString()}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Get batch detail
+    async getBatchDetails(batchId) {
+        try {
+            const response = await API.get(`/admin/withdrawals/batch/${batchId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Pay batch
+    async payBatch(batchId) {
+        try {
+            const response = await API.post(`/admin/withdrawals/batch/${batchId}/pay`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Export batch
+    async exportBatch(batchId) {
+        try {
+            const response = await API.get(`/admin/withdrawals/batch/${batchId}/export`, {
+                responseType: 'blob'
+            });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 export default new WithdrawalRequestService();

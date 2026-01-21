@@ -388,14 +388,22 @@ export default function LoginPage() {
               {/* Demo Credentials - Compact */}
               <div className="pt-4 border-t border-gray-200">
                 <p className="font-medium text-gray-900 text-xs mb-2">Demo Access:</p>
-                <div className="flex gap-2 text-[10px] text-gray-500">
-                  <div className="flex-1 bg-gray-50 p-2 rounded border border-gray-200">
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
                     <span className="font-semibold text-gray-700 block">Admin</span>
                     admin@goldinvestment.com<br />Admin@123
                   </div>
-                  <div className="flex-1 bg-gray-50 p-2 rounded border border-gray-200">
-                    <span className="font-semibold text-gray-700 block">Customer</span>
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    <span className="font-semibold text-gray-700 block">Rajesh (Pending)</span>
                     rajesh.customer@example.com<br />cus1@123
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    <span className="font-semibold text-gray-700 block">Priya (Approved)</span>
+                    priya.customer@example.com<br />cus2@123
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    <span className="font-semibold text-gray-700 block">Amit (Rejected)</span>
+                    amit.customer@example.com<br />cus3@123
                   </div>
                 </div>
               </div>
