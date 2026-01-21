@@ -32,6 +32,11 @@ class KYCService {
       if (kycData.panNumber) {
         formData.append("panNumber", kycData.panNumber);
       }
+      // Append Bank Details
+      if (kycData.bankName) formData.append("bankName", kycData.bankName);
+      if (kycData.accountNumber) formData.append("accountNumber", kycData.accountNumber);
+      if (kycData.ifscCode) formData.append("ifscCode", kycData.ifscCode);
+      if (kycData.accountHolder) formData.append("accountHolder", kycData.accountHolder);
 
       const response = await API.post("/customer/kyc/upload", formData, {
         headers: {

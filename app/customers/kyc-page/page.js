@@ -11,7 +11,9 @@ import {
   Clock,
   XCircle,
   Loader2,
-  RefreshCcw
+  RefreshCcw,
+  Landmark,
+  Eye
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import KYCService from "@/services/customer/kyc.service";
@@ -61,6 +63,13 @@ export default function KYCPage() {
   const [idNumber, setIdNumber] = useState("");
   const [panNumber, setPanNumber] = useState("");
 
+  // Bank details
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
+
   // Nominee details
   const [nomineeName, setNomineeName] = useState("");
   const [nomineeRelation, setNomineeRelation] = useState("");
@@ -90,6 +99,15 @@ export default function KYCPage() {
           if (data.idNumber) setIdNumber(data.idNumber);
           if (data.panNumber) setPanNumber(data.panNumber);
 
+          // Bank data
+          if (data.bankDetail) {
+            setBankName(data.bankDetail.bankName || "");
+            setAccountNumber(data.bankDetail.accountNumber || "");
+            setConfirmAccountNumber(data.bankDetail.accountNumber || "");
+            setIfscCode(data.bankDetail.ifscCode || "");
+            setAccountHolder(data.bankDetail.accountHolder || "");
+          }
+
           // Nominee data
           if (data.nominee) {
             setNomineeName(data.nominee.name || "");
@@ -104,18 +122,14 @@ export default function KYCPage() {
           setRequestedDocs(data.documentsToReupload || []);
 
           // Populate existing document previews if available
-          if (data.documents && Array.isArray(data.documents)) {
+          if (data.documents) {
             const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-            data.documents.forEach(doc => {
-              const name = doc.name?.toLowerCase() || "";
-              const url = doc.url ? `${baseURL}${doc.url}` : null;
-              if (url) {
-                if (name.includes("aadhaar") && name.includes("front")) setAadhaarFrontPreview(url);
-                else if (name.includes("aadhaar") && name.includes("back")) setAadhaarBackPreview(url);
-                else if (name.includes("pan")) setPanCardPreview(url);
-                else if (name.includes("selfie")) setSelfiePreview(url);
-              }
-            });
+            const docs = data.documents;
+
+            if (docs.aadhaarFront) setAadhaarFrontPreview(`${baseURL}${docs.aadhaarFront}`);
+            if (docs.aadhaarBack) setAadhaarBackPreview(`${baseURL}${docs.aadhaarBack}`);
+            if (docs.panCard) setPanCardPreview(`${baseURL}${docs.panCard}`);
+            if (docs.selfie) setSelfiePreview(`${baseURL}${docs.selfie}`);
           }
         }
 
@@ -207,6 +221,16 @@ export default function KYCPage() {
       return;
     }
 
+    if (!bankName || !accountNumber || !confirmAccountNumber || !ifscCode || !accountHolder) {
+      setToast({ message: "Please fill all bank details", type: "error" });
+      return;
+    }
+
+    if (accountNumber !== confirmAccountNumber) {
+      setToast({ message: "Account numbers do not match", type: "error" });
+      return;
+    }
+
     if (!nomineeName || !nomineeRelation || !nomineeDob || !nomineeAddress || !nomineePhone) {
       setToast({ message: "Please fill all nominee details", type: "error" });
       return;
@@ -233,6 +257,10 @@ export default function KYCPage() {
           idType,
           idNumber,
           panNumber,
+          bankName,
+          accountNumber,
+          ifscCode,
+          accountHolder
         }),
         NomineeService.createNominee({
           name: nomineeName,
@@ -281,16 +309,28 @@ export default function KYCPage() {
                 className="max-w-full h-auto max-h-48 sm:max-h-56 md:max-h-64 rounded-md mx-auto"
               />
             </div>
-            {!isDisabled && (
+            <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex gap-2">
               <button
                 type="button"
-                onClick={() => handleRemoveFile(setFile, setPreview, fieldKey)}
-                className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-all shadow-md group"
-                aria-label="Remove file"
+                onClick={() => window.open(preview, '_blank')}
+                className="p-1.5 sm:p-2 bg-background/80 text-foreground rounded-full hover:bg-background transition-all shadow-md group border border-border"
+                aria-label="View file"
+                title="View Full Size"
               >
-                <X size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
+                <Eye size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
               </button>
-            )}
+              {!isDisabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(setFile, setPreview, fieldKey)}
+                  className="p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-all shadow-md group"
+                  aria-label="Remove file"
+                  title="Remove"
+                >
+                  <X size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <label className={isDisabled ? "cursor-not-allowed" : "cursor-pointer"}>
@@ -456,6 +496,89 @@ export default function KYCPage() {
               setPreview={setSelfiePreview}
               fieldKey="selfie"
             />
+          </div>
+
+          {/* Bank Details */}
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
+              <Landmark size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">Bank Details</h3>
+            </div>
+
+            <div className="space-y-4 sm:space-y-5 md:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+                    Account Holder Name <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value)}
+                    placeholder="Enter account holder name"
+                    disabled={isSubmitted}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+                    Bank Name <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Enter bank name"
+                    disabled={isSubmitted}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+                    Account Number <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    placeholder="Enter account number"
+                    disabled={isSubmitted}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+                    Confirm Account Number <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmAccountNumber}
+                    onChange={(e) => setConfirmAccountNumber(e.target.value)}
+                    placeholder="Re-enter account number"
+                    disabled={isSubmitted}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
+                    IFSC Code <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={ifscCode}
+                    onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+                    placeholder="Enter IFSC code"
+                    disabled={isSubmitted}
+                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Nominee Details */}

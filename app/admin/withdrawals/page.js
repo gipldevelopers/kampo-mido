@@ -10,7 +10,8 @@ import {
   FileText,
   FileSpreadsheet,
   RefreshCw,
-  Loader2
+  Loader2,
+  Layers
 } from "lucide-react";
 import adminWithdrawalsService from "../../../services/admin/withdrawal-request.service";
 import Toast from "@/components/Toast";
@@ -290,6 +291,14 @@ export default function WithdrawalManagement() {
               <ChevronDown size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" />
             </div>
           </div>
+
+          {/* Batch Processing Link */}
+          <Link href="/admin/withdrawals/batches">
+            <button className="h-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground border border-primary rounded-md text-xs sm:text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+              <Layers size={14} className="sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Batch Processing</span>
+            </button>
+          </Link>
 
           {/* Export Button */}
           <div className="relative" ref={exportRef}>

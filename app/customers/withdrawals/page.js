@@ -12,9 +12,12 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from "lucide-react";
 import withdrawalsService from "../../../services/customer/withdrawal.service";
+import KYCService from "@/services/customer/kyc.service";
+import Link from "next/link";
 import Toast from "@/components/Toast";
 
 const StatusBadge = ({ status }) => {
@@ -49,6 +52,7 @@ export default function WithdrawalsPage() {
   const router = useRouter();
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [withdrawalType, setWithdrawalType] = useState("money");
   const [amount, setAmount] = useState("");
   const [grams, setGrams] = useState("");
@@ -61,6 +65,31 @@ export default function WithdrawalsPage() {
   const [withdrawalHistory, setWithdrawalHistory] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // KYC State
+  const [kycVerified, setKycVerified] = useState(false);
+  const [checkingKYC, setCheckingKYC] = useState(true);
+
+  // Check KYC Status
+  useEffect(() => {
+    const checkKYC = async () => {
+      try {
+        const response = await KYCService.getKYCStatus();
+        const status = response.data?.status || response.data?.kycStatus || "pending";
+        if (status.toLowerCase() === 'approved' || status.toLowerCase() === 'verified') {
+          setKycVerified(true);
+        } else {
+          setKycVerified(false);
+        }
+      } catch (error) {
+        console.error("KYC Check Error", error);
+        setKycVerified(false);
+      } finally {
+        setCheckingKYC(false);
+      }
+    };
+    checkKYC();
+  }, []);
 
   // Derived state: how much gold is required for the current request
   const requiredGramsForMoney =
@@ -90,9 +119,11 @@ export default function WithdrawalsPage() {
   };
 
   // Fetch initial data
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (isRefresh = false) => {
     try {
-      setLoadingData(true);
+      if (!isRefresh) {
+        setLoadingData(true);
+      }
 
       // Fetch available gold and current rate
       const goldResponse = await withdrawalsService.checkAvailableGold();
@@ -121,7 +152,7 @@ export default function WithdrawalsPage() {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      await fetchInitialData();
+      await fetchInitialData(true);
       setToast({
         message: "Data refreshed successfully",
         type: "success"
@@ -141,12 +172,16 @@ export default function WithdrawalsPage() {
   // Handle withdrawal submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || validating) return;
 
     try {
+      setValidating(true);
+
       // Validate input
       if (withdrawalType === "money") {
         if (!amount || amount <= 0) {
           setToast({ message: "Please enter a valid amount", type: "error" });
+          setValidating(false);
           return;
         }
 
@@ -159,11 +194,13 @@ export default function WithdrawalsPage() {
 
         if (!validation.data.isSufficient) {
           setToast({ message: validation.data.message, type: "error" });
+          setValidating(false);
           return;
         }
       } else if (withdrawalType === "physical" || withdrawalType === "jewellery") {
         if (!grams || grams <= 0) {
           setToast({ message: "Please enter valid gold grams", type: "error" });
+          setValidating(false);
           return;
         }
 
@@ -176,15 +213,18 @@ export default function WithdrawalsPage() {
 
         if (!validation.data.isSufficient) {
           setToast({ message: validation.data.message, type: "error" });
+          setValidating(false);
           return;
         }
 
         if (!address && !pickupLocation) {
           setToast({ message: "Please provide address or pickup location", type: "error" });
+          setValidating(false);
           return;
         }
       }
 
+      setValidating(false);
       setLoading(true);
 
       // Map frontend types to backend types
@@ -231,6 +271,7 @@ export default function WithdrawalsPage() {
       });
     } finally {
       setLoading(false);
+      setValidating(false);
     }
   };
 
@@ -332,191 +373,211 @@ export default function WithdrawalsPage() {
         {/* LEFT COLUMN: Withdrawal Form (Span 2) */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
 
-          {/* Withdrawal Type Selection */}
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
-              <ArrowUpCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
-              <h3 className="text-base sm:text-lg font-semibold text-foreground">Request Withdrawal</h3>
+          {/* Withdrawal Form or KYC Lock */}
+          {checkingKYC ? (
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-8 flex items-center justify-center">
+              <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
-              {/* Withdrawal Type */}
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Withdrawal Type</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawalType("money")}
-                    className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "money"
-                      ? "bg-primary/10 border-primary text-primary"
-                      : "bg-background border-input hover:bg-muted"
-                      }`}
-                  >
-                    <Wallet size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
-                    <p className="font-medium text-[11px] sm:text-xs md:text-sm">Money Payout</p>
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert gold to cash</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawalType("physical")}
-                    className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "physical"
-                      ? "bg-primary/10 border-primary text-primary"
-                      : "bg-background border-input hover:bg-muted"
-                      }`}
-                  >
-                    <Coins size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
-                    <p className="font-medium text-[11px] sm:text-xs md:text-sm">Physical Gold</p>
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Get physical gold</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawalType("jewellery")}
-                    className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "jewellery"
-                      ? "bg-primary/10 border-primary text-primary"
-                      : "bg-background border-input hover:bg-muted"
-                      }`}
-                  >
-                    <Gem size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
-                    <p className="font-medium text-[11px] sm:text-xs md:text-sm">Jewellery</p>
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert to jewellery</p>
-                  </button>
-                </div>
+          ) : !kycVerified ? (
+            <div className="bg-card border border-destructive/20 rounded-lg sm:rounded-xl p-6 md:p-10 text-center space-y-4 shadow-sm">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground">KYC Verification Required</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                To ensure security and compliance, you must complete your KYC verification before making any withdrawals.
+              </p>
+              <div className="pt-2">
+                <Link href="/customers/kyc-page" className="inline-flex items-center justify-center px-6 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity">
+                  Complete Verification
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* Withdrawal Type Selection */
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
+                <ArrowUpCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground">Request Withdrawal</h3>
               </div>
 
-              {/* Amount or Grams Input */}
-              {withdrawalType === "money" ? (
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+                {/* Withdrawal Type */}
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Amount (₹)</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter amount to withdraw"
-                      className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                      required
-                      min="1"
-                    />
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Withdrawal Type</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
                     <button
                       type="button"
-                      onClick={handleCalculate}
-                      className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                      onClick={() => setWithdrawalType("money")}
+                      className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "money"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-input hover:bg-muted"
+                        }`}
                     >
-                      Calculate
+                      <Wallet size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
+                      <p className="font-medium text-[11px] sm:text-xs md:text-sm">Money Payout</p>
+                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert gold to cash</p>
                     </button>
-                  </div>
-                  {amount && currentGoldRate > 0 && (
-                    <p
-                      className={`text-[9px] sm:text-[10px] md:text-xs ${
-                        isExceedingForMoney ? "text-destructive" : "text-muted-foreground"
-                      }`}
-                    >
-                      Will require: {requiredGramsForMoney.toFixed(4)}g of gold{" "}
-                      {isExceedingForMoney &&
-                        `(available: ${availableGold.toFixed(4)}g, reduce amount)`}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Gold (grams)</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={grams}
-                      onChange={(e) => setGrams(e.target.value)}
-                      placeholder="Enter gold grams"
-                      step="0.01"
-                      className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                      required
-                      min="0.01"
-                    />
                     <button
                       type="button"
-                      onClick={handleCalculate}
-                      className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                      onClick={() => setWithdrawalType("physical")}
+                      className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "physical"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-input hover:bg-muted"
+                        }`}
                     >
-                      Calculate
+                      <Coins size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
+                      <p className="font-medium text-[11px] sm:text-xs md:text-sm">Physical Gold</p>
+                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Get physical gold</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawalType("jewellery")}
+                      className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "jewellery"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-input hover:bg-muted"
+                        }`}
+                    >
+                      <Gem size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
+                      <p className="font-medium text-[11px] sm:text-xs md:text-sm">Jewellery</p>
+                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert to jewellery</p>
                     </button>
                   </div>
-                  {grams && currentGoldRate > 0 && (
-                    <p
-                      className={`text-[9px] sm:text-[10px] md:text-xs ${
-                        isExceedingForGold ? "text-destructive" : "text-muted-foreground"
-                      }`}
-                    >
-                      Estimated value: {formatINR(parseFloat(grams) * currentGoldRate)}{" "}
-                      {isExceedingForGold &&
-                        `(available: ${availableGold.toFixed(4)}g, reduce grams)`}
-                    </p>
-                  )}
                 </div>
-              )}
 
-              {/* Address or Pickup Location */}
-              {(withdrawalType === "physical" || withdrawalType === "jewellery") && (
-                <div className="space-y-3 sm:space-y-4">
+                {/* Amount or Grams Input */}
+                {withdrawalType === "money" ? (
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Delivery Address</label>
-                    <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter complete delivery address"
-                      className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
-                    />
-                  </div>
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border"></span>
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Amount (₹)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="Enter amount to withdraw"
+                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        required
+                        min="1"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCalculate}
+                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                      >
+                        Calculate
+                      </button>
                     </div>
-                    <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">OR</span>
-                    </div>
+                    {amount && currentGoldRate > 0 && (
+                      <p
+                        className={`text-[9px] sm:text-[10px] md:text-xs ${isExceedingForMoney ? "text-destructive" : "text-muted-foreground"
+                          }`}
+                      >
+                        Will require: {requiredGramsForMoney.toFixed(4)}g of gold{" "}
+                        {isExceedingForMoney &&
+                          `(available: ${availableGold.toFixed(4)}g, reduce amount)`}
+                      </p>
+                    )}
                   </div>
+                ) : (
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Pickup Location</label>
-                    <input
-                      type="text"
-                      value={pickupLocation}
-                      onChange={(e) => setPickupLocation(e.target.value)}
-                      placeholder="Enter store/pickup location"
-                      className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                    />
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Gold (grams)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={grams}
+                        onChange={(e) => setGrams(e.target.value)}
+                        placeholder="Enter gold grams"
+                        step="0.01"
+                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        required
+                        min="0.01"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCalculate}
+                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                      >
+                        Calculate
+                      </button>
+                    </div>
+                    {grams && currentGoldRate > 0 && (
+                      <p
+                        className={`text-[9px] sm:text-[10px] md:text-xs ${isExceedingForGold ? "text-destructive" : "text-muted-foreground"
+                          }`}
+                      >
+                        Estimated value: {formatINR(parseFloat(grams) * currentGoldRate)}{" "}
+                        {isExceedingForGold &&
+                          `(available: ${availableGold.toFixed(4)}g, reduce grams)`}
+                      </p>
+                    )}
                   </div>
+                )}
+
+                {/* Address or Pickup Location */}
+                {(withdrawalType === "physical" || withdrawalType === "jewellery") && (
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Delivery Address</label>
+                      <textarea
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter complete delivery address"
+                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
+                      />
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border"></span>
+                      </div>
+                      <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">OR</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Pickup Location</label>
+                      <input
+                        type="text"
+                        value={pickupLocation}
+                        onChange={(e) => setPickupLocation(e.target.value)}
+                        placeholder="Enter store/pickup location"
+                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Info Card */}
+                <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                    <strong className="text-foreground">Note:</strong> {withdrawalType === "money"
+                      ? "Money will be transferred to your registered bank account within 24-48 hours after approval."
+                      : withdrawalType === "physical"
+                        ? "Physical gold will be delivered to your address or can be picked up from our store."
+                        : "Jewellery conversion will be processed and delivered to your address or available for pickup."
+                    }
+                  </p>
                 </div>
-              )}
 
-              {/* Info Card */}
-              <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> {withdrawalType === "money"
-                    ? "Money will be transferred to your registered bank account within 24-48 hours after approval."
-                    : withdrawalType === "physical"
-                      ? "Physical gold will be delivered to your address or can be picked up from our store."
-                      : "Jewellery conversion will be processed and delivered to your address or available for pickup."
-                  }
-                </p>
-              </div>
-
-              <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || isInsufficientGold}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ArrowUpCircle size={14} className="sm:w-4 sm:h-4" /> <span>Submit Request</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading || validating || isInsufficientGold}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading || validating ? (
+                      <>
+                        <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>{validating ? "Validating..." : "Submitting..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUpCircle size={14} className="sm:w-4 sm:h-4" /> <span>Submit Request</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: Withdrawal History (Span 1) */}
