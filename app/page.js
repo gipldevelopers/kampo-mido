@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import AuthService from "@/services/auth.service";
 import Toast from "@/components/Toast";
-import { Eye, EyeOff, Shield, Gem, Lock, User, Mail, Phone, ArrowRight, Sparkles, TrendingUp, Award } from "lucide-react";
+import { Eye, EyeOff, Shield, Gem, Lock, User, Mail, ArrowRight, Sparkles, TrendingUp, Award } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,13 +17,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState("email");
 
-  // Clear input when switching tabs
-  useEffect(() => {
-    setLoginInput("");
-    setToast(null);
-  }, [activeTab]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -60,11 +54,7 @@ export default function LoginPage() {
         password,
       };
 
-      if (activeTab === "email") {
-        credentials.email = loginInput.trim().toLowerCase();
-      } else {
-        credentials.phone = loginInput.trim();
-      }
+      credentials.email = loginInput.trim().toLowerCase();
 
       const { user, token } = await AuthService.login(credentials);
 
@@ -261,57 +251,27 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-600">Access your gold portfolio</p>
               </div>
 
-              {/* Login Tabs */}
-              <div className="bg-gray-50 rounded-xl p-1">
-                <div className="flex">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("email")}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === "email"
-                      ? "bg-white text-gray-900 shadow-md"
-                      : "text-gray-600 hover:text-gray-900"
-                      }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>Email</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("phone")}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === "phone"
-                      ? "bg-white text-gray-900 shadow-md"
-                      : "text-gray-600 hover:text-gray-900"
-                      }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>Phone</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
+
 
               {/* Login Form */}
               <form onSubmit={handleLogin} className="space-y-4">
-                {/* Username/Email/Phone Field */}
+                {/* Email Field */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-700 ml-1">
-                    {activeTab === "email" ? "Email Address" : "Phone Number"}
+                    Email Address
                   </label>
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                      {activeTab === "email" ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                      <Mail className="w-4 h-4" />
                     </div>
                     <input
-                      type={activeTab === "email" ? "email" : "tel"}
+                      type="email"
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
                       required
                       disabled={isLoading}
                       className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all duration-300 placeholder:text-gray-400"
-                      placeholder={activeTab === "email" ? "you@example.com" : "9876543210"}
+                      placeholder="you@example.com"
                     />
                   </div>
                 </div>
