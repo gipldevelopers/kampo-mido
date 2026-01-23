@@ -327,7 +327,7 @@ export default function Dashboard() {
           </p>
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/admin/login')}
+              onClick={() => router.push('/')}
               className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity"
             >
               Go to Login
