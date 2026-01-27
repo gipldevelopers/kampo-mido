@@ -148,7 +148,7 @@ export default function ApproveDeposits() {
         const tableRows = filteredDeposits.map(deposit => [
             deposit.customerName,
             deposit.accountNo,
-            `₹ ${deposit.amount.toLocaleString()}`,
+            `Rs. ${deposit.amount.toLocaleString()}`,
             `${deposit.goldAmount} g`,
             deposit.status,
             formatDate(deposit.date),

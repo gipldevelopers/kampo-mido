@@ -20,8 +20,8 @@ export default function ForgotPasswordPage() {
     // Basic email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address");
-        return false;
+      setError("Please enter a valid email address");
+      return false;
     }
     setError("");
     return true;
@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
     try {
       // Call forgot password API
       await AuthService.forgotPassword(email);
-      
+
       // Success - show success state
       setIsSubmitted(true);
     } catch (error) {
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      
+
       <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-card rounded-xl border border-border shadow-lg">
         {!isSubmitted ? (
           <>
@@ -69,8 +69,8 @@ export default function ForgotPasswordPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label 
-                  htmlFor="email" 
+                <label
+                  htmlFor="email"
                   className="text-sm font-medium text-foreground"
                 >
                   Email
@@ -78,9 +78,9 @@ export default function ForgotPasswordPage() {
                 <div className="relative">
                   {/* Icon on the left side */}
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-                  <input 
+                  <input
                     id="email"
-                    type="email" 
+                    type="email"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -91,19 +91,18 @@ export default function ForgotPasswordPage() {
                     required
                     // Adjusted padding-left (pl-11) for icon spacing
                     // Adjusted py-2.5 to match the password fields
-                    className={`w-full pl-11 pr-3 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${
-                        error ? "border-destructive" : "border-input"
+                    className={`w-full pl-11 pr-3 py-2.5 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground/70 transition-all ${error ? "border-red-500" : "border-input"
                       }`}
                     placeholder="Enter your email address"
                   />
                 </div>
                 {error && (
-                  <p className="text-xs text-destructive">{error}</p>
+                  <p className="text-xs text-red-500 font-medium">{error}</p>
                 )}
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isLoading || !email} // Disable if loading or email is empty
                 className="w-full py-2 bg-primary text-primary-foreground font-semibold rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -112,8 +111,8 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="text-center text-sm">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -128,7 +127,7 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-foreground">Check your email</h2>
               <p className="text-muted-foreground">
@@ -140,7 +139,7 @@ export default function ForgotPasswordPage() {
               <p className="text-sm text-muted-foreground">
                 Didn't receive the email? Check your spam folder or try again.
               </p>
-              
+
               <button
                 onClick={() => {
                   setIsSubmitted(false);
@@ -151,8 +150,8 @@ export default function ForgotPasswordPage() {
                 Resend Email
               </button>
 
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="block w-full py-2 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 Back to login

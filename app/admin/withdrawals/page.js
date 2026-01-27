@@ -135,7 +135,7 @@ export default function WithdrawalManagement() {
       w.customer || 'N/A',
       w.typeDisplay || formatType(w.type),
       w.gramsDisplay || (w.grams ? `${w.grams.toFixed(2)} g` : 'N/A'),
-      w.approximateValueDisplay || 'N/A',
+      (w.approximateValueDisplay || 'N/A').replace('₹', 'Rs.'),
       w.date,
       w.statusDisplay || w.status
     ]);
@@ -284,7 +284,7 @@ export default function WithdrawalManagement() {
             >
               <option value="All">All Types</option>
               <option value="Money">Money</option>
-              <option value="Physical">Physical Gold</option>
+              <option value="Gold">Physical Gold</option>
               <option value="Jewellery">Jewellery</option>
             </select>
             <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">

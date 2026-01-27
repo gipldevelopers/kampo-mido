@@ -417,7 +417,7 @@ export default function AdminProfile() {
             <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-5 md:space-y-6">
               {/* Profile Picture Upload */}
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-foreground">Profile Picture</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Profile Picture <span className="text-red-500">*</span></label>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6">
                   <div className="relative shrink-0">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-muted border-2 border-border flex items-center justify-center overflow-hidden">
@@ -461,7 +461,7 @@ export default function AdminProfile() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-xs sm:text-sm font-medium text-foreground">First Name</label>
+                  <label className="text-xs sm:text-sm font-medium text-foreground">First Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={firstName}
@@ -473,7 +473,7 @@ export default function AdminProfile() {
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-xs sm:text-sm font-medium text-foreground">Last Name</label>
+                  <label className="text-xs sm:text-sm font-medium text-foreground">Last Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={lastName}
@@ -486,7 +486,7 @@ export default function AdminProfile() {
               </div>
 
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-foreground">Email Address</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Email Address <span className="text-red-500">*</span></label>
                 <input
                   type="email"
                   value={email}
@@ -538,7 +538,7 @@ export default function AdminProfile() {
 
             <form onSubmit={handleUpdateUPI} className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-foreground">UPI ID</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">UPI ID <span className="text-red-500">*</span></label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
                     type="text"

@@ -153,10 +153,10 @@ export default function DepositManagement() {
     const tableRows = filteredDeposits.map(dep => [
       dep.id,
       dep.customer,
-      `₹ ${dep.amount.toLocaleString()}`,
+      `Rs. ${dep.amount.toLocaleString()}`,
       dep.mode,
       dep.date,
-      `₹ ${dep.rate}`,
+      `Rs. ${dep.rate}`,
       `${dep.gold} g`,
       dep.status
     ]);

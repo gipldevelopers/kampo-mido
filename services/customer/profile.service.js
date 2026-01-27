@@ -19,16 +19,16 @@ class CustomerProfileService {
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      
+
       // Add text fields
-      formData.append('name', profileData.name);
+      formData.append('fullName', profileData.fullName);
       formData.append('mobile', profileData.mobile);
       formData.append('email', profileData.email);
       formData.append('address', profileData.address);
       if (profileData.city) formData.append('city', profileData.city);
       if (profileData.state) formData.append('state', profileData.state);
       if (profileData.pincode) formData.append('pincode', profileData.pincode);
-      
+
       // Add profile picture if provided
       if (profileData.profilePicture) {
         formData.append('profilePicture', profileData.profilePicture);
@@ -39,7 +39,7 @@ class CustomerProfileService {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       return response.data;
     } catch (error) {
       console.error('Update profile error:', error.response?.data || error.message);
@@ -55,7 +55,7 @@ class CustomerProfileService {
         newPassword: passwordData.newPassword,
         confirmPassword: passwordData.confirmPassword
       });
-      
+
       return response.data;
     } catch (error) {
       console.error('Change password error:', error.response?.data || error.message);

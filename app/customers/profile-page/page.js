@@ -46,6 +46,8 @@ export default function CustomerProfile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
+
   // Fetch profile data on component mount
   useEffect(() => {
     fetchProfileData();
@@ -135,7 +137,7 @@ export default function CustomerProfile() {
       setLoading(true);
 
       const profileUpdateData = {
-        name: name.trim(),
+        fullName: name.trim(), // Changed key to match backend expectation
         mobile: mobile.trim(),
         email: email.trim(),
         address: address.trim(),
@@ -303,7 +305,11 @@ export default function CustomerProfile() {
                       <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-muted border-2 border-border flex items-center justify-center overflow-hidden">
                         {profilePicturePreview ? (
                           <img
-                            src={profilePicturePreview}
+                            src={
+                              profilePicturePreview.startsWith('http') || profilePicturePreview.startsWith('data:')
+                                ? profilePicturePreview
+                                : `${baseURL}/${profilePicturePreview}`
+                            }
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />
@@ -341,7 +347,7 @@ export default function CustomerProfile() {
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Full Name</label>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Full Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={name}
@@ -354,7 +360,7 @@ export default function CustomerProfile() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Mobile Number</label>
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Mobile Number <span className="text-red-500">*</span></label>
                     <input
                       type="tel"
                       value={mobile}
@@ -366,7 +372,7 @@ export default function CustomerProfile() {
                   </div>
 
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Email Address</label>
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Email Address <span className="text-red-500">*</span></label>
                     <input
                       type="email"
                       value={email}
@@ -379,7 +385,7 @@ export default function CustomerProfile() {
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Address</label>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">Address <span className="text-red-500">*</span></label>
                   <textarea
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -597,10 +603,10 @@ export default function CustomerProfile() {
             </div>
 
           </div>
-
         </div>
       )}
 
     </div>
   );
 }
+

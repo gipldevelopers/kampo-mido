@@ -144,15 +144,31 @@ export default function KYCPage() {
         } else if (rawStatus === "rejected") {
           finalStatus = "Rejected";
           locked = false; // Allow fix
+          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "reupload_requested" || rawStatus === "action_required") {
           finalStatus = "Re-upload Requested";
           locked = false; // Allow fix
+          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "pending") {
           finalStatus = "Pending";
           // Only lock if we have documents in local storage indicating an active submission
           const submitted = typeof window !== "undefined" ? localStorage.getItem("kycSubmitted") : null;
           if (submitted === "true") {
             locked = true;
+          }
+        }
+
+
+        // Override lock if re-upload is explicitly allowed
+        if (data?.canReupload) {
+          locked = false;
+          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
+
+          // Use more specific status if available
+          if (finalStatus === "Pending") {
+            finalStatus = (data.documentsToReupload && data.documentsToReupload.length > 0)
+              ? "Re-upload Requested"
+              : "Rejected";
           }
         }
 
