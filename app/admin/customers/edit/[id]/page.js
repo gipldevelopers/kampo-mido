@@ -128,7 +128,7 @@ export default function EditCustomer({ params }) {
           {/* Personal Info Group */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Full Name</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Full Name <span className="text-red-500">*</span></label>
               <input
                 name="fullName"
                 type="text"
@@ -139,7 +139,7 @@ export default function EditCustomer({ params }) {
               />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Email Address</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Email Address <span className="text-red-500">*</span></label>
               <input
                 name="email"
                 type="email"
@@ -153,7 +153,7 @@ export default function EditCustomer({ params }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Mobile Number</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Mobile Number <span className="text-red-500">*</span></label>
               <input
                 name="mobile"
                 type="tel"
@@ -164,25 +164,27 @@ export default function EditCustomer({ params }) {
               />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">WhatsApp Number</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">WhatsApp Number <span className="text-red-500">*</span></label>
               <input
                 name="whatsapp"
                 type="tel"
                 value={formData.whatsapp}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Gender</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Gender <span className="text-red-500">*</span></label>
               <select
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               >
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
@@ -191,89 +193,80 @@ export default function EditCustomer({ params }) {
               </select>
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Date of Birth</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Date of Birth <span className="text-red-500">*</span></label>
               <input
                 name="dob"
                 type="date"
                 value={formData.dob}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               />
             </div>
           </div>
 
           <div className="space-y-1.5 sm:space-y-2">
-            <label className="text-xs sm:text-sm font-medium text-foreground">Address</label>
+            <label className="text-xs sm:text-sm font-medium text-foreground">Address <span className="text-red-500">*</span></label>
             <textarea
               name="address"
               value={formData.address}
               onChange={handleChange}
               className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
+              required
             ></textarea>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">City</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">City <span className="text-red-500">*</span></label>
               <input
                 name="city"
                 type="text"
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">State</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">State <span className="text-red-500">*</span></label>
               <input
                 name="state"
                 type="text"
                 value={formData.state}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Pincode</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">Pincode <span className="text-red-500">*</span></label>
               <input
                 name="pincode"
                 type="text"
                 value={formData.pincode}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">KYC Status</label>
+              <label className="text-xs sm:text-sm font-medium text-foreground">KYC Status <span className="text-red-500">*</span></label>
               <select
                 name="kycStatus"
                 value={formData.kycStatus}
                 onChange={handleChange}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
               >
-                <option value="verified">Verified</option>
+                <option value="approved">Approved</option>
                 <option value="pending">Pending</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            {/* Account Status often managed separately or via block/unblock actions, keeping if needed but might need API support
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-foreground">Account Status</label>
-              <select 
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
-              </select>
-            </div>
-            */}
           </div>
 
           <div className="pt-3 sm:pt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">

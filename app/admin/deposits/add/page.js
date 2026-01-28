@@ -12,7 +12,7 @@ export default function AddDeposit() {
   const [loading, setLoading] = useState(false);
   const [fetchingRate, setFetchingRate] = useState(true);
   const [fetchingCustomers, setFetchingCustomers] = useState(true);
-  
+
   // Form State
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -32,7 +32,7 @@ export default function AddDeposit() {
       setFetchingRate(true);
       try {
         const response = await GoldRateService.getCurrentRate();
-        
+
         // Handle different response structures
         let rate = null;
         if (response.data) {
@@ -40,7 +40,7 @@ export default function AddDeposit() {
         } else if (response.ratePerGram || response.rate) {
           rate = response.ratePerGram || response.rate;
         }
-        
+
         if (rate) {
           setGoldRate(rate);
         } else {
@@ -64,7 +64,7 @@ export default function AddDeposit() {
       setFetchingCustomers(true);
       try {
         const response = await CustomerService.getAllCustomers();
-        
+
         // Handle different response structures
         let customersData = [];
         if (response.data && Array.isArray(response.data)) {
@@ -74,7 +74,7 @@ export default function AddDeposit() {
         } else if (response.customers && Array.isArray(response.customers)) {
           customersData = response.customers;
         }
-        
+
         // Format customers data
         const formattedCustomers = customersData.map((customer) => ({
           id: customer.id || customer.userId,
@@ -82,7 +82,7 @@ export default function AddDeposit() {
           accountNumber: customer.accountNumber || customer.customerCode || "N/A",
           displayName: `${customer.fullName || `${customer.user?.firstname || ''} ${customer.user?.lastname || ''}`.trim() || "N/A"} (${customer.accountNumber || customer.customerCode || "N/A"})`
         }));
-        
+
         setCustomers(formattedCustomers);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -108,7 +108,7 @@ export default function AddDeposit() {
       setFetchingDeposits(true);
       try {
         const response = await DepositService.getCustomerDeposits(selectedCustomer);
-        
+
         // Handle different response structures
         let depositsData = [];
         if (response.data && Array.isArray(response.data)) {
@@ -118,24 +118,21 @@ export default function AddDeposit() {
         } else if (response.deposits && Array.isArray(response.deposits)) {
           depositsData = response.deposits;
         }
-        
+
         // Format deposits data - store full deposit object for auto-fill
         // Filter out converted and processing deposits (only show pending and approved)
         const formattedDeposits = depositsData
           .filter((deposit) => {
-            // Exclude deposits that are already converted or being processed
-            return !deposit.isConverted && 
-                   deposit.status !== "converted" && 
-                   deposit.status !== "Converted" &&
-                   deposit.status !== "processing" &&
-                   deposit.status !== "Processing";
+            // Only show approved deposits (allow case-insensitive check and ensure not already converted)
+            return !deposit.isConverted &&
+              (deposit.status === "approved" || deposit.status === "Approved");
           })
           .map((deposit) => {
             const depositDate = deposit.depositDate || deposit.date || deposit.createdAt;
             // Get all possible field names from the deposit object
             const upiRef = deposit.upiReference || deposit.upiRef || deposit.upiReferenceNumber || "";
             const adminNotes = deposit.notes || deposit.adminNotes || deposit.note || "";
-            
+
             return {
               id: deposit.id || deposit.depositId,
               amount: deposit.amount || 0,
@@ -153,7 +150,7 @@ export default function AddDeposit() {
               displayName: `₹ ${(deposit.amount || 0).toLocaleString()} - ${deposit.status || "Pending"} (${depositDate ? new Date(depositDate).toLocaleDateString('en-IN') : "N/A"})`
             };
           });
-        
+
         setDeposits(formattedDeposits);
       } catch (error) {
         console.error("Error fetching deposits:", error);
@@ -173,19 +170,19 @@ export default function AddDeposit() {
     if (selectedDeposit && deposits.length > 0) {
       // Convert both to string for comparison to handle type mismatches
       const deposit = deposits.find(d => String(d.id) === String(selectedDeposit));
-      
+
       if (deposit) {
         console.log("Found deposit for auto-fill:", deposit);
-        
+
         // Auto-fill amount - always set if deposit has amount
         if (deposit.amount !== undefined && deposit.amount !== null && deposit.amount !== 0) {
           setAmount(deposit.amount.toString());
         }
-        
+
         // Auto-fill UPI reference (check both formatted and fullData)
         const upiRef = deposit.upiReference || deposit.fullData?.upiReference || deposit.fullData?.upiRef || "";
         setUpiReference(upiRef); // Set even if empty to clear previous value
-        
+
         // Auto-fill date & time
         const dateValue = deposit.rawDate || deposit.fullData?.depositDate || deposit.fullData?.date || deposit.fullData?.createdAt;
         if (dateValue) {
@@ -200,7 +197,7 @@ export default function AddDeposit() {
             console.error("Error formatting date:", error, dateValue);
           }
         }
-        
+
         // Auto-fill admin notes (check both formatted and fullData)
         const notes = deposit.notes || deposit.fullData?.notes || deposit.fullData?.adminNotes || "";
         setAdminNotes(notes); // Set even if empty to clear previous value
@@ -227,7 +224,7 @@ export default function AddDeposit() {
       setToast({ message: "Please select a customer", type: "error" });
       return;
     }
-    if(!amount || amount <= 0) {
+    if (!amount || amount <= 0) {
       setToast({ message: "Please enter a valid amount", type: "error" });
       return;
     }
@@ -235,19 +232,19 @@ export default function AddDeposit() {
       setToast({ message: "Please select a deposit to process", type: "error" });
       return;
     }
-    
+
     setLoading(true);
     try {
       await DepositService.processDeposit(selectedDeposit, adminNotes || "");
       setToast({ message: "Deposit processed & Gold credited!", type: "success" });
-      
+
       // Reset form after successful submission
       setSelectedDeposit("");
       setAmount("");
       setUpiReference("");
       setDepositDateTime(new Date().toISOString().slice(0, 16));
       setAdminNotes("");
-      
+
       // Optionally refresh deposits list
       // You can uncomment this if you want to refresh the deposits dropdown
       // const response = await DepositService.getCustomerDeposits(selectedCustomer);
@@ -263,7 +260,7 @@ export default function AddDeposit() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative">
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -281,15 +278,15 @@ export default function AddDeposit() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-        
+
         {/* Left: Input Form */}
         <div className="lg:col-span-2 bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
-            
+
             <div className="space-y-1.5 sm:space-y-2">
               <label className="text-xs sm:text-sm font-medium text-foreground">Select Customer</label>
               <div className="relative">
-                <select 
+                <select
                   value={selectedCustomer}
                   onChange={(e) => setSelectedCustomer(e.target.value)}
                   disabled={fetchingCustomers}
@@ -324,7 +321,7 @@ export default function AddDeposit() {
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Select Deposit (Optional)</label>
                 <div className="relative">
-                  <select 
+                  <select
                     value={selectedDeposit}
                     onChange={(e) => {
                       const depositId = e.target.value;
@@ -332,24 +329,24 @@ export default function AddDeposit() {
                         setSelectedDeposit("");
                         return;
                       }
-                      
+
                       // Check if selected deposit is converted or processing
                       const selectedDepositData = deposits.find(d => String(d.id) === String(depositId));
                       if (selectedDepositData && (
-                        selectedDepositData.isConverted || 
-                        selectedDepositData.status === "converted" || 
+                        selectedDepositData.isConverted ||
+                        selectedDepositData.status === "converted" ||
                         selectedDepositData.status === "Converted" ||
                         selectedDepositData.status === "processing" ||
                         selectedDepositData.status === "Processing"
                       )) {
-                        setToast({ 
-                          message: "Cannot select a deposit that has already been converted to gold or is being processed. Please select a pending or approved deposit.", 
-                          type: "error" 
+                        setToast({
+                          message: "Please select an approved deposit. Converted or processing deposits cannot be selected.",
+                          type: "error"
                         });
                         setSelectedDeposit("");
                         return;
                       }
-                      
+
                       setSelectedDeposit(depositId);
                     }}
                     disabled={fetchingDeposits}
@@ -365,7 +362,7 @@ export default function AddDeposit() {
                         </option>
                       ))
                     ) : (
-                      <option value="" disabled>No pending deposits found for this customer</option>
+                      <option value="" disabled>No approved deposits found for this customer</option>
                     )}
                   </select>
                   <div className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -376,28 +373,28 @@ export default function AddDeposit() {
                     )}
                   </div>
                 </div>
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Select a pending deposit to auto-fill all fields (converted deposits are excluded)</p>
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Select an approved deposit to auto-fill all fields</p>
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Deposit Amount (₹)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
-                  placeholder="e.g. 50000" 
+                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  placeholder="e.g. 50000"
                 />
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Payment Mode</label>
-                <input 
-                  type="text" 
-                  value="UPI" 
+                <input
+                  type="text"
+                  value="UPI"
                   readOnly
-                  className="w-full px-3 py-2 sm:py-2.5 bg-muted border border-input rounded-md text-sm text-muted-foreground cursor-not-allowed" 
+                  className="w-full px-3 py-2 sm:py-2.5 bg-muted border border-input rounded-md text-sm text-muted-foreground cursor-not-allowed"
                 />
               </div>
             </div>
@@ -405,28 +402,28 @@ export default function AddDeposit() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">UPI Reference No.</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={upiReference}
                   onChange={(e) => setUpiReference(e.target.value)}
-                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
-                  placeholder="Txn ID from payment app" 
+                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  placeholder="Txn ID from payment app"
                 />
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Date & Time</label>
-                <input 
-                  type="datetime-local" 
+                <input
+                  type="datetime-local"
                   value={depositDateTime}
                   onChange={(e) => setDepositDateTime(e.target.value)}
-                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
+                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
               <label className="text-xs sm:text-sm font-medium text-foreground">Admin Notes</label>
-              <textarea 
+              <textarea
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
                 className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
@@ -440,8 +437,8 @@ export default function AddDeposit() {
                   Cancel
                 </button>
               </Link>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -466,7 +463,7 @@ export default function AddDeposit() {
             <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
               <Calculator size={16} className="sm:w-[18px] sm:h-[18px] text-primary shrink-0" /> <span>Conversion Preview</span>
             </h3>
-            
+
             <div className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center text-xs sm:text-sm">
                 <span className="text-muted-foreground">Current Gold Rate:</span>
@@ -481,7 +478,7 @@ export default function AddDeposit() {
                   <span className="text-muted-foreground">N/A</span>
                 )}
               </div>
-              
+
               <div className="flex justify-between items-center text-xs sm:text-sm">
                 <span className="text-muted-foreground">Deposit Amount:</span>
                 <span className="font-medium text-foreground break-words">₹ {amount || 0}</span>
