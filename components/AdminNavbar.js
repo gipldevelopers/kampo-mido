@@ -201,13 +201,12 @@ export default function AdminNavbar({ onMenuClick }) {
         <div className="hidden md:flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground flex-1 min-w-0 overflow-hidden">
           {breadcrumbs.length > 0 && (
             <>
-              <button
-                onClick={() => router.push("/admin/dashboard")}
-                className="p-1 hover:text-foreground transition-colors shrink-0"
+              <div
+                className="p-1 shrink-0"
                 aria-label="Home"
               >
                 <Home className="w-3.5 h-3.5" />
-              </button>
+              </div>
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center gap-1.5 shrink-0">
                   <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
@@ -216,12 +215,11 @@ export default function AdminNavbar({ onMenuClick }) {
                       {crumb.label}
                     </span>
                   ) : (
-                    <button
-                      onClick={() => router.push(crumb.path)}
-                      className="hover:text-foreground transition-colors truncate max-w-[120px] sm:max-w-[150px]"
+                    <span
+                      className="truncate max-w-[120px] sm:max-w-[150px]"
                     >
                       {crumb.label}
-                    </button>
+                    </span>
                   )}
                 </div>
               ))}

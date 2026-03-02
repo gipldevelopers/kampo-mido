@@ -563,21 +563,6 @@ export default function Dashboard() {
                 <Loader2 size={14} className="animate-spin text-muted-foreground" />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={refreshTransactions}
-                disabled={loading.transactions}
-                className="text-[10px] sm:text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                {loading.transactions ? 'Refreshing...' : 'Refresh'}
-              </button>
-              <Link
-                href="/admin/transactions"
-                className="text-[10px] sm:text-xs text-primary hover:underline"
-              >
-                View All
-              </Link>
-            </div>
           </div>
 
           <div className="flex-1 overflow-auto">

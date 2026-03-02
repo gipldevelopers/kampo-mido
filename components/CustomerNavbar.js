@@ -160,13 +160,13 @@ export default function CustomerNavbar({ onMenuClick }) {
       breadcrumbs.push({ label: "Dashboard", path: "/customers/dashboard" });
     } else {
       breadcrumbs.push({ label: "Dashboard", path: "/customers/dashboard" });
-      
+
       // Build breadcrumbs from path segments
       let currentPath = "";
       pathSegments.forEach((segment, index) => {
         currentPath += `/${segment}`;
         const label = routeMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
-        
+
         // Skip if it's a dynamic ID segment (numeric or UUID-like)
         if (segment.match(/^\d+$/) || segment.length > 20) {
           const prevSegment = pathSegments[index - 1];
@@ -199,18 +199,17 @@ export default function CustomerNavbar({ onMenuClick }) {
             <Menu className="w-5 h-5" />
           </button>
         )}
-        
+
         {/* Breadcrumbs */}
         <div className="hidden md:flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground flex-1 min-w-0 overflow-hidden">
           {breadcrumbs.length > 0 && (
             <>
-              <button
-                onClick={() => router.push("/customers/dashboard")}
-                className="p-1 hover:text-foreground transition-colors shrink-0"
+              <div
+                className="p-1 shrink-0"
                 aria-label="Home"
               >
                 <Home className="w-3.5 h-3.5" />
-              </button>
+              </div>
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center gap-1.5 shrink-0">
                   <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
@@ -219,12 +218,11 @@ export default function CustomerNavbar({ onMenuClick }) {
                       {crumb.label}
                     </span>
                   ) : (
-                    <button
-                      onClick={() => router.push(crumb.path)}
-                      className="hover:text-foreground transition-colors truncate max-w-[120px] sm:max-w-[150px]"
+                    <span
+                      className="truncate max-w-[120px] sm:max-w-[150px]"
                     >
                       {crumb.label}
-                    </button>
+                    </span>
                   )}
                 </div>
               ))}
