@@ -119,13 +119,13 @@ export default function LoginPage() {
             <div className="relative w-12 h-12 rounded-lg shadow-lg overflow-hidden">
               <Image
                 src="/logo/logo.jpeg"
-                alt="Kampo Mido Logo"
+                alt="Gold Harvesting Platform"
                 fill
                 className="object-cover"
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Kampo Mido</h1>
+              <h1 className="text-xl font-bold text-gray-900">Gold Harvesting Platform</h1>
               <p className="text-xs text-gray-600">Digital Gold Platform</p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function LoginPage() {
                   <div className="relative w-16 h-16 mx-auto mb-2 rounded-lg overflow-hidden shadow-sm">
                     <Image
                       src="/logo/logo.jpeg"
-                      alt="Kampo Mido Logo"
+                      alt="Gold Harvesting Platform"
                       fill
                       className="object-cover"
                     />
@@ -234,13 +234,13 @@ export default function LoginPage() {
               <div className="relative w-10 h-10 rounded-md overflow-hidden">
                 <Image
                   src="/logo/logo.jpeg"
-                  alt="Kampo Mido Logo"
+                  alt="Gold Harvesting Platform"
                   fill
                   className="object-cover"
                 />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Kampo Mido</h1>
+                <h1 className="text-lg font-bold text-gray-900">Gold Harvesting Platform</h1>
               </div>
             </div>
 

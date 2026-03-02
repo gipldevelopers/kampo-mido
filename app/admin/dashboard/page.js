@@ -353,7 +353,7 @@ export default function Dashboard() {
         <div>
           <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
           <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">
-            Welcome to Kampo Mido Jewellers Admin Panel
+            Welcome to Gold Harvesting Platform Jewellers Admin Panel
             <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-[9px]">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>

@@ -123,10 +123,10 @@ export default function NotificationManagement() {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingTemplateContent, setEditingTemplateContent] = useState("");
   const [templates, setTemplates] = useState({
-    weeklyGoldUpdate: "Dear {{customer_name}},\n\nYour weekly gold value update:\n\nCurrent Gold Holdings: {{gold_amount}} g\nCurrent Rate: ₹{{gold_rate}}/g\nTotal Value: ₹{{total_value}}\n\nThank you for choosing Kampo Mido Jewellers.",
-    kycApproval: "Dear {{customer_name}},\n\nCongratulations! Your KYC has been approved.\n\nYour account is now fully verified and you can enjoy all platform features.\n\nAccount Number: {{account_no}}\n\nThank you,\nKampo Mido Jewellers",
-    withdrawalConfirmation: "Dear {{customer_name}},\n\nYour withdrawal request has been confirmed.\n\nAmount: ₹{{amount}}\nTransaction ID: {{txn_id}}\nStatus: {{status}}\n\nYour funds will be processed within 24-48 hours.\n\nThank you,\nKampo Mido Jewellers",
-    depositConfirmation: "Dear {{customer_name}},\n\nYour deposit has been successfully received.\n\nAmount: ₹{{amount}}\nGold Added: {{gold_amount}} g\nTransaction ID: {{txn_id}}\n\nThank you for your trust in Kampo Mido Jewellers."
+    weeklyGoldUpdate: "Dear {{customer_name}},\n\nYour weekly gold value update:\n\nCurrent Gold Holdings: {{gold_amount}} g\nCurrent Rate: ₹{{gold_rate}}/g\nTotal Value: ₹{{total_value}}\n\nThank you for choosing Gold Harvesting Platform.",
+    kycApproval: "Dear {{customer_name}},\n\nCongratulations! Your KYC has been approved.\n\nYour account is now fully verified and you can enjoy all platform features.\n\nAccount Number: {{account_no}}\n\nThank you,\nGold Harvesting Platform",
+    withdrawalConfirmation: "Dear {{customer_name}},\n\nYour withdrawal request has been confirmed.\n\nAmount: ₹{{amount}}\nTransaction ID: {{txn_id}}\nStatus: {{status}}\n\nYour funds will be processed within 24-48 hours.\n\nThank you,\nGold Harvesting Platform",
+    depositConfirmation: "Dear {{customer_name}},\n\nYour deposit has been successfully received.\n\nAmount: ₹{{amount}}\nGold Added: {{gold_amount}} g\nTransaction ID: {{txn_id}}\n\nThank you for your trust in Gold Harvesting Platform."
   });
 
   const handleSave = (section) => {

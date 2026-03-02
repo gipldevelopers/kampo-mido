@@ -8,7 +8,7 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Kampo Mido Jewellers",
+  title: "Gold Harvesting Platform",
   description: "Admin Management System",
 };
 

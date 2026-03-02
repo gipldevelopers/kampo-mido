@@ -62,13 +62,13 @@ export default function CustomerSidebar({ onClose }) {
               <div className="relative w-8 h-8 md:w-10 md:h-10 shrink-0 overflow-hidden rounded-md border border-sidebar-border/50">
                 <Image
                   src="/logo/logo.jpeg"
-                  alt="Kampo Mido Logo"
+                  alt="Gold Harvesting Platform Logo"
                   fill
                   className="object-cover"
                 />
               </div>
               <span className="font-bold text-sm md:text-base text-sidebar-foreground tracking-tight whitespace-nowrap">
-                Kampo Mido
+                Gold Harvesting Platform
               </span>
             </div>
 

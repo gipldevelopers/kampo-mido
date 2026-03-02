@@ -184,7 +184,7 @@ export default function AdminProfile() {
   const generateLocalQRCode = (upiId) => {
     if (!upiId) return;
 
-    const merchantName = "Kampo Mido";
+    const merchantName = "Gold Harvesting Platform";
     const upiPaymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&cu=INR`;
 
     // Use a free QR code generator service
