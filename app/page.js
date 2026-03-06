@@ -44,6 +44,22 @@ export default function LoginPage() {
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    // Read email and password from URL query strings
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email');
+      const passwordParam = params.get('password');
+      if (emailParam) setLoginInput(emailParam);
+      if (passwordParam) setPassword(passwordParam);
+
+      // Optionally clean up the URL to prevent credential leaking in history
+      if (emailParam || passwordParam) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);

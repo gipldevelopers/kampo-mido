@@ -83,17 +83,24 @@ export default function AddUser() {
     setToast(null);
 
     try {
-      await UserService.register({
+      const payload = {
         firstname: formData.firstname.trim(),
         lastname: formData.lastname.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
         status: formData.status,
-      });
+        role: formData.role,
+      };
+
+      if (formData.password && formData.password.trim().length >= 6) {
+        payload.password = formData.password.trim();
+      }
+
+      await UserService.register(payload);
 
       setToast({ message: "User registered successfully", type: "success" });
-      
+
       // Redirect to users list after 1.5 seconds
       setTimeout(() => {
         router.push("/admin/users");
@@ -101,7 +108,7 @@ export default function AddUser() {
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Failed to register user. Please try again.";
       setToast({ message: errorMessage, type: "error" });
-      
+
       // Set field-specific errors if provided by API
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
@@ -114,7 +121,7 @@ export default function AddUser() {
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      
+
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
         <Link href="/admin/users">
@@ -131,22 +138,21 @@ export default function AddUser() {
       {/* Form Card */}
       <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="firstname" className="text-xs sm:text-sm font-medium text-foreground">
                 First Name <span className="text-destructive">*</span>
               </label>
-              <input 
+              <input
                 id="firstname"
                 name="firstname"
-                type="text" 
+                type="text"
                 value={formData.firstname}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
-                  errors.firstname ? "border-destructive" : "border-input"
-                }`}
-                placeholder="Enter first name" 
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.firstname ? "border-destructive" : "border-input"
+                  }`}
+                placeholder="Enter first name"
               />
               {errors.firstname && (
                 <p className="text-xs text-destructive text-red-500">{errors.firstname}</p>
@@ -156,16 +162,15 @@ export default function AddUser() {
               <label htmlFor="lastname" className="text-xs sm:text-sm font-medium text-foreground">
                 Last Name <span className="text-destructive">*</span>
               </label>
-              <input 
+              <input
                 id="lastname"
                 name="lastname"
-                type="text" 
+                type="text"
                 value={formData.lastname}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
-                  errors.lastname ? "border-destructive" : "border-input"
-                }`}
-                placeholder="Enter last name" 
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.lastname ? "border-destructive" : "border-input"
+                  }`}
+                placeholder="Enter last name"
               />
               {errors.lastname && (
                 <p className="text-xs text-destructive text-red-500">{errors.lastname}</p>
@@ -178,16 +183,15 @@ export default function AddUser() {
               <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
                 Email Address <span className="text-destructive">*</span>
               </label>
-              <input 
+              <input
                 id="email"
                 name="email"
-                type="email" 
+                type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
-                  errors.email ? "border-destructive" : "border-input"
-                }`}
-                placeholder="user@example.com" 
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.email ? "border-destructive" : "border-input"
+                  }`}
+                placeholder="user@example.com"
               />
               {errors.email && (
                 <p className="text-xs text-destructive text-red-500">{errors.email}</p>
@@ -197,16 +201,15 @@ export default function AddUser() {
               <label htmlFor="phone" className="text-xs sm:text-sm font-medium text-foreground">
                 Phone Number <span className="text-destructive">*</span>
               </label>
-              <input 
+              <input
                 id="phone"
                 name="phone"
-                type="tel" 
+                type="tel"
                 value={formData.phone}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
-                  errors.phone ? "border-destructive" : "border-input"
-                }`}
-                placeholder="7894561320" 
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.phone ? "border-destructive" : "border-input"
+                  }`}
+                placeholder="7894561320"
               />
               {errors.phone && (
                 <p className="text-xs text-destructive text-red-500">{errors.phone}</p>
@@ -218,14 +221,13 @@ export default function AddUser() {
             <label htmlFor="address" className="text-xs sm:text-sm font-medium text-foreground">
               Address <span className="text-destructive">*</span>
             </label>
-            <textarea 
+            <textarea
               id="address"
               name="address"
               value={formData.address}
               onChange={handleChange}
-              className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y ${
-                errors.address ? "border-destructive" : "border-input"
-              }`}
+              className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y ${errors.address ? "border-destructive" : "border-input"
+                }`}
               placeholder="Enter full address"
             ></textarea>
             {errors.address && (
@@ -233,19 +235,38 @@ export default function AddUser() {
             )}
           </div>
 
+          <div className="space-y-1.5 sm:space-y-2 border-t border-border pt-4">
+            <label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
+              Custom Password <span className="text-muted-foreground font-normal">(Optional)</span>
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="text"
+              value={formData.password || ""}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.password ? "border-destructive" : "border-input"
+                }`}
+              placeholder="Enter custom password (min 6 chars)"
+            />
+            {errors.password && (
+              <p className="text-xs text-destructive text-red-500">{errors.password}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Leave blank to auto-generate a secure random password.</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="role" className="text-xs sm:text-sm font-medium text-foreground">
                 Role <span className="text-destructive">*</span>
               </label>
-              <select 
+              <select
                 id="role"
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${
-                  errors.role ? "border-destructive" : "border-input"
-                }`}
+                className={`w-full px-3 py-2 sm:py-2.5 bg-background border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all ${errors.role ? "border-destructive" : "border-input"
+                  }`}
               >
                 <option value="">Select role</option>
                 <option value="admin">Admin</option>
@@ -257,7 +278,7 @@ export default function AddUser() {
             </div>
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="status" className="text-xs sm:text-sm font-medium text-foreground">Status</label>
-              <select 
+              <select
                 id="status"
                 name="status"
                 value={formData.status}
@@ -276,12 +297,12 @@ export default function AddUser() {
                 Cancel
               </button>
             </Link>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={14} className="sm:w-4 sm:h-4 shrink-0" /> 
+              <Save size={14} className="sm:w-4 sm:h-4 shrink-0" />
               <span>{isLoading ? "Registering..." : "Save User"}</span>
             </button>
           </div>
