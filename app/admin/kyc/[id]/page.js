@@ -18,6 +18,25 @@ import {
 import Toast from "@/components/Toast";
 import AdminKYCService from "@/services/admin/admin-kyc.service";
 import { useEffect } from "react";
+const getFullImageUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith('http') && !url.includes('.kampomido.com')) return url;
+
+  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL;
+
+  let relativePath = url;
+  if (url.includes('uploads')) {
+    const parts = url.split('uploads');
+    if (parts.length > 1) {
+      relativePath = '/uploads' + parts[1];
+    }
+  }
+
+  const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
+  const path = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+
+  return `${base}${path}`;
+};
 
 export default function KYCDetail({ params }) {
   const { id } = use(params); // Unwrap params
@@ -300,10 +319,10 @@ export default function KYCDetail({ params }) {
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">KYC Verification</h2>
             <span className={`px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border shrink-0 ${kycData.status?.toLowerCase() === 'approved' || kycData.status?.toLowerCase() === 'verified'
-                ? 'bg-green-100 text-green-700 border-green-200'
-                : kycData.status?.toLowerCase() === 'rejected'
-                  ? 'bg-red-100 text-red-700 border-red-200'
-                  : 'bg-secondary text-secondary-foreground border-secondary'
+              ? 'bg-green-100 text-green-700 border-green-200'
+              : kycData.status?.toLowerCase() === 'rejected'
+                ? 'bg-red-100 text-red-700 border-red-200'
+                : 'bg-secondary text-secondary-foreground border-secondary'
               }`}>
               {kycData.status}
             </span>
@@ -349,8 +368,7 @@ export default function KYCDetail({ params }) {
                       onClick={async () => {
                         if (doc.url) {
                           try {
-                            const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-                            const fullUrl = `${baseURL}${doc.url}`;
+                            const fullUrl = getFullImageUrl(doc.url);
 
                             // Fetch the file as blob
                             const response = await fetch(fullUrl);
@@ -402,8 +420,7 @@ export default function KYCDetail({ params }) {
                     <button
                       onClick={() => {
                         if (kycData.selfie?.url) {
-                          const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-                          window.open(`${baseURL}${kycData.selfie.url}`, '_blank');
+                          window.open(getFullImageUrl(kycData.selfie.url), '_blank');
                         }
                       }}
                       className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium bg-background border border-input rounded-md hover:bg-muted transition-colors"
@@ -414,8 +431,7 @@ export default function KYCDetail({ params }) {
                       onClick={async () => {
                         if (kycData.selfie?.url) {
                           try {
-                            const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-                            const fullUrl = `${baseURL}${kycData.selfie.url}`;
+                            const fullUrl = getFullImageUrl(kycData.selfie.url);
 
                             // Fetch the file as blob
                             const response = await fetch(fullUrl);
@@ -445,7 +461,7 @@ export default function KYCDetail({ params }) {
                 {kycData.selfie.url && (
                   <div className="border border-border rounded-lg overflow-hidden bg-muted/30">
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${kycData.selfie.url}`}
+                      src={getFullImageUrl(kycData.selfie.url)}
                       alt="Selfie"
                       className="w-full h-auto max-h-64 sm:max-h-80 md:max-h-96 object-contain"
                       onError={(e) => {
@@ -707,8 +723,7 @@ export default function KYCDetail({ params }) {
                   <button
                     onClick={async () => {
                       try {
-                        const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-                        const fullUrl = `${baseURL}${previewDocument.url}`;
+                        const fullUrl = getFullImageUrl(previewDocument.url);
 
                         // Fetch the file as blob
                         const response = await fetch(fullUrl);
@@ -750,7 +765,7 @@ export default function KYCDetail({ params }) {
               {previewDocument.url ? (
                 <>
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${previewDocument.url}`}
+                    src={getFullImageUrl(previewDocument.url)}
                     alt={previewDocument.name}
                     className="max-w-full max-h-[70vh] object-contain transition-transform duration-200"
                     style={{ transform: `scale(${imageZoom})` }}
