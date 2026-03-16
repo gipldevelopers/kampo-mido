@@ -30,10 +30,10 @@ class AuthService {
 
       if (credentials.email) {
         payload.email = credentials.email;
-      } else if (credentials.mobile) {
-        payload.mobile = credentials.mobile;
+      } else if (credentials.phone) {
+        payload.phone = credentials.phone;
       } else {
-        throw new Error("Either email or mobile is required");
+        throw new Error("Either email or phone is required");
       }
 
       payload.password = credentials.password;
@@ -66,6 +66,16 @@ class AuthService {
       }
 
       return { user, token };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Register user
+  async register(data) {
+    try {
+      const response = await API.post("/auth/register", data);
+      return response.data;
     } catch (error) {
       throw error;
     }

@@ -6,18 +6,17 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import AuthService from "@/services/auth.service";
 import Toast from "@/components/Toast";
-import { Eye, EyeOff, Shield, Gem, Lock, User, Mail, ArrowRight, Sparkles, TrendingUp, Award } from "lucide-react";
+import { Eye, EyeOff, Shield, Gem, Lock, User, ArrowRight, Sparkles, TrendingUp, Award } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user } = useUser();
+  const { login } = useUser();
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-
 
   useEffect(() => {
     const checkAuth = () => {
@@ -70,9 +69,19 @@ export default function LoginPage() {
         password,
       };
 
-      credentials.email = loginInput.trim().toLowerCase();
+      const input = loginInput.trim();
+      // Check if it's an email or phone
+      if (input.includes("@")) {
+        credentials.email = input.toLowerCase();
+      } else if (/^\d{10}$/.test(input)) {
+        credentials.phone = input;
+      } else {
+        setToast({ message: "Please enter a valid email or 10-digit phone number", type: "error" });
+        setIsLoading(false);
+        return;
+      }
 
-      const { user, token } = await AuthService.login(credentials);
+      const { user } = await AuthService.login(credentials);
 
       if (!user) {
         setToast({ message: "Login failed: No user data received", type: "error" });
@@ -267,27 +276,25 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-600">Access your gold portfolio</p>
               </div>
 
-
-
               {/* Login Form */}
               <form onSubmit={handleLogin} className="space-y-4">
-                {/* Email Field */}
+                {/* Email/Phone Field */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-700 ml-1">
-                    Email Address
+                    Email or Mobile Number
                   </label>
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                      <Mail className="w-4 h-4" />
+                      <User className="w-4 h-4" />
                     </div>
                     <input
-                      type="email"
+                      type="text"
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
                       required
                       disabled={isLoading}
                       className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all duration-300 placeholder:text-gray-400"
-                      placeholder="you@example.com"
+                      placeholder="Email or 10-digit mobile"
                     />
                   </div>
                 </div>
@@ -360,8 +367,6 @@ export default function LoginPage() {
                   </p>
                 </div>
               </div>
-
-
             </div>
           </div>
         </div>
