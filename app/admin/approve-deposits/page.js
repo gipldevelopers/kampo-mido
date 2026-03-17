@@ -4,14 +4,17 @@ import Link from "next/link";
 import {
     Search,
     Filter,
-    Download,
     FileText,
     FileSpreadsheet,
     ChevronDown,
     CheckCircle2,
     XCircle,
     Loader2,
-    X
+    X,
+    Image as ImageIcon,
+    ZoomIn,
+    ZoomOut,
+    Download
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import DepositService from "@/services/admin/deposit.service";
@@ -48,7 +51,27 @@ const StatusBadge = ({ status }) => {
 export default function ApproveDeposits() {
     const [deposits, setDeposits] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [previewDocument, setPreviewDocument] = useState(null);
+    const [imageZoom, setImageZoom] = useState(1);
     const [processingId, setProcessingId] = useState(null);
+
+    const getFullImageUrl = (url) => {
+        if (!url) return "";
+        if (url.startsWith('http')) return url;
+
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "";
+        const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
+
+        let path = url;
+        if (url.includes('uploads')) {
+            const parts = url.split('uploads');
+            path = '/uploads' + parts[parts.length - 1];
+        } else {
+            path = '/uploads/' + (url.startsWith('/') ? url.slice(1) : url);
+        }
+
+        return `${base}${path.replace(/\/+/g, '/')}`;
+    };
     const [searchTerm, setSearchTerm] = useState("");
     const [filter, setFilter] = useState("All");
     const [toast, setToast] = useState(null);
@@ -91,6 +114,7 @@ export default function ApproveDeposits() {
                 status: deposit.status || "pending",
                 upiReference: deposit.upiReference || deposit.upiRef || "N/A",
                 paymentMode: deposit.paymentMode || deposit.mode || "UPI",
+                screenshot: deposit.screenshot || null,
                 notes: deposit.notes || deposit.adminNotes || "",
                 isConverted: deposit.isConverted || deposit.status === "converted" || deposit.status === "Converted" || !!deposit.conversion
             }));
@@ -354,6 +378,22 @@ export default function ApproveDeposits() {
                                             <p className="text-[10px] text-muted-foreground">Date</p>
                                             <p className="text-xs text-foreground">{formatDate(deposit.date)}</p>
                                         </div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[10px] text-muted-foreground">Proof</p>
+                                            {deposit.screenshot ? (
+                                                <button
+                                                    onClick={() => {
+                                                        setPreviewDocument({ name: `Proof - ${deposit.customerName}`, url: deposit.screenshot });
+                                                        setImageZoom(1);
+                                                    }}
+                                                    className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+                                                >
+                                                    <ImageIcon size={10} /> View Proof
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] text-muted-foreground italic">No proof</span>
+                                            )}
+                                        </div>
                                         {(deposit.status === "Pending" || deposit.status === "pending") && !deposit.isConverted && (
                                             <div className="flex items-center gap-2 pt-2 border-t border-border">
                                                 <button
@@ -399,6 +439,7 @@ export default function ApproveDeposits() {
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer Name</th>
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Amount</th>
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Date</th>
+                                        <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-center">Payment Proof</th>
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">UPI Reference</th>
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
                                         <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
@@ -413,6 +454,22 @@ export default function ApproveDeposits() {
                                                 </td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 font-semibold">₹ {deposit.amount.toLocaleString()}</td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{formatDate(deposit.date)}</td>
+                                                <td className="px-4 lg:px-6 py-3 lg:py-4 text-center">
+                                                    {deposit.screenshot ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                setPreviewDocument({ name: `Proof - ${deposit.customerName}`, url: deposit.screenshot });
+                                                                setImageZoom(1);
+                                                            }}
+                                                            className="p-1.5 hover:bg-primary/10 rounded-md text-primary transition-colors mx-auto block"
+                                                            title="View Payment Proof"
+                                                        >
+                                                            <ImageIcon size={16} />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-muted-foreground italic text-[10px]">N/A</span>
+                                                    )}
+                                                </td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{deposit.upiReference}</td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={deposit.status} /></td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
@@ -545,6 +602,108 @@ export default function ApproveDeposits() {
                                     )}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Document Preview Modal */}
+            {previewDocument && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setPreviewDocument(null)}
+                >
+                    <div
+                        className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-border">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon size={20} className="text-primary" />
+                                <h3 className="text-lg font-semibold">{previewDocument.name}</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {/* Zoom Controls */}
+                                <div className="flex items-center gap-1 border border-input rounded-md">
+                                    <button
+                                        onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
+                                        className="p-1.5 hover:bg-muted transition-colors text-foreground"
+                                        title="Zoom Out"
+                                    >
+                                        <ZoomOut size={16} />
+                                    </button>
+                                    <span className="px-2 text-xs text-muted-foreground min-w-[3rem] text-center">
+                                        {Math.round(imageZoom * 100)}%
+                                    </span>
+                                    <button
+                                        onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
+                                        className="p-1.5 hover:bg-muted transition-colors text-foreground"
+                                        title="Zoom In"
+                                    >
+                                        <ZoomIn size={16} />
+                                    </button>
+                                </div>
+                                {/* Download Button */}
+                                {previewDocument.url && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const fullUrl = getFullImageUrl(previewDocument.url);
+                                                const response = await fetch(fullUrl);
+                                                const blob = await response.blob();
+                                                const url = window.URL.createObjectURL(blob);
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.download = previewDocument.name.replace(/\s+/g, '_') || 'proof';
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                window.URL.revokeObjectURL(url);
+                                            } catch (error) {
+                                                console.error('Download failed:', error);
+                                                setToast({ message: "Failed to download document", type: "error" });
+                                            }
+                                        }}
+                                        className="p-2 hover:bg-muted rounded-md transition-colors text-foreground"
+                                        title="Download"
+                                    >
+                                        <Download size={18} />
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setPreviewDocument(null)}
+                                    className="p-2 hover:bg-muted rounded-md transition-colors text-foreground"
+                                    title="Close"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Image Preview */}
+                        <div className="flex-1 overflow-auto p-4 bg-muted/20 flex items-center justify-center">
+                            {previewDocument.url ? (
+                                <>
+                                    <img
+                                        src={getFullImageUrl(previewDocument.url)}
+                                        alt={previewDocument.name}
+                                        className="max-w-full max-h-[70vh] object-contain transition-transform duration-200"
+                                        style={{ transform: `scale(${imageZoom})` }}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            const fallback = e.target.nextElementSibling;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                    <div className="hidden h-64 bg-muted/30 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground">
+                                        Failed to load image
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-64 bg-muted/30 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground">
+                                    No preview available
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

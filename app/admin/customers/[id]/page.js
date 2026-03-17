@@ -7,9 +7,33 @@ import {
   Mail,
   Edit,
   Plus,
+  FileText,
+  Image,
+  Eye,
+  ExternalLink,
+  User as UserIcon,
+  CreditCard
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import CustomerService from "@/services/admin/customer.service";
+
+const getFullImageUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith('http')) return url;
+
+  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "";
+  const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
+
+  let path = url;
+  if (url.includes('uploads')) {
+    const parts = url.split('uploads');
+    path = '/uploads' + parts[parts.length - 1];
+  } else {
+    path = '/uploads/' + (url.startsWith('/') ? url.slice(1) : url);
+  }
+
+  return `${base}${path.replace(/\/+/g, '/')}`;
+};
 
 export default function CustomerDetail({ params }) {
   const { id } = use(params);
@@ -53,6 +77,9 @@ export default function CustomerDetail({ params }) {
             kycStatus: customer.kycStatus || "pending",
             createdAt: customer.createdAt || null,
             user: customer.user || null,
+            kycDocument: customer.kycDocument || null,
+            nominee: customer.nominee || null,
+            bankDetail: customer.bankDetail || null,
           });
         }
       } catch (error) {
@@ -237,7 +264,7 @@ export default function CustomerDetail({ params }) {
               </div>
             </div>
 
-            {/* KYC Section - Placeholder for now */}
+            {/* KYC Section */}
             <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm space-y-4 sm:space-y-5 md:space-y-6 h-fit">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <h3 className="font-semibold text-sm sm:text-base md:text-lg">KYC Details</h3>
@@ -252,9 +279,118 @@ export default function CustomerDetail({ params }) {
               </div>
 
               <div className="space-y-3 sm:space-y-4">
-                <p className="text-xs sm:text-sm text-muted-foreground">KYC details will be available soon.</p>
+                {customerData.kycDocument ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Document Info */}
+                    <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+                      <div className="flex justify-between items-center py-1 border-b border-border/50">
+                        <span className="text-muted-foreground">ID Type</span>
+                        <span className="font-medium">{customerData.kycDocument.idType}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-border/50">
+                        <span className="text-muted-foreground">ID Number</span>
+                        <span className="font-medium">{customerData.kycDocument.idNumber}</span>
+                      </div>
+                      {customerData.kycDocument.panNumber && (
+                        <div className="flex justify-between items-center py-1 border-b border-border/50">
+                          <span className="text-muted-foreground">PAN Number</span>
+                          <span className="font-medium">{customerData.kycDocument.panNumber}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Document Previews */}
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {[
+                        { label: 'ID Front', url: customerData.kycDocument.idFront, icon: FileText },
+                        { label: 'ID Back', url: customerData.kycDocument.idBack, icon: FileText },
+                        { label: 'Selfie', url: customerData.kycDocument.selfie, icon: Image },
+                        { label: 'PAN Card', url: customerData.kycDocument.panFile, icon: FileText }
+                      ].filter(d => d.url).map((doc, idx) => (
+                        <a
+                          key={idx}
+                          href={getFullImageUrl(doc.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 border border-border rounded-lg hover:border-primary/40 transition-all group"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                              <doc.icon size={16} />
+                            </div>
+                            <span className="text-xs sm:text-sm font-medium">{doc.label}</span>
+                          </div>
+                          <ExternalLink size={14} className="text-muted-foreground group-hover:text-primary" />
+                        </a>
+                      ))}
+                    </div>
+
+                    {/* View Full KYC Request */}
+                    <Link href={`/admin/kyc/${customerData.id}`} className="block">
+                      <button className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 bg-primary/5 text-primary border border-primary/20 rounded-md text-xs font-semibold hover:bg-primary/10 transition-colors">
+                        <Eye size={14} /> View Full KYC Detail
+                      </button>
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-muted-foreground italic text-center py-4 bg-muted/20 rounded-lg border border-dashed border-border">
+                    No KYC documents submitted yet.
+                  </p>
+                )}
               </div>
             </div>
+
+            {/* Nominee Details */}
+            {customerData.nominee && (
+              <div className="md:col-span-1 bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm space-y-4 sm:space-y-5 md:space-y-6">
+                <h3 className="font-semibold text-sm sm:text-base md:text-lg border-b border-border pb-2 flex items-center gap-2">
+                  <UserIcon size={18} className="text-primary" /> Nominee
+                </h3>
+                <div className="space-y-3 text-xs sm:text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Nominee Name</p>
+                    <p className="font-medium">{customerData.nominee.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Relationship</p>
+                    <p className="font-medium">{customerData.nominee.relationship || customerData.nominee.relation || 'N/A'}</p>
+                  </div>
+                  {customerData.nominee.phone && (
+                    <div>
+                      <p className="text-muted-foreground text-[10px] sm:text-xs">Contact Number</p>
+                      <p className="font-medium">{customerData.nominee.phone}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Bank Details */}
+            {customerData.bankDetail && (
+              <div className="md:col-span-1 bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm space-y-4 sm:space-y-5 md:space-y-6">
+                <h3 className="font-semibold text-sm sm:text-base md:text-lg border-b border-border pb-2 flex items-center gap-2">
+                  <CreditCard size={18} className="text-primary" /> Bank Details
+                </h3>
+                <div className="space-y-3 text-xs sm:text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Bank Name</p>
+                    <p className="font-medium">{customerData.bankDetail.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Account Number</p>
+                    <p className="font-medium">{customerData.bankDetail.accountNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">IFSC Code</p>
+                    <p className="font-medium uppercase">{customerData.bankDetail.ifscCode}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Account Holder</p>
+                    <p className="font-medium">{customerData.bankDetail.accountHolder}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

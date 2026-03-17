@@ -13,6 +13,8 @@ class UserService {
         phone: userData.phone,
         address: userData.address,
         status: userData.status,
+        role: userData.role,
+        password: userData.password,
       });
       return response.data;
     } catch (error) {
@@ -51,12 +53,15 @@ class UserService {
         status: userData.status,
         phone: userData.phone,
         address: userData.address,
+        role: userData.role,
+        password: userData.password,
       });
       return response.data;
     } catch (error) {
       throw error;
     }
   }
+
 
   // Delete user
   async deleteUser(userId) {

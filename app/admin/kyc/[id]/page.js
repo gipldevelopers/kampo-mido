@@ -20,22 +20,20 @@ import AdminKYCService from "@/services/admin/admin-kyc.service";
 import { useEffect } from "react";
 const getFullImageUrl = (url) => {
   if (!url) return "";
-  if (url.startsWith('http') && !url.includes('.kampomido.com')) return url;
+  if (url.startsWith('http')) return url;
 
-  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL;
+  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "";
+  const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
 
-  let relativePath = url;
+  let path = url;
   if (url.includes('uploads')) {
     const parts = url.split('uploads');
-    if (parts.length > 1) {
-      relativePath = '/uploads' + parts[1];
-    }
+    path = '/uploads' + parts[parts.length - 1];
+  } else {
+    path = '/uploads/' + (url.startsWith('/') ? url.slice(1) : url);
   }
 
-  const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
-  const path = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
-
-  return `${base}${path}`;
+  return `${base}${path.replace(/\/+/g, '/')}`;
 };
 
 export default function KYCDetail({ params }) {
@@ -420,7 +418,8 @@ export default function KYCDetail({ params }) {
                     <button
                       onClick={() => {
                         if (kycData.selfie?.url) {
-                          window.open(getFullImageUrl(kycData.selfie.url), '_blank');
+                          setPreviewDocument(kycData.selfie);
+                          setImageZoom(1);
                         }
                       }}
                       className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium bg-background border border-input rounded-md hover:bg-muted transition-colors"
@@ -463,7 +462,11 @@ export default function KYCDetail({ params }) {
                     <img
                       src={getFullImageUrl(kycData.selfie.url)}
                       alt="Selfie"
-                      className="w-full h-auto max-h-64 sm:max-h-80 md:max-h-96 object-contain"
+                      className="w-full h-auto max-h-64 sm:max-h-80 md:max-h-96 object-contain cursor-pointer transition-all hover:opacity-90"
+                      onClick={() => {
+                        setPreviewDocument(kycData.selfie);
+                        setImageZoom(1);
+                      }}
                       onError={(e) => {
                         e.target.style.display = 'none';
                         const fallback = e.target.nextElementSibling;

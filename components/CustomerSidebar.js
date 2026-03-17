@@ -58,7 +58,7 @@ export default function CustomerSidebar({ onClose }) {
         {!isCollapsed ? (
           <div className="flex items-center justify-between px-3 h-full">
             {/* Logo Area - Expanded */}
-            <div className="flex items-center gap-2 overflow-hidden transition-all duration-300 w-44 opacity-100">
+            <div className="flex items-center gap-2 overflow-hidden transition-all duration-300 flex-1 min-w-0 opacity-100 mr-2">
               <div className="relative w-8 h-8 md:w-10 md:h-10 shrink-0 overflow-hidden rounded-md border border-sidebar-border/50">
                 <Image
                   src="/logo/logo.jpeg"
@@ -67,8 +67,8 @@ export default function CustomerSidebar({ onClose }) {
                   className="object-cover"
                 />
               </div>
-              <span className="font-bold text-sm md:text-base text-sidebar-foreground tracking-tight whitespace-nowrap">
-                Gold Harvesting Platform
+              <span className="font-bold text-sm md:text-base text-sidebar-foreground tracking-tight leading-tight">
+                Gold Harvesting
               </span>
             </div>
 
