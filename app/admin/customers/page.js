@@ -47,8 +47,8 @@ export default function CustomerManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All");
   const [toast, setToast] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportRef = useRef(null);
 
@@ -72,10 +72,6 @@ export default function CustomerManagement() {
           status: customer.user?.status ? customer.user.status.charAt(0).toUpperCase() + customer.user.status.slice(1) : "Active",
         }));
         setCustomers(mappedCustomers);
-
-        if (response.pagination) {
-          setPagination(response.pagination);
-        }
       } else {
         setCustomers([]);
       }
@@ -91,6 +87,10 @@ export default function CustomerManagement() {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -113,6 +113,13 @@ export default function CustomerManagement() {
 
     return matchesSearch;
   });
+
+  // Calculate paginated customers
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -254,8 +261,8 @@ export default function CustomerManagement() {
           <>
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-border">
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => (
+              {paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((customer) => (
                   <div key={customer.id} className="p-3 hover:bg-muted/20 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1 min-w-0">
@@ -328,8 +335,8 @@ export default function CustomerManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => (
+                  {paginatedCustomers.length > 0 ? (
+                    paginatedCustomers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">
                           <Link href={`/admin/customers/${customer.id}`} className="hover:text-primary transition-colors">
@@ -368,6 +375,62 @@ export default function CustomerManagement() {
           </>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && filteredCustomers.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm mt-4">
+          <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
+            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> of <span className="font-medium text-foreground">{filteredCustomers.length}</span> results
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {[...Array(totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                // Show only a few page numbers if there are many
+                if (
+                  totalPages <= 5 ||
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 flex items-center justify-center rounded-md text-xs sm:text-sm font-medium transition-all ${currentPage === pageNum
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "hover:bg-muted border border-transparent hover:border-border"
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  (pageNum === currentPage - 2 && pageNum > 1) ||
+                  (pageNum === currentPage + 2 && pageNum < totalPages)
+                ) {
+                  return <span key={pageNum} className="text-muted-foreground px-1">...</span>;
+                }
+                return null;
+              })}
+            </div>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div >
   );
 }
