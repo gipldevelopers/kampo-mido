@@ -14,9 +14,9 @@ class DepositService {
   }
 
   // Get all deposits
-  async getAllDeposits() {
+  async getAllDeposits(params = {}) {
     try {
-      const response = await API.get(`/admin/deposits/get-all`);
+      const response = await API.get(`/admin/deposits/get-all`, { params });
       return response.data;
     } catch (error) {
       throw error;
@@ -83,6 +83,16 @@ class DepositService {
     }
   }
 }
+
+// Create deposit (admin manual entry)
+DepositService.prototype.createDeposit = async function(depositData) {
+  try {
+    const response = await API.post(`/admin/deposits/create`, depositData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export default new DepositService();
 

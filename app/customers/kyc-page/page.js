@@ -13,7 +13,10 @@ import {
   Loader2,
   RefreshCcw,
   Landmark,
-  Eye
+  Eye,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import KYCService from "@/services/customer/kyc.service";
@@ -40,6 +43,163 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+
+/**
+ * Premium Date of Birth Picker Component
+ * Provides a Year-first selection flow for fast access to birth years.
+ */
+function PremiumDobPicker({ value, onChange, error, disabled }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState("year"); // year, month, day
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null); // 0-based
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 110 }, (_, i) => currentYear - i);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+
+  const handleOpen = () => {
+    if (disabled) return;
+    if (value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        setSelectedYear(d.getFullYear());
+        setSelectedMonth(d.getMonth());
+      }
+    }
+    setView("year");
+    setIsOpen(true);
+  };
+
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setView("month");
+  };
+
+  const handleMonthSelect = (monthIndex) => {
+    setSelectedMonth(monthIndex);
+    setView("day");
+  };
+
+  const handleDaySelect = (day) => {
+    const formattedDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    onChange(formattedDate);
+    setIsOpen(false);
+  };
+
+  const formatDisplayDate = (val) => {
+    if (!val) return "Select Date";
+    const [y, m, d] = val.split("-");
+    if (!y || !m || !d) return val; // Fallback for other formats
+    return `${d}/${m}/${y}`;
+  };
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={handleOpen}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between px-3 py-2 bg-background border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground transition-all hover:border-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ${
+          error ? "border-destructive ring-1 ring-destructive/20" : "border-input"
+        }`}
+      >
+        <span className={!value ? "text-muted-foreground" : ""}>
+          {formatDisplayDate(value)}
+        </span>
+        <CalendarIcon size={14} className="text-muted-foreground" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[340px] z-[70] bg-card border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                {view === "year" ? "Select Year" : view === "month" ? `Select Month (${selectedYear})` : `Select Day (${months[selectedMonth]} ${selectedYear})`}
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setIsOpen(false)} 
+                className="p-1 hover:bg-muted rounded-full transition-colors"
+              >
+                <X size={18} className="text-muted-foreground" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 max-h-[350px] overflow-y-auto custom-scrollbar">
+              {view === "year" && (
+                <div className="grid grid-cols-4 gap-2">
+                  {years.map((year) => (
+                    <button
+                      type="button"
+                      key={year}
+                      onClick={() => handleYearSelect(year)}
+                      className={`py-2 text-sm rounded-lg transition-all ${
+                        selectedYear === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-primary/10 text-foreground"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {view === "month" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {months.map((month, idx) => (
+                    <button
+                      type="button"
+                      key={month}
+                      onClick={() => handleMonthSelect(idx)}
+                      className={`py-4 text-sm rounded-xl border transition-all ${
+                        selectedMonth === idx ? "bg-primary text-primary-foreground border-primary font-bold shadow-lg" : "bg-muted/30 hover:bg-muted border-border text-foreground"
+                      }`}
+                    >
+                      {month}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {view === "day" && (
+                <div className="grid grid-cols-7 gap-1.5">
+                  {Array.from({ length: getDaysInMonth(selectedYear, selectedMonth) }, (_, i) => i + 1).map((day) => (
+                    <button
+                      type="button"
+                      key={day}
+                      onClick={() => handleDaySelect(day)}
+                      className="aspect-square flex items-center justify-center text-sm rounded-lg hover:bg-primary/20 text-foreground transition-all hover:scale-110 active:scale-95 border border-transparent hover:border-primary/30"
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {(view === "month" || view === "day") && (
+              <div className="p-3 border-t border-border flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setView(view === "day" ? "month" : "year")}
+                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                >
+                  <ChevronLeft size={14} /> Back to {view === "day" ? "Month" : "Year"}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function KYCPage() {
   const [toast, setToast] = useState(null);
@@ -237,8 +397,29 @@ export default function KYCPage() {
       return;
     }
 
+    // Aadhaar Validation (12 digits)
+    const aadhaarRegex = /^\d{12}$/;
+    if (!aadhaarRegex.test(idNumber)) {
+      setToast({ message: "Aadhaar number must be exactly 12 digits", type: "error" });
+      return;
+    }
+
+    // PAN Validation (5 letters, 4 digits, 1 letter)
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(panNumber)) {
+      setToast({ message: "Invalid PAN number format (e.g. ABCDE1234F)", type: "error" });
+      return;
+    }
+
     if (!bankName || !accountNumber || !confirmAccountNumber || !ifscCode || !accountHolder) {
       setToast({ message: "Please fill all bank details", type: "error" });
+      return;
+    }
+
+    // IFSC Validation (4 letters, 0, 6 characters)
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    if (!ifscRegex.test(ifscCode)) {
+      setToast({ message: "Invalid IFSC code format (e.g. SBIN0123456)", type: "error" });
       return;
     }
 
@@ -432,12 +613,14 @@ export default function KYCPage() {
                     <input
                       type="text"
                       value={idNumber}
-                      onChange={(e) => setIdNumber(e.target.value)}
+                      onChange={(e) => setIdNumber(e.target.value.replace(/\D/g, ''))}
                       placeholder={`Enter ${idType} number`}
+                      maxLength={12}
                       disabled={isSubmitted}
                       className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       required
                     />
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: 123456789012 (12 digits)</p>
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2 mt-4 sm:mt-5">
@@ -454,6 +637,7 @@ export default function KYCPage() {
                     className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   />
+                  <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: ABCDE1234F (5 letters, 4 digits, 1 letter)</p>
                 </div>
               </div>
 
@@ -588,10 +772,12 @@ export default function KYCPage() {
                     value={ifscCode}
                     onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
                     placeholder="Enter IFSC code"
+                    maxLength={11}
                     disabled={isSubmitted}
                     className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   />
+                  <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: SBIN0123456 (4 letters, 0, 6 chars)</p>
                 </div>
               </div>
             </div>
@@ -647,13 +833,10 @@ export default function KYCPage() {
                 <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
                   Date of Birth <span className="text-destructive">*</span>
                 </label>
-                <input
-                  type="date"
+                <PremiumDobPicker
                   value={nomineeDob}
-                  max={new Date().toISOString().split('T')[0]} // Prevent future dates
-                  onChange={(e) => setNomineeDob(e.target.value)}
+                  onChange={(val) => setNomineeDob(val)}
                   disabled={isSubmitted}
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>

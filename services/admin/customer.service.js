@@ -27,9 +27,11 @@ class CustomerService {
   }
 
   // Get all customers
-  async getAllCustomers() {
+  async getAllCustomers(params = {}) {
     try {
-      const response = await API.get("/admin/customers/get-all-customers");
+      const response = await API.get("/admin/customers/get-all-customers", {
+        params
+      });
       return response.data;
     } catch (error) {
       throw error;

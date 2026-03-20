@@ -20,6 +20,7 @@ export default function AddDeposit() {
   const [deposits, setDeposits] = useState([]);
   const [fetchingDeposits, setFetchingDeposits] = useState(false);
   const [amount, setAmount] = useState("");
+  const [paymentMode, setPaymentMode] = useState("UPI");
   const [upiReference, setUpiReference] = useState("");
   const [depositDateTime, setDepositDateTime] = useState(new Date().toISOString().slice(0, 16));
   const [adminNotes, setAdminNotes] = useState("");
@@ -182,6 +183,10 @@ export default function AddDeposit() {
         // Auto-fill UPI reference (check both formatted and fullData)
         const upiRef = deposit.upiReference || deposit.fullData?.upiReference || deposit.fullData?.upiRef || "";
         setUpiReference(upiRef); // Set even if empty to clear previous value
+        
+        // Auto-fill Payment Mode if available
+        const mode = deposit.fullData?.mode || "UPI";
+        setPaymentMode(mode);
 
         // Auto-fill date & time
         const dateValue = deposit.rawDate || deposit.fullData?.depositDate || deposit.fullData?.date || deposit.fullData?.createdAt;
@@ -228,15 +233,27 @@ export default function AddDeposit() {
       setToast({ message: "Please enter a valid amount", type: "error" });
       return;
     }
-    if (!selectedDeposit) {
-      setToast({ message: "Please select a deposit to process", type: "error" });
-      return;
-    }
 
     setLoading(true);
     try {
-      await DepositService.processDeposit(selectedDeposit, adminNotes || "");
-      setToast({ message: "Deposit processed & Gold credited!", type: "success" });
+      if (selectedDeposit) {
+        // Process an existing approved deposit
+        await DepositService.processDeposit(selectedDeposit, adminNotes || "");
+        setToast({ message: "Deposit processed & Gold credited!", type: "success" });
+      } else {
+        // Create a NEW manual deposit and process it immediately
+        const depositData = {
+          customerId: parseInt(selectedCustomer),
+          amount: parseFloat(amount),
+          mode: paymentMode,
+          upiReference: paymentMode === "UPI" ? upiReference : "",
+          depositDate: depositDateTime,
+          adminNotes: adminNotes,
+          processImmediately: true // Gold credit will happen automatically
+        };
+        await DepositService.createDeposit(depositData);
+        setToast({ message: "Manual deposit created & Gold credited!", type: "success" });
+      }
 
       // Reset form after successful submission
       setSelectedDeposit("");
@@ -272,7 +289,7 @@ export default function AddDeposit() {
         </Link>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">Add New Deposit</h2>
-          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manually record a UPI payment and convert to gold.</p>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manually record a payment (UPI, Cash, or Check) and convert to gold.</p>
         </div>
       </div>
 
@@ -390,24 +407,35 @@ export default function AddDeposit() {
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Payment Mode</label>
-                <input
-                  type="text"
-                  value="UPI"
-                  readOnly
-                  className="w-full px-3 py-2 sm:py-2.5 bg-muted border border-input rounded-md text-sm text-muted-foreground cursor-not-allowed"
-                />
+                <div className="relative">
+                  <select
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground appearance-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
+                    required
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="CASH">Cash</option>
+                    <option value="CHECK">Check</option>
+                  </select>
+                  <div className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-foreground">UPI Reference No.</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">
+                  {paymentMode === "UPI" ? "UPI Reference No." : paymentMode === "CHECK" ? "Check Number" : "Payment Reference"}
+                </label>
                 <input
                   type="text"
                   value={upiReference}
                   onChange={(e) => setUpiReference(e.target.value)}
                   className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                  placeholder="Txn ID from payment app"
+                  placeholder={paymentMode === "UPI" ? "Txn ID from payment app" : paymentMode === "CHECK" ? "Enter check number" : "Optional reference..."}
                 />
               </div>
               <div className="space-y-1.5 sm:space-y-2">
@@ -497,7 +525,7 @@ export default function AddDeposit() {
 
           <div className="bg-muted/30 border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 text-xs sm:text-sm text-muted-foreground">
             <p className="mb-2 font-medium text-foreground">Important Note:</p>
-            <p className="break-words">Ensure the UPI transaction is verified in your banking app before proceeding. This action will immediately credit the customer&apos;s wallet.</p>
+            <p className="break-words">Ensure the payment transaction is verified before proceeding. For UPI, check your banking app; for Cash or Check, ensure the funds are physically received or cleared. This action will immediately credit the customer&apos;s gold wallet.</p>
           </div>
         </div>
 

@@ -86,11 +86,27 @@ export default function ApproveDeposits() {
     const [selectedDeposit, setSelectedDeposit] = useState(null);
     const [notes, setNotes] = useState("");
 
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    // Debounce search term to reduce API calls and server load
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500); // 500ms delay
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     // Fetch deposits from API
     const fetchDeposits = async () => {
         setLoading(true);
         try {
-            const response = await DepositService.getAllDeposits();
+            const params = {
+                search: debouncedSearchTerm || undefined,
+                status: filter !== "All" ? filter.toLowerCase() : undefined
+            };
+
+            const response = await DepositService.getAllDeposits(params);
 
             // Handle different response structures
             let depositsData = [];
@@ -105,9 +121,9 @@ export default function ApproveDeposits() {
             // Map API data to UI format
             const mappedDeposits = depositsData.map(deposit => ({
                 id: deposit.id || deposit.depositId,
-                customerName: deposit.customer?.name || deposit.customerName || deposit.customer?.fullName || "N/A",
+                customerName: deposit.customer?.fullName || deposit.customerName || deposit.customer?.name || "N/A",
                 customerId: deposit.customerId || deposit.customer?.id,
-                accountNo: deposit.customer?.accountNumber || deposit.accountNumber || deposit.customer?.customerCode || "N/A",
+                accountNo: deposit.customer?.customerCode || deposit.accountNumber || "N/A",
                 amount: deposit.amount || 0,
                 goldAmount: deposit.goldAmount || deposit.gold || deposit.goldGrams || 0,
                 date: deposit.depositDate || deposit.date || deposit.createdAt,
@@ -135,7 +151,7 @@ export default function ApproveDeposits() {
 
     useEffect(() => {
         fetchDeposits();
-    }, []);
+    }, [debouncedSearchTerm, filter]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -147,29 +163,14 @@ export default function ApproveDeposits() {
 
 
 
-    const filteredDeposits = deposits.filter(deposit => {
-        const matchesSearch =
-            deposit.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            deposit.accountNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            deposit.upiReference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            deposit.id.toString().includes(searchTerm);
-
-        if (filter === "All") return matchesSearch;
-        if (filter === "Pending") return matchesSearch && (deposit.status === "Pending" || deposit.status === "pending");
-        if (filter === "Approved") return matchesSearch && (deposit.status === "Approved" || deposit.status === "approved");
-        if (filter === "Processing") return matchesSearch && (deposit.status === "Processing" || deposit.status === "processing");
-        if (filter === "Converted") return matchesSearch && (deposit.status === "Converted" || deposit.status === "converted");
-        if (filter === "Rejected") return matchesSearch && (deposit.status === "Rejected" || deposit.status === "rejected");
-
-        return matchesSearch;
-    });
+    const filteredDeposits = deposits; // Server-side search is now used
 
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text("Approved Deposits Report", 14, 20);
 
         const tableColumn = ["Customer Name", "Account No", "Amount", "Gold", "Status", "Date", "UPI Reference"];
-        const tableRows = filteredDeposits.map(deposit => [
+        const tableRows = deposits.map(deposit => [
             deposit.customerName,
             deposit.accountNo,
             `Rs. ${deposit.amount.toLocaleString()}`,
@@ -190,7 +191,7 @@ export default function ApproveDeposits() {
     };
 
     const exportToExcel = () => {
-        const workSheet = XLSX.utils.json_to_sheet(filteredDeposits.map(deposit => ({
+        const workSheet = XLSX.utils.json_to_sheet(deposits.map(deposit => ({
             "Customer Name": deposit.customerName,
             "Account No": deposit.accountNo,
             Amount: deposit.amount,

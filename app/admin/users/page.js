@@ -52,26 +52,58 @@ export default function UserManagement() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportRef = useRef(null);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Debounce search term to reduce API calls and server load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [totalResults, setTotalResults] = useState(0);
+
   // Fetch users from API
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await UserService.getAllUsers();
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm || undefined,
+      };
+
+      // Map UI filters to backend params
+      if (filter === "Active") params.status = "active";
+      if (filter === "Inactive") params.status = "inactive";
+
+      const response = await UserService.getAllUsers(params);
 
       // Handle different response structures
       if (response.data && Array.isArray(response.data)) {
         setUsers(response.data);
+        if (response.pagination) {
+          setTotalResults(response.pagination.total);
+        } else {
+          setTotalResults(response.data.length);
+        }
       } else if (response.data && response.data.users) {
         setUsers(response.data.users);
+        setTotalResults(response.pagination?.total || response.data.users.length);
       } else if (response.users) {
         setUsers(response.users);
+        setTotalResults(response.pagination?.total || response.users.length);
       } else {
         setUsers([]);
+        setTotalResults(0);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Failed to fetch users";
       setToast({ message: errorMessage, type: "error" });
       setUsers([]);
+      setTotalResults(0);
     } finally {
       setLoading(false);
     }
@@ -79,11 +111,11 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, debouncedSearchTerm, filter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filter]);
+  }, [debouncedSearchTerm, filter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -128,7 +160,7 @@ export default function UserManagement() {
     doc.text("User Report", 14, 20);
 
     const tableColumn = ["Name", "Email", "Phone", "Role", "Status"];
-    const tableRows = filteredUsers.map(user => [
+    const tableRows = users.map(user => [
       getUserName(user),
       getUserEmail(user),
       getUserPhone(user),
@@ -147,7 +179,7 @@ export default function UserManagement() {
   };
 
   const exportToExcel = () => {
-    const workSheet = XLSX.utils.json_to_sheet(filteredUsers.map(user => ({
+    const workSheet = XLSX.utils.json_to_sheet(users.map(user => ({
       Name: getUserName(user),
       Email: getUserEmail(user),
       Phone: getUserPhone(user),
@@ -164,30 +196,9 @@ export default function UserManagement() {
     setIsExportOpen(false);
   };
 
-  const filteredUsers = users.filter(user => {
-    const name = getUserName(user).toLowerCase();
-    const email = getUserEmail(user).toLowerCase();
-    const role = getUserRole(user).toLowerCase();
-    const phone = getUserPhone(user);
-
-    const matchesSearch = name.includes(searchTerm.toLowerCase()) ||
-      email.includes(searchTerm.toLowerCase()) ||
-      role.includes(searchTerm.toLowerCase()) ||
-      phone.includes(searchTerm);
-
-    if (filter === "All") return matchesSearch;
-    if (filter === "Active") return matchesSearch && getUserStatus(user) === "Active";
-    if (filter === "Inactive") return matchesSearch && getUserStatus(user) === "Inactive";
-
-    return matchesSearch;
-  });
-
-  // Calculate paginated users
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Server-side filtering is now used, so we use users directly
+  const paginatedUsers = users;
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
 
   const handleDelete = async (id, name) => {
     // Confirm deletion
@@ -397,10 +408,10 @@ export default function UserManagement() {
       </div>
 
       {/* Pagination Controls */}
-      {!loading && filteredUsers.length > 0 && (
+      {!loading && totalResults > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm mt-4">
           <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
-            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> of <span className="font-medium text-foreground">{filteredUsers.length}</span> results
+            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, totalResults)}</span> of <span className="font-medium text-foreground">{totalResults}</span> results
           </div>
           <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
             <button

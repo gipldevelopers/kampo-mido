@@ -51,59 +51,70 @@ export default function KYCManagement() {
   // Refs
   const exportRef = useRef(null);
 
-  // Fetch KYC requests
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Debounce search term to reduce API calls and server load
   useEffect(() => {
-    const fetchKYCRequests = async () => {
-      setLoading(true);
-      try {
-        const status = filter === "All" ? null : filter.toLowerCase();
-        const response = await AdminKYCService.getAllKYC({
-          status,
-          page: 1,
-          limit: 50,
-        });
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
 
-        // Handle different response structures
-        let kycList = [];
-        if (response.data && Array.isArray(response.data)) {
-          kycList = response.data;
-        } else if (response.kyc && Array.isArray(response.kyc)) {
-          kycList = response.kyc;
-        } else if (Array.isArray(response)) {
-          kycList = response;
-        }
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-        // Map API data to UI format
-        const mappedRequests = kycList.map((kyc) => {
-          // The API endpoint /admin/kyc/view/{id} expects the KYC record ID (not customer ID)
-          // Always use KYC ID - do NOT fallback to customerId
-          const kycId = kyc.id || kyc.kycId;
-          const customerId = kyc.customerId || kyc.customer?.id;
+  const fetchKYCRequests = async () => {
+    setLoading(true);
+    try {
+      const status = filter === "All" ? null : filter.toLowerCase();
+      const response = await AdminKYCService.getAllKYC({
+        status,
+        search: debouncedSearchTerm || undefined,
+        page: 1,
+        limit: 50,
+      });
 
-          return {
-            id: kycId ? String(kycId) : null,
-            kycId: kycId ? String(kycId) : null,
-            customerId: customerId ? String(customerId) : null,
-            name: kyc.customer?.fullName || kyc.fullName || kyc.name || "N/A",
-            date: kyc.createdAt ? new Date(kyc.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "N/A",
-            staff: kyc.assignedStaff || kyc.staff || "Admin",
-            status: kyc.status ? kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1) : "Pending",
-            docType: kyc.idType || kyc.documentType || "Aadhaar Card",
-          };
-        }).filter(req => req.id !== null);
-
-        setRequests(mappedRequests);
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || error.message || "Failed to fetch KYC requests";
-        setToast({ message: errorMessage, type: "error" });
-        setRequests([]);
-      } finally {
-        setLoading(false);
+      // Handle different response structures
+      let kycList = [];
+      if (response.data && Array.isArray(response.data)) {
+        kycList = response.data;
+      } else if (response.kyc && Array.isArray(response.kyc)) {
+        kycList = response.kyc;
+      } else if (Array.isArray(response)) {
+        kycList = response;
       }
-    };
 
+      // Map API data to UI format
+      const mappedRequests = kycList.map((kyc) => {
+        // The API endpoint /admin/kyc/view/{id} expects the KYC record ID (not customer ID)
+        // Always use KYC ID - do NOT fallback to customerId
+        const kycId = kyc.id || kyc.kycId;
+        const customerId = kyc.customerId || kyc.customer?.id;
+
+        return {
+          id: kycId ? String(kycId) : null,
+          kycId: kycId ? String(kycId) : null,
+          customerId: customerId ? String(customerId) : null,
+          name: kyc.customer?.fullName || kyc.fullName || kyc.name || "N/A",
+          date: kyc.createdAt ? new Date(kyc.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "N/A",
+          staff: kyc.assignedStaff || kyc.staff || "Admin",
+          status: kyc.status ? kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1) : "Pending",
+          docType: kyc.idType || kyc.documentType || "Aadhaar Card",
+        };
+      }).filter(req => req.id !== null);
+
+      setRequests(mappedRequests);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to fetch KYC requests";
+      setToast({ message: errorMessage, type: "error" });
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchKYCRequests();
-  }, [filter]);
+  }, [filter, debouncedSearchTerm]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -113,21 +124,15 @@ export default function KYCManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter Logic
-  const filteredRequests = requests.filter(req => {
-    const matchesSearch = req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (filter === "All") return matchesSearch;
-    return matchesSearch && req.status === filter;
-  });
+  // Simplified Filter Logic (now handles server-side)
+  const filteredRequests = requests;
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("KYC Requests Report", 14, 20);
 
     const tableColumn = ["Customer", "ID", "Document Type", "Staff", "Date", "Status"];
-    const tableRows = filteredRequests.map(req => [
+    const tableRows = requests.map(req => [
       req.name,
       req.id,
       req.docType,
@@ -147,7 +152,7 @@ export default function KYCManagement() {
   };
 
   const exportToExcel = () => {
-    const workSheet = XLSX.utils.json_to_sheet(filteredRequests.map(req => ({
+    const workSheet = XLSX.utils.json_to_sheet(requests.map(req => ({
       Customer: req.name,
       ID: req.id,
       "Document Type": req.docType,

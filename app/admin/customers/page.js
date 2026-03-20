@@ -52,11 +52,36 @@ export default function CustomerManagement() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportRef = useRef(null);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Debounce search term to reduce API calls and server load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [totalResults, setTotalResults] = useState(0);
+
   // Fetch customers from API
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await CustomerService.getAllCustomers();
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm || undefined,
+      };
+
+      // Map UI filters to backend params
+      if (filter === "Active") params.status = "active";
+      if (filter === "Inactive") params.status = "inactive";
+      if (filter === "KYC Pending") params.kycStatus = "pending";
+      // Note: "High Balance" is still handled locally or would need backend support
+
+      const response = await CustomerService.getAllCustomers(params);
 
       // Handle response structure: { success: true, data: [...], pagination: {...} }
       if (response.data && Array.isArray(response.data)) {
@@ -72,13 +97,22 @@ export default function CustomerManagement() {
           status: customer.user?.status ? customer.user.status.charAt(0).toUpperCase() + customer.user.status.slice(1) : "Active",
         }));
         setCustomers(mappedCustomers);
+
+        // Update total items based on pagination info
+        if (response.pagination) {
+          setTotalResults(response.pagination.total);
+        } else {
+          setTotalResults(mappedCustomers.length);
+        }
       } else {
         setCustomers([]);
+        setTotalResults(0);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Failed to fetch customers";
       setToast({ message: errorMessage, type: "error" });
       setCustomers([]);
+      setTotalResults(0);
     } finally {
       setLoading(false);
     }
@@ -86,11 +120,11 @@ export default function CustomerManagement() {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [currentPage, debouncedSearchTerm, filter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filter]);
+  }, [debouncedSearchTerm, filter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -100,33 +134,16 @@ export default function CustomerManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.accountNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.mobile.includes(searchTerm);
-
-    if (filter === "All") return matchesSearch;
-    if (filter === "KYC Pending") return matchesSearch && customer.kyc === "Pending";
-    if (filter === "Active") return matchesSearch && customer.status === "Active";
-    if (filter === "Inactive") return matchesSearch && customer.status === "Inactive";
-    if (filter === "High Balance") return matchesSearch && customer.deposited > 100000;
-
-    return matchesSearch;
-  });
-
-  // Calculate paginated customers
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Server-side filtering is now used, so we use customers directly
+  const paginatedCustomers = customers;
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Customer Report", 14, 20);
 
     const tableColumn = ["Name", "Account No", "Mobile", "Deposited", "Gold (g)", "KYC", "Status"];
-    const tableRows = filteredCustomers.map(customer => [
+    const tableRows = customers.map(customer => [
       customer.name,
       customer.accountNo,
       customer.mobile,
@@ -147,7 +164,7 @@ export default function CustomerManagement() {
   };
 
   const exportToExcel = () => {
-    const workSheet = XLSX.utils.json_to_sheet(filteredCustomers.map(customer => ({
+    const workSheet = XLSX.utils.json_to_sheet(customers.map(customer => ({
       Name: customer.name,
       "Account No": customer.accountNo,
       Mobile: customer.mobile,
@@ -377,10 +394,10 @@ export default function CustomerManagement() {
       </div>
 
       {/* Pagination Controls */}
-      {!loading && filteredCustomers.length > 0 && (
+      {!loading && totalResults > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm mt-4">
           <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
-            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> of <span className="font-medium text-foreground">{filteredCustomers.length}</span> results
+            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, totalResults)}</span> of <span className="font-medium text-foreground">{totalResults}</span> results
           </div>
           <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
             <button

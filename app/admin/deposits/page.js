@@ -48,11 +48,27 @@ export default function DepositManagement() {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const exportRef = useRef(null);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Debounce search term to reduce API calls and server load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Fetch deposits from API
   const fetchDeposits = async () => {
     setLoading(true);
     try {
-      const response = await DepositService.getAllDeposits();
+      const params = {
+        search: debouncedSearchTerm || undefined,
+        status: filter !== "All" ? filter.toLowerCase() : undefined
+      };
+
+      const response = await DepositService.getAllDeposits(params);
 
       // Handle different response structures
       let depositsData = [];
@@ -99,7 +115,7 @@ export default function DepositManagement() {
         return {
           id: deposit.transactionId || deposit.id || `DEP-${deposit.id}`,
           numericId: deposit.id,
-          customer: deposit.customer?.name || deposit.customerName || "N/A",
+          customer: deposit.customer?.fullName || deposit.customerName || "N/A",
           amount: deposit.amount || 0,
           mode: deposit.mode || "UPI",
           date: formattedDate,
@@ -127,7 +143,7 @@ export default function DepositManagement() {
 
   useEffect(() => {
     fetchDeposits();
-  }, []);
+  }, [debouncedSearchTerm, filter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -137,20 +153,14 @@ export default function DepositManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredDeposits = deposits.filter(dep => {
-    const matchesSearch = dep.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dep.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (filter === "All") return matchesSearch;
-    return matchesSearch && dep.status === filter;
-  });
+  const filteredDeposits = deposits; // Server-side search is now used
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Deposit Report", 14, 20);
 
     const tableColumn = ["Transaction ID", "Customer", "Amount", "Mode", "Date", "Rate Used", "Gold Credited", "Status"];
-    const tableRows = filteredDeposits.map(dep => [
+    const tableRows = deposits.map(dep => [
       dep.id,
       dep.customer,
       `Rs. ${dep.amount.toLocaleString()}`,
@@ -172,7 +182,7 @@ export default function DepositManagement() {
   };
 
   const exportToExcel = () => {
-    const workSheet = XLSX.utils.json_to_sheet(filteredDeposits.map(dep => ({
+    const workSheet = XLSX.utils.json_to_sheet(deposits.map(dep => ({
       "Transaction ID": dep.id,
       Customer: dep.customer,
       Amount: dep.amount,

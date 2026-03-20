@@ -23,9 +23,10 @@ class UserService {
   }
 
   // Get all users
-  async getAllUsers() {
+  async getAllUsers(params = {}) {
     try {
       const response = await API.get("/admin/users/get-all-users", {
+        params
       });
       return response.data;
     } catch (error) {
