@@ -6,6 +6,7 @@ import Toast from "@/components/Toast";
 import GoldRateService from "@/services/admin/gold-rate.service";
 import CustomerService from "@/services/admin/customer.service";
 import DepositService from "@/services/admin/deposit.service";
+import SearchableSelect from "@/components/SearchableSelect";
 
 export default function AddDeposit() {
   const [toast, setToast] = useState(null);
@@ -64,7 +65,8 @@ export default function AddDeposit() {
     const fetchCustomers = async () => {
       setFetchingCustomers(true);
       try {
-        const response = await CustomerService.getAllCustomers();
+        // Fetch more customers (limit 1000 instead of default 10) to ensure more are visible
+        const response = await CustomerService.getAllCustomers({ limit: 1000 });
 
         // Handle different response structures
         let customersData = [];
@@ -303,33 +305,15 @@ export default function AddDeposit() {
             <div className="space-y-1.5 sm:space-y-2">
               <label className="text-xs sm:text-sm font-medium text-foreground">Select Customer</label>
               <div className="relative">
-                <select
+                <SearchableSelect
+                  options={customers}
                   value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                  disabled={fetchingCustomers}
-                  className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground appearance-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  onChange={(val) => setSelectedCustomer(val)}
+                  loading={fetchingCustomers}
+                  placeholder="-- Choose Customer --"
+                  searchPlaceholder="Search by name, A/C or code..."
                   required
-                >
-                  <option value="">-- Choose Customer --</option>
-                  {fetchingCustomers ? (
-                    <option value="" disabled>Loading customers...</option>
-                  ) : customers.length > 0 ? (
-                    customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.displayName}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>No customers available</option>
-                  )}
-                </select>
-                <div className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  {fetchingCustomers ? (
-                    <Loader2 size={14} className="sm:w-4 sm:h-4 text-muted-foreground animate-spin" />
-                  ) : (
-                    <ChevronDown size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
-                  )}
-                </div>
+                />
               </div>
             </div>
 
@@ -338,50 +322,38 @@ export default function AddDeposit() {
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-foreground">Select Deposit (Optional)</label>
                 <div className="relative">
-                  <select
-                    value={selectedDeposit}
-                    onChange={(e) => {
-                      const depositId = e.target.value;
-                      if (!depositId) {
-                        setSelectedDeposit("");
-                        return;
-                      }
+                <SearchableSelect
+                  options={deposits}
+                  value={selectedDeposit}
+                  onChange={(val) => {
+                    if (!val) {
+                      setSelectedDeposit("");
+                      return;
+                    }
 
-                      // Check if selected deposit is converted or processing
-                      const selectedDepositData = deposits.find(d => String(d.id) === String(depositId));
-                      if (selectedDepositData && (
-                        selectedDepositData.isConverted ||
-                        selectedDepositData.status === "converted" ||
-                        selectedDepositData.status === "Converted" ||
-                        selectedDepositData.status === "processing" ||
-                        selectedDepositData.status === "Processing"
-                      )) {
-                        setToast({
-                          message: "Please select an approved deposit. Converted or processing deposits cannot be selected.",
-                          type: "error"
-                        });
-                        setSelectedDeposit("");
-                        return;
-                      }
+                    // Check if selected deposit is converted or processing
+                    const selectedDepositData = deposits.find(d => String(d.id) === String(val));
+                    if (selectedDepositData && (
+                      selectedDepositData.isConverted ||
+                      selectedDepositData.status === "converted" ||
+                      selectedDepositData.status === "Converted" ||
+                      selectedDepositData.status === "processing" ||
+                      selectedDepositData.status === "Processing"
+                    )) {
+                      setToast({
+                        message: "Please select an approved deposit. Converted or processing deposits cannot be selected.",
+                        type: "error"
+                      });
+                      setSelectedDeposit("");
+                      return;
+                    }
 
-                      setSelectedDeposit(depositId);
-                    }}
-                    disabled={fetchingDeposits}
-                    className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground appearance-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">-- Choose Deposit (Optional) --</option>
-                    {fetchingDeposits ? (
-                      <option value="" disabled>Loading deposits...</option>
-                    ) : deposits.length > 0 ? (
-                      deposits.map((deposit) => (
-                        <option key={deposit.id} value={deposit.id}>
-                          {deposit.displayName}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No approved deposits found for this customer</option>
-                    )}
-                  </select>
+                    setSelectedDeposit(val);
+                  }}
+                  loading={fetchingDeposits}
+                  placeholder="-- Choose Deposit (Optional) --"
+                  searchPlaceholder="Search deposits..."
+                />
                   <div className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     {fetchingDeposits ? (
                       <Loader2 size={14} className="sm:w-4 sm:h-4 text-muted-foreground animate-spin" />
