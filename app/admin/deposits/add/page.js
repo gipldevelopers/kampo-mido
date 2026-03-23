@@ -66,7 +66,7 @@ export default function AddDeposit() {
       setFetchingCustomers(true);
       try {
         // Fetch more customers (limit 1000 instead of default 10) to ensure more are visible
-        const response = await CustomerService.getAllCustomers({ limit: 1000 });
+        const response = await CustomerService.getAllCustomers({ limit: 100 });
 
         // Handle different response structures
         let customersData = [];
