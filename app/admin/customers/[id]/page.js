@@ -15,7 +15,10 @@ import {
   CreditCard
 } from "lucide-react";
 import Toast from "@/components/Toast";
+import Modal from "@/components/Modal";
 import CustomerService from "@/services/admin/customer.service";
+import DepositService from "@/services/admin/deposit.service";
+import GoldRateService from "@/services/admin/gold-rate.service";
 
 const getFullImageUrl = (url) => {
   if (!url) return "";
@@ -182,12 +185,10 @@ export default function CustomerDetail({ params }) {
             </button>
           </Link>
         </div>
-      </div>
-
-      {/* 2. Tabs Navigation */}
+      </div>      {/* 2. Tabs Navigation */}
       <div className="border-b border-border">
         <nav className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
-          {['overview'].map((tab) => (
+          {['overview', 'deposits'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -394,7 +395,202 @@ export default function CustomerDetail({ params }) {
           </div>
         )}
 
+        {/* --- Tab B: Deposits List --- */}
+        {activeTab === 'deposits' && (
+          <div className="animate-in slide-in-from-bottom-2 duration-300">
+            <CustomerDeposits 
+              customerId={id} 
+              formatDate={formatDate} 
+              setToast={setToast}
+            />
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
+
+// Separate component for Customer Deposits for better management
+function CustomerDeposits({ customerId, formatDate, setToast }) {
+  const [deposits, setDeposits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [syncingId, setSyncingId] = useState(null);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDeposit, setSelectedDeposit] = useState(null);
+  const [manualRateInput, setManualRateInput] = useState("");
+
+  const fetchDeposits = async () => {
+    setLoading(true);
+    try {
+      const response = await DepositService.getCustomerDeposits(customerId);
+      setDeposits(response.data || []);
+    } catch (err) {
+      setError(err.message || "Failed to fetch deposits");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDeposits();
+  }, [customerId]);
+
+  const handleSyncRate = (deposit) => {
+    setSelectedDeposit(deposit);
+    setManualRateInput(deposit.rateLockedValue || deposit.rateLockedRecord || "");
+    setIsModalOpen(true);
+  };
+
+  const handleSaveManualRate = async () => {
+    if (!manualRateInput || isNaN(manualRateInput)) {
+      setToast({ message: "Please enter a valid numeric rate.", type: "alert" });
+      return;
+    }
+
+    try {
+      setSyncingId(selectedDeposit.id);
+      setIsModalOpen(false);
+      
+      await DepositService.updateDeposit(selectedDeposit.id, {
+        goldRateLockValue: parseFloat(manualRateInput)
+      });
+
+      // Refresh data
+      await fetchDeposits();
+      setToast({ message: "Gold rate updated manually for this deposit!", type: "success" });
+    } catch (err) {
+      setToast({ message: `Failed to update rate: ${err.message}`, type: "alert" });
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+  if (loading) return <div className="text-center py-10 text-muted-foreground">Loading deposits...</div>;
+  if (error) return <div className="text-center py-10 text-destructive">{error}</div>;
+  if (deposits.length === 0) return (
+    <div className="text-center py-10 bg-muted/20 border border-dashed border-border rounded-xl">
+      <p className="text-muted-foreground italic">No deposits found for this customer.</p>
+      <Link href="/admin/deposits" className="mt-4 inline-block text-primary text-sm font-semibold hover:underline">
+        Go to Deposits Management
+      </Link>
+    </div>
+  );
+
+  return (
+    <>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Manual Gold Rate Override"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Enter the gold rate (per gram) that should be applied to this deposit (ID: {selectedDeposit?.transactionId}).
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Rate Per Gram (₹)</label>
+            <input 
+              type="number" 
+              value={manualRateInput}
+              onChange={(e) => setManualRateInput(e.target.value)}
+              placeholder="e.g. 7500.50"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveManualRate}
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90"
+            >
+              Save Rate
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <div className="bg-card border border-border rounded-lg sm:rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse">
+            <thead>
+              <tr className="bg-muted/50 border-b border-border">
+                <th className="px-4 py-3 font-semibold text-muted-foreground">ID</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Amount</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Date</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Gold (g)</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Rate Locked/Used</th>
+                <th className="px-4 py-3 font-semibold text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {deposits.map((deposit) => (
+                <tr key={deposit.id} className="hover:bg-muted/30 transition-colors group">
+                  <td className="px-4 py-3 font-medium text-foreground">{deposit.transactionId}</td>
+                  <td className="px-4 py-3 font-bold text-foreground">₹{deposit.amount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(deposit.depositDate)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${deposit.status === 'converted'
+                      ? 'bg-status-success/10 text-status-success border-status-success/20'
+                      : deposit.status === 'pending'
+                        ? 'bg-status-warning/10 text-status-warning border-status-warning/20'
+                        : deposit.status === 'rejected'
+                          ? 'bg-status-error/10 text-status-error border-status-error/20'
+                          : 'bg-secondary text-secondary-foreground border-border'
+                      }`}>
+                      {deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    {deposit.gold ? `${deposit.gold.toFixed(4)}g` : '--'}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground flex flex-col">
+                    {deposit.rateUsed ? (
+                      <span className="text-foreground font-medium">₹{deposit.rateUsed}/g (Used)</span>
+                    ) : deposit.rateLockedValue ? (
+                      <span className="text-primary font-medium">₹{deposit.rateLockedValue}/g (Manual)</span>
+                    ) : deposit.rateLockedRecord ? (
+                      <span className="text-primary/70 font-medium">₹{deposit.rateLockedRecord}/g (Auto)</span>
+                    ) : (
+                      <span className="text-muted-foreground italic">Not Set</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(deposit.status === 'pending' || deposit.status === 'converted') && !deposit.rateLockedValue && !deposit.rateLockedRecord && !deposit.rateUsed && (
+                      <button
+                        onClick={() => handleSyncRate(deposit)}
+                        disabled={syncingId === deposit.id}
+                        className="px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded text-[10px] font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
+                      >
+                        {syncingId === deposit.id ? 'Setting...' : 'Set Rate'}
+                      </button>
+                    )}
+                    {(deposit.status === 'pending' || deposit.status === 'approved' || deposit.status === 'converted') && (deposit.rateLockedValue || deposit.rateLockedRecord || deposit.rateUsed) && (
+                      <button
+                        onClick={() => handleSyncRate(deposit)}
+                        disabled={syncingId === deposit.id}
+                        className="px-2 py-1 bg-muted border border-border rounded text-[10px] font-semibold hover:bg-muted/80 transition-all disabled:opacity-50"
+                      >
+                        {syncingId === deposit.id ? 'Updating...' : 'Update Rate'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
