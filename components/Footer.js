@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, Instagram, Twitter, Facebook, ArrowRight } from "lucide-react";
+import { Phone, Mail, Instagram, Twitter, Facebook, ArrowRight, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   const adminPhone = process.env.NEXT_PUBLIC_ADMIN_PHONE;
+  const adminWhatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
   const currentYear = new Date().getFullYear();
 
@@ -72,10 +74,27 @@ export default function Footer() {
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Email Support</span>
                 </div>
                 <a
-                  href="mailto:support@goldharvesting.com"
+                  href={`mailto:${adminEmail}`}
                   className="text-base font-bold text-foreground hover:text-primary transition-colors block pl-9"
                 >
-                  kampomidojewellers@gmail.com
+                  {adminEmail}
+                </a>
+              </div>
+
+              <div className="group p-4 bg-muted/30 rounded-xl border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-1 justify-start">
+                  <div className="p-1.5 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                    <MessageCircle size={14} className="text-primary" />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">WhatsApp Chat</span>
+                </div>
+                <a
+                  href={`https://wa.me/${adminWhatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-base font-bold text-foreground hover:text-primary transition-colors block pl-9"
+                >
+                  Chat with us
                 </a>
               </div>
             </div>
