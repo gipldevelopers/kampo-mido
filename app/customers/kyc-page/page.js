@@ -296,44 +296,19 @@ export default function KYCPage() {
         // Normalize status
         const rawStatus = status.toLowerCase();
         let finalStatus = "Pending";
-        let locked = false;
 
         if (rawStatus === "approved" || rawStatus === "verified") {
           finalStatus = "Verified";
-          locked = true;
         } else if (rawStatus === "rejected") {
           finalStatus = "Rejected";
-          locked = false; // Allow fix
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "reupload_requested" || rawStatus === "action_required") {
           finalStatus = "Re-upload Requested";
-          locked = false; // Allow fix
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "pending") {
           finalStatus = "Pending";
-          // Only lock if we have documents in local storage indicating an active submission
-          const submitted = typeof window !== "undefined" ? localStorage.getItem("kycSubmitted") : null;
-          if (submitted === "true") {
-            locked = true;
-          }
-        }
-
-
-        // Override lock if re-upload is explicitly allowed
-        if (data?.canReupload) {
-          locked = false;
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
-
-          // Use more specific status if available
-          if (finalStatus === "Pending") {
-            finalStatus = (data.documentsToReupload && data.documentsToReupload.length > 0)
-              ? "Re-upload Requested"
-              : "Rejected";
-          }
         }
 
         setKycStatus(finalStatus);
-        setIsSubmitted(locked);
+        setIsSubmitted(true); // Always locked in this view
 
       } catch (error) {
         console.error("Error fetching KYC status:", error);
@@ -381,106 +356,8 @@ export default function KYCPage() {
     setPreview(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!(aadhaarFront || aadhaarFrontPreview) ||
-      !(aadhaarBack || aadhaarBackPreview) ||
-      !(panCard || panCardPreview) ||
-      !(selfie || selfiePreview)) {
-      setToast({ message: "Please upload all required documents", type: "error" });
-      return;
-    }
-
-    if (!idNumber || !panNumber) {
-      setToast({ message: "Please enter Aadhaar number and PAN number", type: "error" });
-      return;
-    }
-
-    // Aadhaar Validation (12 digits)
-    const aadhaarRegex = /^\d{12}$/;
-    if (!aadhaarRegex.test(idNumber)) {
-      setToast({ message: "Aadhaar number must be exactly 12 digits", type: "error" });
-      return;
-    }
-
-    // PAN Validation (5 letters, 4 digits, 1 letter)
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(panNumber)) {
-      setToast({ message: "Invalid PAN number format (e.g. ABCDE1234F)", type: "error" });
-      return;
-    }
-
-    if (!bankName || !accountNumber || !confirmAccountNumber || !ifscCode || !accountHolder) {
-      setToast({ message: "Please fill all bank details", type: "error" });
-      return;
-    }
-
-    // IFSC Validation (4 letters, 0, 6 characters)
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    if (!ifscRegex.test(ifscCode)) {
-      setToast({ message: "Invalid IFSC code format (e.g. SBIN0123456)", type: "error" });
-      return;
-    }
-
-    if (accountNumber !== confirmAccountNumber) {
-      setToast({ message: "Account numbers do not match", type: "error" });
-      return;
-    }
-
-    if (!nomineeName || !nomineeRelation || !nomineeDob || !nomineeAddress || !nomineePhone) {
-      setToast({ message: "Please fill all nominee details", type: "error" });
-      return;
-    }
-
-    // Validate Nominee DOB (cannot be in future)
-    const selectedDate = new Date(nomineeDob);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selectedDate > today) {
-      setToast({ message: "Nominee Date of Birth cannot be in the future", type: "error" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Call both APIs in parallel
-      await Promise.all([
-        KYCService.uploadKYC({
-          aadhaarFront,
-          aadhaarBack,
-          panCard,
-          selfie,
-          idType,
-          idNumber,
-          panNumber,
-          bankName,
-          accountNumber,
-          ifscCode,
-          accountHolder
-        }),
-        NomineeService.createNominee({
-          name: nomineeName,
-          relationship: nomineeRelation,
-          dob: nomineeDob,
-          address: nomineeAddress,
-          phone: nomineePhone,
-        }),
-      ]);
-
-      setToast({ message: "KYC documents and nominee details submitted successfully! Admin will verify and approve.", type: "success" });
-
-      // Mark as submitted and save to localStorage
-      setIsSubmitted(true);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("kycSubmitted", "true");
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to submit. Please try again.";
-      setToast({ message: errorMessage, type: "error" });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const FileUploadSection = ({ title, description, file, preview, setFile, setPreview, required = true, fieldKey }) => {
@@ -499,7 +376,7 @@ export default function KYCPage() {
         </div>
         {preview ? (
           <div className="relative">
-            <div className={`border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30 ${isRequested ? "border-orange-300 shadow-sm" : "border-border"}`}>
+            <div className={`border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30 border-border`}>
               <img
                 src={preview}
                 alt={title}
@@ -516,35 +393,13 @@ export default function KYCPage() {
               >
                 <Eye size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
               </button>
-              {!isDisabled && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(setFile, setPreview, fieldKey)}
-                  className="p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-all shadow-md group"
-                  aria-label="Remove file"
-                  title="Remove"
-                >
-                  <X size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-                </button>
-              )}
             </div>
           </div>
         ) : (
-          <label className={isDisabled ? "cursor-not-allowed" : "cursor-pointer"}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e.target.files[0], setFile, setPreview, fieldKey)}
-              disabled={isDisabled}
-              className="hidden"
-              required={required && !preview}
-            />
-            <div className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed rounded-lg transition-all ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"} ${isRequested ? "border-orange-400 bg-orange-50/30 ring-1 ring-orange-100" : "border-border"}`}>
-              <ImageIcon size={24} className={`sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${isRequested ? "text-orange-500 animate-pulse" : "text-muted-foreground"}`} />
-              <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload {title.toLowerCase()}</p>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
-            </div>
-          </label>
+          <div className="flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/10 border-2 border-dashed rounded-lg border-border opacity-60">
+            <ImageIcon size={24} className="sm:w-8 sm:h-8 mb-1.5 sm:mb-2 text-muted-foreground" />
+            <p className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground">Document not available</p>
+          </div>
         )}
         {description && <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{description}</p>}
       </div>
@@ -872,27 +727,8 @@ export default function KYCPage() {
 
               <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> All documents must be clear and readable.
-                  Ensure all information is visible and not blurred. Admin will verify your documents and approve your KYC.
+                  View of existing KYC details. For any changes, please contact support.
                 </p>
-              </div>
-
-              <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || isSubmitted}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck size={14} className="sm:w-4 sm:h-4" /> <span>Submit KYC</span>
-                    </>
-                  )}
-                </button>
               </div>
             </form>
           </div>
