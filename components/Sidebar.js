@@ -29,8 +29,8 @@ const getMenuItems = (role) => {
       { name: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard },
       { name: "User Management", href: "/staff/users", icon: Users },
       { name: "Customer Management", href: "/staff/customers", icon: Users },
-      { name: "Add Deposit", href: "/staff/deposits/add", icon: PlusCircle },
       { name: "Approve deposits", href: "/staff/approve-deposits", icon: CheckCircle2 },
+      { name: "Add Deposit", href: "/staff/deposits/add", icon: PlusCircle },
       { name: "KYC Management", href: "/staff/kyc", icon: ShieldCheck },
       { name: "Staff Profile", href: "/staff/profile", icon: UserCircle },
     ];

@@ -171,7 +171,8 @@ export default function EditCustomer({ params }) {
     whatsapp: "",
     city: "",
     state: "",
-    pincode: ""
+    pincode: "",
+    capLockYears: "0"
   });
 
   const [loading, setLoading] = useState(true);
@@ -197,7 +198,8 @@ export default function EditCustomer({ params }) {
             whatsapp: data.whatsapp || "",
             city: data.city || "",
             state: data.state || "",
-            pincode: data.pincode || ""
+            pincode: data.pincode || "",
+            capLockYears: data.capLockYears !== undefined ? String(data.capLockYears) : "0"
           });
         }
       } catch (error) {
@@ -410,6 +412,28 @@ export default function EditCustomer({ params }) {
                 <option value="approved">Approved</option>
                 <option value="pending">Pending</option>
                 <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium text-foreground">Cap Lock Years <span className="text-red-500">*</span></label>
+              <select
+                name="capLockYears"
+                value={formData.capLockYears}
+                onChange={handleChange}
+                className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                required
+              >
+                <option value="0">0 Years (No Lock)</option>
+                <option value="1">1 Year</option>
+                <option value="2">2 Years</option>
+                <option value="3">3 Years</option>
+                <option value="4">4 Years</option>
+                <option value="5">5 Years</option>
+                <option value="6">6 Years</option>
+                <option value="7">7 Years</option>
+                <option value="8">8 Years</option>
+                <option value="9">9 Years</option>
+                <option value="10">10 Years</option>
               </select>
             </div>
           </div>

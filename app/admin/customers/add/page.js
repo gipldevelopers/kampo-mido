@@ -168,6 +168,7 @@ export default function AddCustomer() {
     city: "",
     state: "",
     pincode: "",
+    capLockYears: "0",
     initialDeposit: "",
     status: "active",
   });
@@ -403,6 +404,7 @@ export default function AddCustomer() {
         city: formData.city.trim() || null,
         state: formData.state.trim() || null,
         pincode: formData.pincode.trim() || null,
+        capLockYears: formData.capLockYears ? parseInt(formData.capLockYears, 10) : 0,
         kycStatus: "pending",
       });
 
@@ -689,6 +691,28 @@ export default function AddCustomer() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="capLockYears" className="text-xs sm:text-sm font-medium text-foreground">Cap Lock Years</label>
+              <select
+                id="capLockYears"
+                name="capLockYears"
+                value={formData.capLockYears}
+                onChange={handleChange}
+                className="w-full px-3 py-2 sm:py-2.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+              >
+                <option value="0">0 Years (No Lock)</option>
+                <option value="1">1 Year</option>
+                <option value="2">2 Years</option>
+                <option value="3">3 Years</option>
+                <option value="4">4 Years</option>
+                <option value="5">5 Years</option>
+                <option value="6">6 Years</option>
+                <option value="7">7 Years</option>
+                <option value="8">8 Years</option>
+                <option value="9">9 Years</option>
+                <option value="10">10 Years</option>
+              </select>
+            </div>
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="initialDeposit" className="text-xs sm:text-sm font-medium text-foreground">Initial Deposit (Optional)</label>
               <input

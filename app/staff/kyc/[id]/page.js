@@ -46,6 +46,7 @@ export default function KYCDetail({ params }) {
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
   const [imageZoom, setImageZoom] = useState(1);
+  const [capLockYears, setCapLockYears] = useState("0");
 
   // Fetch KYC details
   useEffect(() => {
@@ -206,7 +207,7 @@ export default function KYCDetail({ params }) {
         return;
       }
       try {
-        await AdminKYCService.updateKYCStatus(finalKycId, "approved", notes);
+        await AdminKYCService.updateKYCStatus(finalKycId, "approved", notes, null, parseInt(capLockYears, 10));
         setToast({ message: "KYC Approved Successfully", type: "success" });
         if (kycData) {
           setKycData({ ...kycData, status: "Approved" });
@@ -233,7 +234,8 @@ export default function KYCDetail({ params }) {
           finalKycId,
           "rejected",
           notes,
-          documentsToReupload.length > 0 ? documentsToReupload : undefined
+          documentsToReupload.length > 0 ? documentsToReupload : undefined,
+          0 // No cap lock on rejection
         );
         setToast({ message: "KYC Rejected", type: "error" });
         if (kycData) {
@@ -632,16 +634,42 @@ export default function KYCDetail({ params }) {
             </div>
           )}
 
-          {/* Staff Notes */}
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-            <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Staff Notes</h3>
-            <textarea
-              className={`w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y ${isReadOnly ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
-              placeholder={isReadOnly ? "Notes are locked" : "Add verification notes here..."}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={isReadOnly}
-            ></textarea>
+          {/* Action Details: Cap Lock & Staff Notes */}
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm space-y-4">
+            {!isReadOnly && (
+              <div>
+                <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Set Cap Lock Profile</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Optional: Define for how many years this customer&apos;s funds will be restricted from withdrawal.</p>
+                <select
+                  value={capLockYears}
+                  onChange={(e) => setCapLockYears(e.target.value)}
+                  className={`w-full bg-background border border-input rounded-md px-3 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all`}
+                >
+                  <option value="0">0 Years (No Lock)</option>
+                  <option value="1">1 Year</option>
+                  <option value="2">2 Years</option>
+                  <option value="3">3 Years</option>
+                  <option value="4">4 Years</option>
+                  <option value="5">5 Years</option>
+                  <option value="6">6 Years</option>
+                  <option value="7">7 Years</option>
+                  <option value="8">8 Years</option>
+                  <option value="9">9 Years</option>
+                  <option value="10">10 Years</option>
+                </select>
+              </div>
+            )}
+            
+            <div>
+              <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Staff Notes</h3>
+              <textarea
+                className={`w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y ${isReadOnly ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
+                placeholder={isReadOnly ? "Notes are locked" : "Add verification notes here..."}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={isReadOnly}
+              ></textarea>
+            </div>
           </div>
 
         </div>

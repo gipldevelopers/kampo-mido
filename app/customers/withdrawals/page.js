@@ -65,6 +65,8 @@ export default function WithdrawalsPage() {
   const [withdrawalHistory, setWithdrawalHistory] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isCapLocked, setIsCapLocked] = useState(false);
+  const [unlockDate, setUnlockDate] = useState(null);
 
   // KYC State
   const [kycVerified, setKycVerified] = useState(false);
@@ -125,11 +127,12 @@ export default function WithdrawalsPage() {
         setLoadingData(true);
       }
 
-      // Fetch available gold and current rate
       const goldResponse = await withdrawalsService.checkAvailableGold();
       if (goldResponse.success && goldResponse.data) {
         setAvailableGold(goldResponse.data.availableGold);
         setCurrentGoldRate(goldResponse.data.currentGoldRate);
+        setIsCapLocked(goldResponse.data.isCapLocked || false);
+        setUnlockDate(goldResponse.data.unlockDate || null);
       }
 
       // Fetch withdrawal history
@@ -368,34 +371,47 @@ export default function WithdrawalsPage() {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-
-        {/* LEFT COLUMN: Withdrawal Form (Span 2) */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
-
-          {/* Withdrawal Form or KYC Lock */}
-          {checkingKYC ? (
-            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-8 flex items-center justify-center">
-              <Loader2 size={32} className="animate-spin text-muted-foreground" />
+      {/* Withdrawals Page Content Blocks */}
+      {checkingKYC ? (
+        <div className="bg-card border border-border rounded-lg sm:rounded-xl p-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 size={32} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : isCapLocked ? (
+        <div className="bg-card border border-primary/20 bg-primary/5 rounded-lg sm:rounded-xl p-6 md:p-10 text-center space-y-4 shadow-sm min-h-[400px] flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Withdrawals Temporarily Disabled</h3>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Your account is currently under a Global Cap Lock lock-in period. All gold withdrawals and conversions are suspended until your term is completed.
+          </p>
+          {unlockDate && (
+            <div className="mt-4 inline-block px-4 py-2 bg-background border border-primary/20 rounded-md">
+              <span className="text-sm font-medium text-primary">Unlocks on: {new Date(unlockDate).toLocaleDateString()}</span>
             </div>
-          ) : !kycVerified ? (
-            <div className="bg-card border border-destructive/20 rounded-lg sm:rounded-xl p-6 md:p-10 text-center space-y-4 shadow-sm">
-              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-destructive" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground">KYC Verification Required</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                To ensure security and compliance, you must complete your KYC verification before making any withdrawals.
-              </p>
-              <div className="pt-2">
-                <Link href="/customers/kyc-page" className="inline-flex items-center justify-center px-6 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity">
-                  Complete Verification
-                </Link>
-              </div>
-            </div>
-          ) : (
-            /* Withdrawal Type Selection */
-            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
+          )}
+        </div>
+      ) : !kycVerified ? (
+        <div className="bg-card border border-destructive/20 rounded-lg sm:rounded-xl p-6 md:p-10 text-center space-y-4 shadow-sm min-h-[400px] flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+            <Lock className="w-8 h-8 text-destructive" />
+          </div>
+          <h3 className="text-xl sm:text-2xl font-semibold text-foreground">KYC Verification Required</h3>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            To ensure security and compliance, you must complete your KYC verification before making any withdrawals.
+          </p>
+          <div className="pt-2">
+            <Link href="/customers/kyc-page" className="inline-flex items-center justify-center px-6 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity">
+              Complete Verification
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+          {/* LEFT COLUMN: Withdrawal Form (Span 2) */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm relative overflow-hidden">
+              
               <div className="flex items-center gap-2 mb-4 sm:mb-5 md:mb-6">
                 <ArrowUpCircle size={18} className="sm:w-5 sm:h-5 text-primary shrink-0" />
                 <h3 className="text-base sm:text-lg font-semibold text-foreground">Request Withdrawal</h3>
@@ -408,6 +424,7 @@ export default function WithdrawalsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
                     <button
                       type="button"
+                      disabled={loading || validating}
                       onClick={() => setWithdrawalType("money")}
                       className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "money"
                         ? "bg-primary/10 border-primary text-primary"
@@ -420,6 +437,7 @@ export default function WithdrawalsPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={loading || validating}
                       onClick={() => setWithdrawalType("physical")}
                       className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "physical"
                         ? "bg-primary/10 border-primary text-primary"
@@ -432,6 +450,7 @@ export default function WithdrawalsPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={loading || validating}
                       onClick={() => setWithdrawalType("jewellery")}
                       className={`p-3 sm:p-4 rounded-lg border transition-all ${withdrawalType === "jewellery"
                         ? "bg-primary/10 border-primary text-primary"
@@ -455,19 +474,21 @@ export default function WithdrawalsPage() {
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="Enter amount to withdraw"
-                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                         required
+                        disabled={loading || validating}
                         min="1"
                       />
                       <button
                         type="button"
+                        disabled={loading || validating}
                         onClick={handleCalculate}
-                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors disabled:opacity-50"
                       >
                         Calculate
                       </button>
                     </div>
-                    {amount && currentGoldRate > 0 && (
+                    {amount && currentGoldRate > 0 && !isCapLocked && (
                       <p
                         className={`text-[9px] sm:text-[10px] md:text-xs ${isExceedingForMoney ? "text-destructive" : "text-muted-foreground"
                           }`}
@@ -487,20 +508,22 @@ export default function WithdrawalsPage() {
                         value={grams}
                         onChange={(e) => setGrams(e.target.value)}
                         placeholder="Enter gold grams"
+                        disabled={loading || validating}
                         step="0.01"
-                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        className="flex-1 px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                         required
                         min="0.01"
                       />
                       <button
                         type="button"
+                        disabled={loading || validating}
                         onClick={handleCalculate}
-                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors"
+                        className="px-3 py-2 bg-secondary text-secondary-foreground rounded-md text-[11px] sm:text-xs hover:bg-secondary/80 transition-colors disabled:opacity-50"
                       >
                         Calculate
                       </button>
                     </div>
-                    {grams && currentGoldRate > 0 && (
+                    {grams && currentGoldRate > 0 && !isCapLocked && (
                       <p
                         className={`text-[9px] sm:text-[10px] md:text-xs ${isExceedingForGold ? "text-destructive" : "text-muted-foreground"
                           }`}
@@ -521,8 +544,9 @@ export default function WithdrawalsPage() {
                       <textarea
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
+                        disabled={loading || validating}
                         placeholder="Enter complete delivery address"
-                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y"
+                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y disabled:opacity-50"
                       />
                     </div>
                     <div className="relative">
@@ -539,8 +563,9 @@ export default function WithdrawalsPage() {
                         type="text"
                         value={pickupLocation}
                         onChange={(e) => setPickupLocation(e.target.value)}
+                        disabled={loading || validating}
                         placeholder="Enter store/pickup location"
-                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                       />
                     </div>
                   </div>
@@ -561,7 +586,7 @@ export default function WithdrawalsPage() {
                 <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
                   <button
                     type="submit"
-                    disabled={loading || validating || isInsufficientGold}
+                        disabled={loading || validating || isInsufficientGold}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {loading || validating ? (
@@ -577,8 +602,7 @@ export default function WithdrawalsPage() {
                 </div>
               </form>
             </div>
-          )}
-        </div>
+          </div>
 
         {/* RIGHT COLUMN: Withdrawal History (Span 1) */}
         <div className="space-y-4 sm:space-y-5 md:space-y-6">
@@ -658,33 +682,35 @@ export default function WithdrawalsPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
-            <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-2 sm:mb-3">Quick Actions</p>
-            <div className="space-y-2">
-              <button
-                onClick={() => setWithdrawalType("money")}
-                className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
-              >
-                Request Money Payout
-              </button>
-              <button
-                onClick={() => setWithdrawalType("physical")}
-                className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
-              >
-                Request Physical Gold
-              </button>
-              <button
-                onClick={() => setWithdrawalType("jewellery")}
-                className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
-              >
-                Request Jewellery
-              </button>
+          {(!isCapLocked && kycVerified) && (
+            <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+              <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-2 sm:mb-3">Quick Actions</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setWithdrawalType("money")}
+                  className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
+                >
+                  Request Money Payout
+                </button>
+                <button
+                  onClick={() => setWithdrawalType("physical")}
+                  className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
+                >
+                  Request Physical Gold
+                </button>
+                <button
+                  onClick={() => setWithdrawalType("jewellery")}
+                  className="w-full text-left px-3 py-2 text-[10px] sm:text-xs border border-input rounded-md hover:bg-muted transition-colors"
+                >
+                  Request Jewellery
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
-
       </div>
+      )}
 
     </div>
   );
