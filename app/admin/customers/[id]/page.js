@@ -3,8 +3,6 @@ import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  AlertTriangle,
-  Mail,
   Edit,
   Plus,
   FileText,
@@ -19,7 +17,6 @@ import Modal from "@/components/Modal";
 import CustomerService from "@/services/admin/customer.service";
 import AdminKYCSubmitService from "@/services/admin/admin-kyc-submit.service";
 import DepositService from "@/services/admin/deposit.service";
-import GoldRateService from "@/services/admin/gold-rate.service";
 
 const getFullImageUrl = (url) => {
   if (!url) return "";
@@ -148,6 +145,26 @@ export default function CustomerDetail({ params }) {
     nomineeAddress: "",
     nomineePhone: "",
   });
+
+  // Pre-fill KYC form from customer data
+  useEffect(() => {
+    if (customerData) {
+      setKycForm({
+        idType: customerData.kycDocument?.idType || "Aadhaar",
+        idNumber: customerData.kycDocument?.idNumber || "",
+        panNumber: customerData.kycDocument?.panNumber || "",
+        bankName: customerData.bankDetail?.bankName || "",
+        accountNumber: customerData.bankDetail?.accountNumber || "",
+        ifscCode: customerData.bankDetail?.ifscCode || "",
+        accountHolder: customerData.bankDetail?.accountHolder || "",
+        nomineeName: customerData.nominee?.name || "",
+        nomineeRelation: customerData.nominee?.relationship || customerData.nominee?.relation || "",
+        nomineeDob: customerData.nominee?.dob ? new Date(customerData.nominee.dob).toISOString().split('T')[0] : "",
+        nomineeAddress: customerData.nominee?.address || "",
+        nomineePhone: customerData.nominee?.phone || "",
+      });
+    }
+  }, [customerData]);
   const [kycFiles, setKycFiles] = useState({
     aadhaarFront: null,
     aadhaarBack: null,
@@ -524,6 +541,12 @@ export default function CustomerDetail({ params }) {
                               <div className="flex flex-col items-center gap-1">
                                 <span className="text-primary font-medium truncate max-w-[200px]">{kycFiles[field.key].name}</span>
                                 <span className="text-[10px] text-muted-foreground">Click to change</span>
+                              </div>
+                            ) : customerData?.kycDocument?.[field.key === 'aadhaarFront' ? 'idFront' : field.key === 'aadhaarBack' ? 'idBack' : field.key === 'panCard' ? 'panFile' : 'selfie'] ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <FileText size={20} className="mb-1 text-primary/60" />
+                                <span className="text-foreground font-medium">Existing Document</span>
+                                <span className="text-[10px] text-muted-foreground">Click to replace</span>
                               </div>
                             ) : (
                               <div className="flex flex-col items-center gap-1">
