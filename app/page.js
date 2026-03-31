@@ -28,6 +28,8 @@ export default function LoginPage() {
           const role = storedUser.role?.toLowerCase();
           if (role === "admin") {
             router.push("/admin/dashboard");
+          } else if (role === "staff") {
+            router.push("/staff/dashboard");
           } else if (role === "customer") {
             router.push("/customers/dashboard");
           }
@@ -93,6 +95,8 @@ export default function LoginPage() {
 
       if (role === "admin") {
         router.push("/admin/dashboard");
+      } else if (role === "staff") {
+        router.push("/staff/dashboard");
       } else if (role === "customer") {
         router.push("/customers/dashboard");
       } else {

@@ -160,13 +160,13 @@ export default function AdminManagement() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShieldAlert size={24} className="text-primary" /> Admin Management
+            <ShieldAlert size={24} className="text-primary" /> User & Staff Management
           </h2>
-          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manage administrative users and their access.</p>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manage administrative users, staff, and their access.</p>
         </div>
         <Link href="/admin/admins/add" className="w-full sm:w-auto">
           <button className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-all shadow-sm">
-            <Plus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Add New Admin</span>
+            <Plus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Add Admin/Staff</span>
           </button>
         </Link>
       </div>
@@ -193,7 +193,7 @@ export default function AdminManagement() {
               onChange={(e) => setFilter(e.target.value)}
               className="w-full sm:w-auto h-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary sm:min-w-[150px]"
             >
-              <option value="All">All Admins</option>
+              <option value="All">All Roles</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
@@ -253,8 +253,10 @@ export default function AdminManagement() {
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Phone</p>
-                        <p className="text-xs text-foreground">{admin.phone || "N/A"}</p>
+                        <p className="text-[10px] text-muted-foreground">Phone | Role</p>
+                        <p className="text-xs text-foreground">
+                          {admin.phone || "N/A"} | <span className="capitalize font-medium">{admin.role || "admin"}</span>
+                        </p>
                       </div>
                       <StatusBadge status={getAdminStatus(admin)} />
                     </div>
@@ -274,6 +276,7 @@ export default function AdminManagement() {
                   <tr>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Name</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Email</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Role</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Phone</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
@@ -285,6 +288,11 @@ export default function AdminManagement() {
                       <tr key={admin.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{getAdminName(admin)}</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{admin.email || "N/A"}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 truncate capitalize">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${admin.role === 'staff' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {admin.role || "admin"}
+                          </span>
+                        </td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4">{admin.phone || "N/A"}</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={getAdminStatus(admin)} /></td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">

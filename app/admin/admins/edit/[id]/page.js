@@ -19,6 +19,7 @@ export default function EditAdmin(props) {
     email: "",
     phone: "",
     password: "", // Keep empty if not changing
+    role: "admin",
     status: "active",
   });
 
@@ -34,6 +35,7 @@ export default function EditAdmin(props) {
             email: admin.email || "",
             phone: admin.phone || "",
             password: "", // Clear for security
+            role: admin.role || "admin",
             status: admin.status || "active",
           });
         }
@@ -92,7 +94,7 @@ export default function EditAdmin(props) {
         </Link>
         <div>
           <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <UserCog size={24} className="text-primary" /> Edit Administrator
+            <UserCog size={24} className="text-primary" /> Edit Admin/Staff Profile
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Modify the administrative account details.</p>
         </div>
@@ -157,6 +159,18 @@ export default function EditAdmin(props) {
                 placeholder="Leave blank to keep current"
               />
               <p className="text-[10px] text-muted-foreground italic">If entered, must be at least 6 characters.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">User Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer"
+              >
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Current Status</label>

@@ -22,26 +22,41 @@ import {
 import { clsx } from "clsx";
 import { useUser } from "@/context/UserContext";
 
-const menuItems = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Admin Management", href: "/admin/admins", icon: ShieldCheck },
-  { name: "User Management", href: "/admin/users", icon: Users },
-  { name: "Customer Management", href: "/admin/customers", icon: Users },
-  { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
-  { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
-  { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
-  { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
-  { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
-  { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
-  { name: "Notifications", href: "/admin/notification", icon: Bell },
-  { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
-];
+const getMenuItems = (role) => {
+  if (role === 'staff') {
+    return [
+      { name: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard },
+      { name: "User Management", href: "/admin/users", icon: Users },
+      { name: "Customer Management", href: "/admin/customers", icon: Users },
+      { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
+      { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
+      { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
+      { name: "Staff Profile", href: "/staff/profile", icon: UserCircle },
+    ];
+  }
+  
+  // Default Admin menu
+  return [
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Admin Management", href: "/admin/admins", icon: ShieldCheck },
+    { name: "User Management", href: "/admin/users", icon: Users },
+    { name: "Customer Management", href: "/admin/customers", icon: Users },
+    { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
+    { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
+    { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
+    { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
+    { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
+    { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
+    { name: "Notifications", href: "/admin/notification", icon: Bell },
+    { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
+  ];
+};
 
 export default function Sidebar({ onClose }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useUser();
+  const { user, logout } = useUser();
 
   const handleLogout = () => {
     logout();
@@ -124,8 +139,8 @@ export default function Sidebar({ onClose }) {
         "flex-1 overflow-y-auto py-4 flex flex-col gap-1 scrollbar-thin scrollbar-thumb-muted overflow-x-hidden",
         isCollapsed ? "px-2" : "px-2"
       )}>
-        {menuItems.map((item) => {
-          const isActive = item.href === "/admin/dashboard"
+        {getMenuItems(user?.role).map((item) => {
+          const isActive = (item.href === "/admin/dashboard" || item.href === "/staff/dashboard")
             ? pathname === item.href
             : pathname.startsWith(item.href);
 
