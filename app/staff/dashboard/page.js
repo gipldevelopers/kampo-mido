@@ -10,8 +10,18 @@ import {
   Loader2,
   CheckCircle,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  TrendingUp
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
 import Toast from "@/components/Toast";
 import StaffDashboardService from "@/services/staff/dashboard.service";
 
@@ -50,6 +60,28 @@ const StatCard = ({ title, value, subtext, icon: Icon, loading = false, color = 
   );
 };
 
+const ChartSkeleton = () => (
+  <div className="h-[180px] sm:h-[220px] md:h-[250px] lg:h-[300px] w-full bg-muted rounded animate-pulse"></div>
+);
+
+// Custom Tooltip for charts
+const CustomTooltip = ({ active, payload, label, formatINR }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+        <p className="text-xs font-semibold text-foreground">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-xs text-muted-foreground mt-1">
+            <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
+            {entry.name}: {formatINR(entry.value)}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -60,6 +92,7 @@ export default function StaffDashboard() {
     doneKYC: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [goldData, setGoldData] = useState([]);
 
   // Format currency
   const formatINR = (amount) => {
@@ -77,6 +110,7 @@ export default function StaffDashboard() {
       if (response?.success) {
         setStats(response.data.overview);
         setRecentActivity(response.data.recentActivity || []);
+        setGoldData(response.data.goldRateTrend || []);
       }
     } catch (error) {
       setToast({
@@ -164,44 +198,63 @@ export default function StaffDashboard() {
         />
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold text-base flex items-center gap-2">
-            <Activity size={18} className="text-primary" /> My Recent Activity
+      {/* Gold Rate Chart */}
+      <div className="bg-card rounded-xl border border-border p-4 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+            <TrendingUp size={18} className="text-primary" /> Gold Value Trend (30 Days)
           </h3>
-          <button 
+          <button
             onClick={fetchDashboardData}
-            className="text-xs text-primary hover:underline hover:text-primary/80"
+            disabled={loading}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
           >
-            Refresh
+            {loading ? <Loader2 size={10} className="animate-spin" /> : 'Refresh'}
           </button>
         </div>
-        <div className="p-4">
+        <div className="h-[200px] sm:h-[250px] md:h-[300px] w-full">
           {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse"></div>
-              ))}
-            </div>
-          ) : recentActivity.length > 0 ? (
-            <div className="space-y-4">
-              {recentActivity.map((activity, idx) => (
-                <div key={activity.id || idx} className="flex gap-4 items-start">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground leading-snug">{activity.text}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {new Date(activity.time).toLocaleDateString()} at {formatActivityTime(activity.time)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ChartSkeleton />
+          ) : goldData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={goldData}>
+                <defs>
+                  <linearGradient id="colorGoldStaff" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis
+                  dataKey="day"
+                  stroke="var(--muted-foreground)"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={10}
+                />
+                <YAxis
+                  stroke="var(--muted-foreground)"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                  fontSize={10}
+                />
+                <Tooltip content={<CustomTooltip formatINR={formatINR} />} />
+                <Area
+                  type="monotone"
+                  dataKey="rate"
+                  stroke="#F59E0B"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorGoldStaff)"
+                  name="Rate per Gram"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              <Activity className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">No recent activity recorded.</p>
+            <div className="flex flex-col items-center justify-center h-full">
+              <TrendingUp className="w-12 h-12 text-muted-foreground mb-2 opacity-20" />
+              <p className="text-sm text-muted-foreground">No gold rate data available</p>
             </div>
           )}
         </div>

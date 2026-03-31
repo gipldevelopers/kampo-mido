@@ -8,14 +8,30 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  AlertCircle,
-  CheckCircle2,
   Upload,
   X,
   ShieldCheck
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import AdminProfileService from "../../../services/admin/admin-profile.service";
+
+const getFullImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http') || url.startsWith('data:')) return url;
+
+  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "";
+  const base = serverURL.endsWith('/') ? serverURL.slice(0, -1) : serverURL;
+
+  let path = url;
+  if (url.includes('uploads')) {
+    const parts = url.split('uploads');
+    path = '/uploads' + parts[parts.length - 1];
+  } else {
+    path = '/uploads/' + (url.startsWith('/') ? url.slice(1) : url);
+  }
+
+  return `${base}${path.replace(/\/+/g, '/')}`;
+};
 
 // --- Toggle Switch Component ---
 const ToggleSwitch = ({ enabled, onChange, label, description }) => {
@@ -85,7 +101,7 @@ export default function StaffProfile() {
         setName(`${userData.firstname || ''} ${userData.lastname || ''}`.trim() || "Staff Member");
 
         if (userData.profilePicture) {
-          setProfilePicturePreview(userData.profilePicture);
+          setProfilePicturePreview(getFullImageUrl(userData.profilePicture));
         }
       } else {
         setToast({
