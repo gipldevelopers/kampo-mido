@@ -14,6 +14,7 @@ import {
   BookOpen,
   Bell,
   UserCircle,
+  PlusCircle,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -26,11 +27,12 @@ const getMenuItems = (role) => {
   if (role === 'staff') {
     return [
       { name: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard },
-      { name: "User Management", href: "/admin/users", icon: Users },
-      { name: "Customer Management", href: "/admin/customers", icon: Users },
-      { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
-      { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
-      { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
+      { name: "User Management", href: "/staff/users", icon: Users },
+      { name: "Customer Management", href: "/staff/customers", icon: Users },
+      { name: "Add Deposit", href: "/staff/deposits/add", icon: PlusCircle },
+      { name: "KYC Management", href: "/staff/kyc", icon: ShieldCheck },
+      { name: "Approve deposits", href: "/staff/approve-deposits", icon: CheckCircle2 },
+      { name: "Deposits", href: "/staff/deposits", icon: ArrowDownCircle },
       { name: "Staff Profile", href: "/staff/profile", icon: UserCircle },
     ];
   }

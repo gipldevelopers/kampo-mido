@@ -5,27 +5,33 @@ import {
   Search,
   Filter,
   Download,
-  Plus,
+  UserPlus,
   FileText,
   FileSpreadsheet,
   ChevronDown,
   Pencil,
   Trash2,
-  Eye,
-  ShieldAlert
+  Eye
 } from "lucide-react";
 import Toast from "@/components/Toast";
-import AdminService from "@/services/admin/admin.service";
+import CustomerService from "@/services/admin/customer.service";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 // --- Components ---
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, type }) => {
   let styles = "bg-muted text-muted-foreground border-border";
-  if (status === 'Active') styles = "text-primary bg-primary/10 border-primary/20";
-  if (status === 'Inactive') styles = "text-muted-foreground bg-muted border-border";
+
+  if (type === 'kyc') {
+    if (status === 'Verified') styles = "text-primary bg-primary/10 border-primary/20";
+    if (status === 'Pending') styles = "text-secondary-foreground bg-secondary border-secondary";
+    if (status === 'Rejected') styles = "text-destructive bg-destructive/10 border-destructive/20";
+  } else if (type === 'account') {
+    if (status === 'Active') styles = "text-primary bg-primary/10 border-primary/20";
+    if (status === 'Inactive') styles = "text-muted-foreground bg-muted border-border";
+  }
 
   return (
     <span className={`px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium border ${styles}`}>
@@ -34,8 +40,8 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-export default function AdminManagement() {
-  const [admins, setAdmins] = useState([]);
+export default function CustomerManagement() {
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,18 +51,22 @@ export default function AdminManagement() {
   const itemsPerPage = 10;
   const [isExportOpen, setIsExportOpen] = useState(false);
   const exportRef = useRef(null);
-  const [totalResults, setTotalResults] = useState(0);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
+  // Debounce search term to reduce API calls and server load
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500);
+    }, 500); // 500ms delay
+
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchAdmins = async () => {
+  const [totalResults, setTotalResults] = useState(0);
+
+  // Fetch customers from API
+  const fetchCustomers = async () => {
     setLoading(true);
     try {
       const params = {
@@ -65,22 +75,43 @@ export default function AdminManagement() {
         search: debouncedSearchTerm || undefined,
       };
 
+      // Map UI filters to backend params
       if (filter === "Active") params.status = "active";
       if (filter === "Inactive") params.status = "inactive";
+      if (filter === "KYC Pending") params.kycStatus = "pending";
+      // Note: "High Balance" is still handled locally or would need backend support
 
-      const response = await AdminService.getAllAdmins(params);
+      const response = await CustomerService.getAllCustomers(params);
 
-      if (response.success && Array.isArray(response.data)) {
-        setAdmins(response.data);
-        setTotalResults(response.pagination?.total || response.data.length);
+      // Handle response structure: { success: true, data: [...], pagination: {...} }
+      if (response.data && Array.isArray(response.data)) {
+        // Map API data to UI format
+        const mappedCustomers = response.data.map(customer => ({
+          id: customer.id,
+          name: customer.fullName || "N/A",
+          accountNo: customer.accountNumber || customer.customerCode || "N/A",
+          mobile: customer.mobile || "N/A",
+          deposited: 0, // Not in API response, default to 0
+          gold: 0, // Not in API response, default to 0
+          kyc: customer.kycStatus ? customer.kycStatus.charAt(0).toUpperCase() + customer.kycStatus.slice(1) : "Pending",
+          status: customer.user?.status ? customer.user.status.charAt(0).toUpperCase() + customer.user.status.slice(1) : "Active",
+        }));
+        setCustomers(mappedCustomers);
+
+        // Update total items based on pagination info
+        if (response.pagination) {
+          setTotalResults(response.pagination.total);
+        } else {
+          setTotalResults(mappedCustomers.length);
+        }
       } else {
-        setAdmins([]);
+        setCustomers([]);
         setTotalResults(0);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to fetch admins";
+      const errorMessage = error.response?.data?.message || error.message || "Failed to fetch customers";
       setToast({ message: errorMessage, type: "error" });
-      setAdmins([]);
+      setCustomers([]);
       setTotalResults(0);
     } finally {
       setLoading(false);
@@ -88,7 +119,7 @@ export default function AdminManagement() {
   };
 
   useEffect(() => {
-    fetchAdmins();
+    fetchCustomers();
   }, [currentPage, debouncedSearchTerm, filter]);
 
   useEffect(() => {
@@ -103,55 +134,75 @@ export default function AdminManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const getAdminName = (admin) => `${admin.firstname || ""} ${admin.lastname || ""}`.trim() || "N/A";
-  const getAdminStatus = (admin) => admin.status ? admin.status.charAt(0).toUpperCase() + admin.status.slice(1) : "Inactive";
+  // Server-side filtering is now used, so we use customers directly
+  const paginatedCustomers = customers;
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text("Admin Users Report", 14, 20);
-    const tableColumn = ["Name", "Email", "Phone", "Status"];
-    const tableRows = admins.map(admin => [
-      getAdminName(admin),
-      admin.email || "N/A",
-      admin.phone || "N/A",
-      getAdminStatus(admin)
+    doc.text("Customer Report", 14, 20);
+
+    const tableColumn = ["Name", "Account No", "Mobile", "Deposited", "Gold (g)", "KYC", "Status"];
+    const tableRows = customers.map(customer => [
+      customer.name,
+      customer.accountNo,
+      customer.mobile,
+      `₹ ${customer.deposited.toLocaleString()}`,
+      customer.gold,
+      customer.kyc,
+      customer.status
     ]);
-    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 25 });
-    doc.save("admins_report.pdf");
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+    });
+
+    doc.save("customers_report.pdf");
     setIsExportOpen(false);
   };
 
   const exportToExcel = () => {
-    const workSheet = XLSX.utils.json_to_sheet(admins.map(admin => ({
-      Name: getAdminName(admin),
-      Email: admin.email || "N/A",
-      Phone: admin.phone || "N/A",
-      Status: getAdminStatus(admin)
+    const workSheet = XLSX.utils.json_to_sheet(customers.map(customer => ({
+      Name: customer.name,
+      "Account No": customer.accountNo,
+      Mobile: customer.mobile,
+      Deposited: customer.deposited,
+      "Gold (g)": customer.gold,
+      KYC: customer.kyc,
+      Status: customer.status
     })));
+
     const workBook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workBook, workSheet, "Admins");
+    XLSX.utils.book_append_sheet(workBook, workSheet, "Customers");
+
     const excelBuffer = XLSX.write(workBook, { bookType: "xlsx", type: "array" });
     const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    saveAs(data, "admins_report.xlsx");
+    saveAs(data, "customers_report.xlsx");
     setIsExportOpen(false);
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete admin ${name}? This action cannot be undone.`)) return;
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
+      return;
+    }
+
     setDeletingId(id);
     try {
-      await AdminService.deleteAdmin(id);
-      setAdmins(prev => prev.filter(a => a.id !== id));
+      await CustomerService.deleteCustomer(id);
+
+      // Remove customer from state
+      setCustomers(prev => prev.filter(c => c.id !== id));
       setToast({ message: `${name} deleted successfully`, type: 'success' });
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to delete admin";
+      const errorMessage = error.response?.data?.message || error.message || "Failed to delete customer";
       setToast({ message: errorMessage, type: "error" });
     } finally {
       setDeletingId(null);
     }
   };
-
-  const totalPages = Math.ceil(totalResults / itemsPerPage);
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 relative min-h-screen pb-4 sm:pb-6 md:pb-10">
@@ -159,14 +210,12 @@ export default function AdminManagement() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShieldAlert size={24} className="text-primary" /> Admin & Staff Management
-          </h2>
-          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manage administrative users, staff, and their access.</p>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">Customer Management</h2>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5">Manage users, KYC status, and accounts.</p>
         </div>
-        <Link href="/admin/admins/add" className="w-full sm:w-auto">
+        <Link href="/staff/customers/add" className="w-full sm:w-auto">
           <button className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 transition-all shadow-sm">
-            <Plus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Add Admin/Staff</span>
+            <UserPlus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Update Customers</span>
           </button>
         </Link>
       </div>
@@ -176,7 +225,7 @@ export default function AdminManagement() {
           <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by Name, Email, or Phone..."
+            placeholder="Search by Name or Mobile..."
             className="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -193,15 +242,16 @@ export default function AdminManagement() {
               onChange={(e) => setFilter(e.target.value)}
               className="w-full sm:w-auto h-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary sm:min-w-[150px]"
             >
-              <option value="All">All Roles</option>
+              <option value="All">All Customers</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
+              <option value="KYC Pending">KYC Pending</option>
+              <option value="High Balance">High Balance</option>
             </select>
             <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
               <ChevronDown size={12} className="sm:w-3.5 sm:h-3.5 text-muted-foreground" />
             </div>
           </div>
-
           <div className="relative" ref={exportRef}>
             <button onClick={() => setIsExportOpen(!isExportOpen)} className="h-full flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-secondary text-secondary-foreground border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted/80 transition-colors">
               <Download size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span className="hidden sm:inline">Export</span>
@@ -219,31 +269,39 @@ export default function AdminManagement() {
       </div>
 
       <div className="bg-card rounded-lg sm:rounded-xl border border-border shadow-sm overflow-hidden">
+        {/* Loading State */}
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">
-            <p className="text-sm">Loading admins...</p>
+            <p className="text-sm">Loading customers...</p>
           </div>
         ) : (
           <>
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-border">
-              {admins.length > 0 ? (
-                admins.map((admin) => (
-                  <div key={admin.id} className="p-3 hover:bg-muted/20 transition-colors">
+              {paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((customer) => (
+                  <div key={customer.id} className="p-3 hover:bg-muted/20 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm text-foreground truncate">{getAdminName(admin)}</h3>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{admin.email || "N/A"}</p>
+                        <Link href={`/staff/customers/${customer.id}`} className="hover:text-primary transition-colors">
+                          <h3 className="font-medium text-sm text-foreground truncate">{customer.name}</h3>
+                        </Link>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{customer.accountNo}</p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Link href={`/admin/admins/edit/${admin.id}`}>
+                        <Link href={`/staff/customers/${customer.id}`}>
+                          <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors" title="View">
+                            <Eye size={14} />
+                          </button>
+                        </Link>
+                        <Link href={`/staff/customers/edit/${customer.id}`}>
                           <button className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors" title="Edit">
                             <Pencil size={14} />
                           </button>
                         </Link>
                         <button
-                          onClick={() => handleDelete(admin.id, getAdminName(admin))}
-                          disabled={deletingId === admin.id}
+                          onClick={() => handleDelete(customer.id, customer.name)}
+                          disabled={deletingId === customer.id}
                           className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete"
                         >
@@ -251,20 +309,31 @@ export default function AdminManagement() {
                         </button>
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Mobile</p>
+                        <p className="text-xs text-foreground">{customer.mobile}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Gold</p>
+                        <p className="text-xs text-foreground">{customer.gold} g</p>
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Phone | Role</p>
-                        <p className="text-xs text-foreground">
-                          {admin.phone || "N/A"} | <span className="capitalize font-medium">{admin.role || "admin"}</span>
-                        </p>
+                        <p className="text-[10px] text-muted-foreground">Total Deposited</p>
+                        <p className="text-sm font-semibold text-foreground">₹ {customer.deposited.toLocaleString()}</p>
                       </div>
-                      <StatusBadge status={getAdminStatus(admin)} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={customer.kyc} type="kyc" />
+                        <StatusBadge status={customer.status} type="account" />
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No admins found.</p>
+                  <p className="text-sm">No customers found.</p>
                 </div>
               )}
             </div>
@@ -274,39 +343,39 @@ export default function AdminManagement() {
               <table className="w-full text-xs sm:text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Name</th>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Email</th>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Role</th>
-                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Phone</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Customer Name</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Account No</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Mobile</th>
+                    <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">KYC</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium">Status</th>
                     <th className="px-4 lg:px-6 py-2 lg:py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {admins.length > 0 ? (
-                    admins.map((admin) => (
-                      <tr key={admin.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{getAdminName(admin)}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{admin.email || "N/A"}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4 truncate capitalize">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${admin.role === 'staff' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {admin.role || "admin"}
-                          </span>
+                  {paginatedCustomers.length > 0 ? (
+                    paginatedCustomers.map((customer) => (
+                      <tr key={customer.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">
+                          <Link href={`/staff/customers/${customer.id}`} className="hover:text-primary transition-colors">
+                            {customer.name}
+                          </Link>
                         </td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4">{admin.phone || "N/A"}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={getAdminStatus(admin)} /></td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{customer.accountNo}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">{customer.mobile}</td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={customer.kyc} type="kyc" /></td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4"><StatusBadge status={customer.status} type="account" /></td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
                           <div className="flex items-center justify-end gap-1.5 lg:gap-2">
-                            <Link href={`/admin/admins/edit/${admin.id}`}>
-                              <button className="p-1.5 lg:p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors" title="Edit Admin">
-                                <Pencil size={14} className="lg:w-4 lg:h-4" />
+                            <Link href={`/staff/customers/${customer.id}`}>
+                              <button className="p-1.5 lg:p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors" title="View Details">
+                                <Eye size={14} className="lg:w-4 lg:h-4" />
                               </button>
                             </Link>
                             <button
-                              onClick={() => handleDelete(admin.id, getAdminName(admin))}
-                              disabled={deletingId === admin.id}
+                              onClick={() => handleDelete(customer.id, customer.name)}
+                              disabled={deletingId === customer.id}
                               className="p-1.5 lg:p-2 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Delete Admin"
+                              title="Delete Customer"
                             >
                               <Trash2 size={14} className="lg:w-4 lg:h-4" />
                             </button>
@@ -315,7 +384,7 @@ export default function AdminManagement() {
                       </tr>
                     ))
                   ) : (
-                    <tr><td colSpan="5" className="px-6 py-8 text-center text-muted-foreground">No admins found.</td></tr>
+                    <tr><td colSpan="8" className="px-6 py-8 text-center text-muted-foreground">No customers found.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -328,19 +397,20 @@ export default function AdminManagement() {
       {!loading && totalResults > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border shadow-sm mt-4">
           <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
-            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, totalResults)}</span> of <span className="font-medium text-foreground">{totalResults}</span> admins
+            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, totalResults)}</span> of <span className="font-medium text-foreground">{totalResults}</span> results
           </div>
           <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-2 sm:px-3 py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
             <div className="flex items-center gap-1">
               {[...Array(totalPages)].map((_, i) => {
                 const pageNum = i + 1;
+                // Show only a few page numbers if there are many
                 if (
                   totalPages <= 5 ||
                   pageNum === 1 ||
@@ -352,8 +422,8 @@ export default function AdminManagement() {
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
                       className={`min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 flex items-center justify-center rounded-md text-xs sm:text-sm font-medium transition-all ${currentPage === pageNum
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-muted border border-transparent hover:border-border"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "hover:bg-muted border border-transparent hover:border-border"
                         }`}
                     >
                       {pageNum}
@@ -371,13 +441,13 @@ export default function AdminManagement() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-2 sm:px-3 py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border text-xs sm:text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
           </div>
         </div>
       )}
-    </div>
+    </div >
   );
 }
