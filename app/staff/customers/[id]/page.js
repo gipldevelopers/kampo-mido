@@ -3,6 +3,8 @@ import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  AlertTriangle,
+  Mail,
   Edit,
   Plus,
   FileText,
@@ -17,6 +19,7 @@ import Modal from "@/components/Modal";
 import CustomerService from "@/services/admin/customer.service";
 import AdminKYCSubmitService from "@/services/admin/admin-kyc-submit.service";
 import DepositService from "@/services/admin/deposit.service";
+import GoldRateService from "@/services/admin/gold-rate.service";
 
 const getFullImageUrl = (url) => {
   if (!url) return "";
@@ -185,7 +188,31 @@ export default function CustomerDetail({ params }) {
       setActiveTab("overview");
       // Refresh customer data
       const response = await CustomerService.getCustomerById(id);
-      if (response.data) setCustomerData(response.data);
+      let customer = null;
+      if (response.data) customer = response.data;
+      else if (response.customer) customer = response.customer;
+      else customer = response;
+
+      if (customer) setCustomerData({
+        id: customer.id,
+        fullName: customer.fullName || "N/A",
+        email: customer.email || "N/A",
+        mobile: customer.mobile || "N/A",
+        whatsapp: customer.whatsapp || null,
+        address: customer.address || "N/A",
+        city: customer.city || null,
+        state: customer.state || null,
+        pincode: customer.pincode || null,
+        gender: customer.gender || null,
+        dob: customer.dob || null,
+        accountNumber: customer.accountNumber || customer.customerCode || "N/A",
+        kycStatus: customer.kycStatus || "pending",
+        createdAt: customer.createdAt || null,
+        user: customer.user || null,
+        kycDocument: customer.kycDocument || null,
+        nominee: customer.nominee || null,
+        bankDetail: customer.bankDetail || null,
+      });
     } catch (error) {
       setToast({ message: error.response?.data?.message || "Failed to submit KYC", type: "error" });
     } finally {
@@ -221,7 +248,7 @@ export default function CustomerDetail({ params }) {
       {/* 1. Top Header & Actions */}
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-          <Link href="/admin/customers">
+          <Link href="/staff/customers">
             <button className="p-1.5 sm:p-2 hover:bg-card border border-border rounded-full transition-colors shrink-0">
               <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-muted-foreground" />
             </button>
@@ -239,7 +266,7 @@ export default function CustomerDetail({ params }) {
           <Link href="/admin/deposits" className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:opacity-90 shadow-sm transition-all">
             <Plus size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Add Deposit</span>
           </Link>
-          <Link href={`/admin/customers/edit/${id}`}>
+          <Link href={`/staff/customers/edit/${id}`}>
             <button className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-background border border-input rounded-md text-xs sm:text-sm font-medium hover:bg-muted transition-colors">
               <Edit size={14} className="sm:w-4 sm:h-4 shrink-0" /> <span>Edit</span>
             </button>
@@ -662,6 +689,7 @@ export default function CustomerDetail({ params }) {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

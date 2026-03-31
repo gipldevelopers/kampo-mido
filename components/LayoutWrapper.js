@@ -14,6 +14,7 @@ export default function LayoutWrapper({ children }) {
   
   // Check if the current page is an admin page
   const isAdminPage = pathname.startsWith("/admin");
+  const isStaffPage = pathname.startsWith("/staff");
   const isCustomerPage = pathname.startsWith("/customers");
   const isLoginPage = pathname === "/";
 
@@ -22,8 +23,8 @@ export default function LayoutWrapper({ children }) {
     return <>{children}</>;
   }
 
-  // Admin Layout
-  if (isAdminPage) {
+  // Admin & Staff Layout (shared components for now)
+  if (isAdminPage || isStaffPage) {
     return (
       <div className="flex min-h-screen bg-muted/20">
         {/* Mobile Overlay */}

@@ -26,14 +26,16 @@ const StatusBadge = ({ status }) => {
   const styles = {
     Pending: "text-secondary-foreground bg-secondary border-secondary",
     Verified: "text-primary bg-primary/10 border-primary/20",
+    Approved: "text-primary bg-primary/10 border-primary/20",
     Rejected: "text-destructive bg-destructive/10 border-destructive/20",
     "Re-upload Requested": "text-orange-600 bg-orange-50 border-orange-200",
   };
   const icons = {
     Pending: Clock,
     Verified: CheckCircle2,
+    Approved: CheckCircle2,
     Rejected: XCircle,
-    "Re-upload Requested": RefreshCcw, // I should add RefreshCcw to imports
+    "Re-upload Requested": RefreshCcw,
   };
   const Icon = icons[status] || Clock;
   return (
@@ -296,44 +298,27 @@ export default function KYCPage() {
         // Normalize status
         const rawStatus = status.toLowerCase();
         let finalStatus = "Pending";
-        let locked = false;
 
         if (rawStatus === "approved" || rawStatus === "verified") {
           finalStatus = "Verified";
-          locked = true;
         } else if (rawStatus === "rejected") {
           finalStatus = "Rejected";
-          locked = false; // Allow fix
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "reupload_requested" || rawStatus === "action_required") {
           finalStatus = "Re-upload Requested";
-          locked = false; // Allow fix
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
         } else if (rawStatus === "pending") {
           finalStatus = "Pending";
-          // Only lock if we have documents in local storage indicating an active submission
-          const submitted = typeof window !== "undefined" ? localStorage.getItem("kycSubmitted") : null;
-          if (submitted === "true") {
-            locked = true;
-          }
-        }
-
-
-        // Override lock if re-upload is explicitly allowed
-        if (data?.canReupload) {
-          locked = false;
-          if (typeof window !== "undefined") localStorage.removeItem("kycSubmitted");
-
-          // Use more specific status if available
-          if (finalStatus === "Pending") {
-            finalStatus = (data.documentsToReupload && data.documentsToReupload.length > 0)
-              ? "Re-upload Requested"
-              : "Rejected";
-          }
         }
 
         setKycStatus(finalStatus);
-        setIsSubmitted(locked);
+        
+        // Populate flags
+        if (finalStatus === "Verified" || finalStatus === "Approved" || rawStatus === "pending") {
+          setIsSubmitted(true); // Locked for approved or pending (no client submission allowed)
+        } else {
+          setIsSubmitted(false); // Maybe allow re-upload if rejected? 
+          // (User said "customer wont be send the kyc docs", so keeping it mostly locked)
+          setIsSubmitted(true); 
+        }
 
       } catch (error) {
         console.error("Error fetching KYC status:", error);
@@ -381,106 +366,8 @@ export default function KYCPage() {
     setPreview(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!(aadhaarFront || aadhaarFrontPreview) ||
-      !(aadhaarBack || aadhaarBackPreview) ||
-      !(panCard || panCardPreview) ||
-      !(selfie || selfiePreview)) {
-      setToast({ message: "Please upload all required documents", type: "error" });
-      return;
-    }
-
-    if (!idNumber || !panNumber) {
-      setToast({ message: "Please enter Aadhaar number and PAN number", type: "error" });
-      return;
-    }
-
-    // Aadhaar Validation (12 digits)
-    const aadhaarRegex = /^\d{12}$/;
-    if (!aadhaarRegex.test(idNumber)) {
-      setToast({ message: "Aadhaar number must be exactly 12 digits", type: "error" });
-      return;
-    }
-
-    // PAN Validation (5 letters, 4 digits, 1 letter)
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(panNumber)) {
-      setToast({ message: "Invalid PAN number format (e.g. ABCDE1234F)", type: "error" });
-      return;
-    }
-
-    if (!bankName || !accountNumber || !confirmAccountNumber || !ifscCode || !accountHolder) {
-      setToast({ message: "Please fill all bank details", type: "error" });
-      return;
-    }
-
-    // IFSC Validation (4 letters, 0, 6 characters)
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    if (!ifscRegex.test(ifscCode)) {
-      setToast({ message: "Invalid IFSC code format (e.g. SBIN0123456)", type: "error" });
-      return;
-    }
-
-    if (accountNumber !== confirmAccountNumber) {
-      setToast({ message: "Account numbers do not match", type: "error" });
-      return;
-    }
-
-    if (!nomineeName || !nomineeRelation || !nomineeDob || !nomineeAddress || !nomineePhone) {
-      setToast({ message: "Please fill all nominee details", type: "error" });
-      return;
-    }
-
-    // Validate Nominee DOB (cannot be in future)
-    const selectedDate = new Date(nomineeDob);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selectedDate > today) {
-      setToast({ message: "Nominee Date of Birth cannot be in the future", type: "error" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Call both APIs in parallel
-      await Promise.all([
-        KYCService.uploadKYC({
-          aadhaarFront,
-          aadhaarBack,
-          panCard,
-          selfie,
-          idType,
-          idNumber,
-          panNumber,
-          bankName,
-          accountNumber,
-          ifscCode,
-          accountHolder
-        }),
-        NomineeService.createNominee({
-          name: nomineeName,
-          relationship: nomineeRelation,
-          dob: nomineeDob,
-          address: nomineeAddress,
-          phone: nomineePhone,
-        }),
-      ]);
-
-      setToast({ message: "KYC documents and nominee details submitted successfully! Admin will verify and approve.", type: "success" });
-
-      // Mark as submitted and save to localStorage
-      setIsSubmitted(true);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("kycSubmitted", "true");
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to submit. Please try again.";
-      setToast({ message: errorMessage, type: "error" });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const FileUploadSection = ({ title, description, file, preview, setFile, setPreview, required = true, fieldKey }) => {
@@ -499,7 +386,7 @@ export default function KYCPage() {
         </div>
         {preview ? (
           <div className="relative">
-            <div className={`border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30 ${isRequested ? "border-orange-300 shadow-sm" : "border-border"}`}>
+            <div className={`border rounded-lg p-2 sm:p-3 md:p-4 bg-muted/30 border-border`}>
               <img
                 src={preview}
                 alt={title}
@@ -516,35 +403,13 @@ export default function KYCPage() {
               >
                 <Eye size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
               </button>
-              {!isDisabled && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(setFile, setPreview, fieldKey)}
-                  className="p-1.5 sm:p-2 bg-destructive text-destructive-foreground rounded-full hover:opacity-90 transition-all shadow-md group"
-                  aria-label="Remove file"
-                  title="Remove"
-                >
-                  <X size={12} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-                </button>
-              )}
             </div>
           </div>
         ) : (
-          <label className={isDisabled ? "cursor-not-allowed" : "cursor-pointer"}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e.target.files[0], setFile, setPreview, fieldKey)}
-              disabled={isDisabled}
-              className="hidden"
-              required={required && !preview}
-            />
-            <div className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/30 border-2 border-dashed rounded-lg transition-all ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"} ${isRequested ? "border-orange-400 bg-orange-50/30 ring-1 ring-orange-100" : "border-border"}`}>
-              <ImageIcon size={24} className={`sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${isRequested ? "text-orange-500 animate-pulse" : "text-muted-foreground"}`} />
-              <p className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground mb-0.5 sm:mb-1">Click to upload {title.toLowerCase()}</p>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">PNG, JPG or GIF (Max 5MB)</p>
-            </div>
-          </label>
+          <div className="flex flex-col items-center justify-center w-full px-3 sm:px-4 py-6 sm:py-8 bg-muted/10 border-2 border-dashed rounded-lg border-border opacity-60">
+            <ImageIcon size={24} className="sm:w-8 sm:h-8 mb-1.5 sm:mb-2 text-muted-foreground" />
+            <p className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground">Document not available</p>
+          </div>
         )}
         {description && <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{description}</p>}
       </div>
@@ -593,87 +458,65 @@ export default function KYCPage() {
                 <h4 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">ID Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                      ID Type <span className="text-destructive">*</span>
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                      ID Type
                     </label>
-                    <select
-                      value={idType}
-                      onChange={(e) => setIdType(e.target.value)}
-                      disabled={isSubmitted}
-                      className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      required
-                    >
-                      <option value="Aadhaar">Aadhaar</option>
-                    </select>
+                    <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                      {idType}
+                    </p>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                      {idType} Number <span className="text-destructive">*</span>
+                    <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                      {idType} Number
                     </label>
-                    <input
-                      type="text"
-                      value={idNumber}
-                      onChange={(e) => setIdNumber(e.target.value.replace(/\D/g, ''))}
-                      placeholder={`Enter ${idType} number`}
-                      maxLength={12}
-                      disabled={isSubmitted}
-                      className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      required
-                    />
-                    <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: 123456789012 (12 digits)</p>
+                    <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium tracking-widest">
+                      {idNumber || "N/A"}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2 mt-4 sm:mt-5">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    PAN Number <span className="text-destructive">*</span>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    PAN Number
                   </label>
-                  <input
-                    type="text"
-                    value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                    placeholder="Enter PAN number (e.g., ABCDE1234F)"
-                    maxLength={10}
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
-                  <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: ABCDE1234F (5 letters, 4 digits, 1 letter)</p>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium uppercase">
+                    {panNumber || "N/A"}
+                  </p>
                 </div>
               </div>
 
               {/* Document Uploads */}
               <div className="pt-2 sm:pt-3">
-                <h4 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">Document Uploads</h4>
+                <h4 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">Verified Documents</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                   <FileUploadSection
                     title="Aadhaar Front"
-                    description="Upload front side of your Aadhaar card"
                     file={aadhaarFront}
                     preview={aadhaarFrontPreview}
                     setFile={setAadhaarFront}
                     setPreview={setAadhaarFrontPreview}
                     fieldKey="idFront"
+                    required={false}
                   />
                   <FileUploadSection
                     title="Aadhaar Back"
-                    description="Upload back side of your Aadhaar card"
                     file={aadhaarBack}
                     preview={aadhaarBackPreview}
                     setFile={setAadhaarBack}
                     setPreview={setAadhaarBackPreview}
                     fieldKey="idBack"
+                    required={false}
                   />
                 </div>
 
                 <div className="mt-4 sm:mt-5 md:mt-6">
                   <FileUploadSection
                     title="PAN Card"
-                    description="Upload your PAN card (both sides if applicable)"
                     file={panCard}
                     preview={panCardPreview}
                     setFile={setPanCard}
                     setPreview={setPanCardPreview}
                     fieldKey="panFile"
+                    required={false}
                   />
                 </div>
               </div>
@@ -708,76 +551,36 @@ export default function KYCPage() {
             <div className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    Account Holder Name <span className="text-destructive">*</span>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Account Holder Name
                   </label>
-                  <input
-                    type="text"
-                    value={accountHolder}
-                    onChange={(e) => setAccountHolder(e.target.value)}
-                    placeholder="Enter account holder name"
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {accountHolder || "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    Bank Name <span className="text-destructive">*</span>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Bank Name
                   </label>
-                  <input
-                    type="text"
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    placeholder="Enter bank name"
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {bankName || "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    Account Number <span className="text-destructive">*</span>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Account Number
                   </label>
-                  <input
-                    type="password"
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder="Enter account number"
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium tracking-wider">
+                    {accountNumber ? '•'.repeat(accountNumber.length - 4) + accountNumber.slice(-4) : "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    Confirm Account Number <span className="text-destructive">*</span>
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    IFSC Code
                   </label>
-                  <input
-                    type="text"
-                    value={confirmAccountNumber}
-                    onChange={(e) => setConfirmAccountNumber(e.target.value)}
-                    placeholder="Re-enter account number"
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                    IFSC Code <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={ifscCode}
-                    onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
-                    placeholder="Enter IFSC code"
-                    maxLength={11}
-                    disabled={isSubmitted}
-                    className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                  />
-                  <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Example: SBIN0123456 (4 letters, 0, 6 chars)</p>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium uppercase">
+                    {ifscCode || "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -792,107 +595,60 @@ export default function KYCPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
               <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                  Nominee Name <span className="text-destructive">*</span>
+                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                  Nominee Name
                 </label>
-                <input
-                  type="text"
-                  value={nomineeName}
-                  onChange={(e) => setNomineeName(e.target.value)}
-                  placeholder="Enter nominee full name"
-                  disabled={isSubmitted}
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                  Relation <span className="text-destructive">*</span>
-                </label>
-                <select
-                  value={nomineeRelation}
-                  onChange={(e) => setNomineeRelation(e.target.value)}
-                  disabled={isSubmitted}
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                >
-                  <option value="">Select relation</option>
-                  <option value="Spouse">Spouse</option>
-                  <option value="Father">Father</option>
-                  <option value="Mother">Mother</option>
-                  <option value="Son">Son</option>
-                  <option value="Daughter">Daughter</option>
-                  <option value="Brother">Brother</option>
-                  <option value="Sister">Sister</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                  Date of Birth <span className="text-destructive">*</span>
-                </label>
-                <PremiumDobPicker
-                  value={nomineeDob}
-                  onChange={(val) => setNomineeDob(val)}
-                  disabled={isSubmitted}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                  Address <span className="text-destructive">*</span>
-                </label>
-                <textarea
-                  value={nomineeAddress}
-                  onChange={(e) => setNomineeAddress(e.target.value)}
-                  placeholder="Enter complete address"
-                  disabled={isSubmitted}
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all min-h-[80px] sm:min-h-[100px] resize-y disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[11px] sm:text-xs md:text-sm font-medium text-foreground">
-                  Phone Number <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={nomineePhone}
-                  onChange={(e) => setNomineePhone(e.target.value)}
-                  placeholder="Enter phone number"
-                  disabled={isSubmitted}
-                  className="w-full px-2.5 sm:px-3 py-2 bg-background border border-input rounded-md text-[11px] sm:text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                />
-              </div>
-
-              <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
-                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
-                  <strong className="text-foreground">Note:</strong> All documents must be clear and readable.
-                  Ensure all information is visible and not blurred. Admin will verify your documents and approve your KYC.
+                <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                  {nomineeName || "N/A"}
                 </p>
               </div>
 
-              <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || isSubmitted}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-primary text-primary-foreground rounded-md text-[11px] sm:text-xs md:text-sm font-medium hover:opacity-90 transition-opacity shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck size={14} className="sm:w-4 sm:h-4" /> <span>Submit KYC</span>
-                    </>
-                  )}
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Relation
+                  </label>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {nomineeRelation || "N/A"}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Phone Number
+                  </label>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {nomineePhone || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {nomineeDob && (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Date of Birth
+                  </label>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {new Date(nomineeDob).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+              )}
+
+              {nomineeAddress && (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-tight">
+                    Address
+                  </label>
+                  <p className="px-3 py-2 bg-muted/20 border border-border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground font-medium">
+                    {nomineeAddress}
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-primary/5 p-3 sm:p-4 rounded-lg border border-primary/20 mt-4">
+                <p className="text-[9px] sm:text-[10px] md:text-xs font-medium text-primary flex items-center gap-1.5">
+                  <ShieldCheck size={14} /> This information has been verified and cannot be edited.
+                </p>
               </div>
             </form>
           </div>

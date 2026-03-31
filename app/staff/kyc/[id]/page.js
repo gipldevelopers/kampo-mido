@@ -310,7 +310,7 @@ export default function KYCDetail({ params }) {
 
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-        <Link href="/admin/kyc">
+        <Link href="/staff/kyc">
           <button className="p-1.5 sm:p-2 hover:bg-card border border-border rounded-full transition-colors shrink-0">
             <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-muted-foreground" />
           </button>
@@ -664,11 +664,11 @@ export default function KYCDetail({ params }) {
               <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-2">Staff Notes</h3>
               <textarea
                 className={`w-full bg-background border border-input rounded-md p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px] sm:min-h-[100px] resize-y ${isReadOnly ? 'opacity-50 cursor-not-allowed bg-muted' : ''}`}
-              placeholder={isReadOnly ? "Notes are locked" : "Add verification notes here..."}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={isReadOnly}
-            ></textarea>
+                placeholder={isReadOnly ? "Notes are locked" : "Add verification notes here..."}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={isReadOnly}
+              ></textarea>
             </div>
           </div>
 

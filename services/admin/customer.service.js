@@ -17,6 +17,7 @@ class CustomerService {
         city: customerData.city,
         state: customerData.state,
         pincode: customerData.pincode,
+        capLockYears: customerData.capLockYears,
         kycStatus: customerData.kycStatus || "pending",
         userId: customerData.userId,
       });
@@ -72,6 +73,7 @@ class CustomerService {
         city: customerData.city,
         state: customerData.state,
         pincode: customerData.pincode,
+        capLockYears: customerData.capLockYears,
         kycStatus: customerData.kycStatus || "pending",
       });
       return response.data;

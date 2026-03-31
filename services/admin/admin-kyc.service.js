@@ -48,7 +48,7 @@ class AdminKYCService {
   }
 
   // Update KYC status (approve/reject)
-  async updateKYCStatus(kycId, status, notes = "", documentsToReupload = null) {
+  async updateKYCStatus(kycId, status, notes = "", documentsToReupload = null, capLockYears = 0) {
     try {
       // Ensure kycId is a valid number or string
       if (!kycId || kycId === "N/A" || kycId === "null") {
@@ -69,6 +69,7 @@ class AdminKYCService {
       const payload = {
         status,
         notes: notes || "",
+        capLockYears: capLockYears || 0
       };
       
       // Add documentsToReupload if provided (for reject with specific documents)

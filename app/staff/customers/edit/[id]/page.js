@@ -233,7 +233,7 @@ export default function EditCustomer({ params }) {
 
       // Redirect back to details page after short delay
       setTimeout(() => {
-        router.push(`/admin/customers/${id}`);
+        router.push(`/staff/customers/${id}`);
       }, 1500);
     } catch (error) {
       console.error("Update error:", error);
@@ -261,7 +261,7 @@ export default function EditCustomer({ params }) {
 
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-        <Link href={`/admin/customers/${id}`}>
+        <Link href={`/staff/customers/${id}`}>
           <button className="p-1.5 sm:p-2 hover:bg-card border border-border rounded-full transition-colors shrink-0">
             <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-muted-foreground" />
           </button>
@@ -439,7 +439,7 @@ export default function EditCustomer({ params }) {
           </div>
 
           <div className="pt-3 sm:pt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-            <Link href={`/admin/customers/${id}`} className="w-full sm:w-auto">
+            <Link href={`/staff/customers/${id}`} className="w-full sm:w-auto">
               <button type="button" className="w-full sm:w-auto px-4 py-2 sm:py-2.5 border border-input bg-transparent rounded-md text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors">
                 Cancel
               </button>

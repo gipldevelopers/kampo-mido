@@ -412,7 +412,7 @@ export default function AddCustomer() {
 
       // Redirect to customers list after 1.5 seconds
       setTimeout(() => {
-        router.push("/admin/customers");
+        router.push("/staff/customers");
       }, 1500);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Failed to save customer. Please try again.";
@@ -433,7 +433,7 @@ export default function AddCustomer() {
 
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-        <Link href="/admin/customers">
+        <Link href="/staff/customers">
           <button className="p-1.5 sm:p-2 hover:bg-card border border-border rounded-full transition-colors shrink-0">
             <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-muted-foreground" />
           </button>
@@ -728,7 +728,7 @@ export default function AddCustomer() {
           </div>
 
           <div className="pt-3 sm:pt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-            <Link href="/admin/customers" className="w-full sm:w-auto">
+            <Link href="/staff/customers" className="w-full sm:w-auto">
               <button type="button" className="w-full sm:w-auto px-4 py-2 sm:py-2.5 border border-input bg-transparent rounded-md text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors">
                 Cancel
               </button>

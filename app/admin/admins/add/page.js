@@ -17,6 +17,7 @@ export default function AddAdmin() {
     email: "",
     phone: "",
     password: "",
+    role: "admin",
     status: "active",
   });
 
@@ -53,9 +54,9 @@ export default function AddAdmin() {
         </Link>
         <div>
           <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShieldPlus size={24} className="text-primary" /> Create New Admin
+            <ShieldPlus size={24} className="text-primary" /> Create New Admin/Staff
           </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Define a new administrator with full platform access.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Define a new administrator or staff member.</p>
         </div>
       </div>
 
@@ -125,6 +126,18 @@ export default function AddAdmin() {
               <p className="text-[10px] text-muted-foreground italic">Password must be at least 6 characters.</p>
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer"
+              >
+                <option value="admin">Admin (Full Access)</option>
+                <option value="staff">Staff (Limited Management)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Initial Status</label>
               <select
                 name="status"
@@ -155,7 +168,7 @@ export default function AddAdmin() {
                 </>
               ) : (
                 <>
-                  <Save size={16} /> <span>Create Admin</span>
+                  <Save size={16} /> <span>Create User</span>
                 </>
               )}
             </button>
