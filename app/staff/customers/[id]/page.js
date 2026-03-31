@@ -17,6 +17,7 @@ import {
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 import CustomerService from "@/services/admin/customer.service";
+import AdminKYCSubmitService from "@/services/admin/admin-kyc-submit.service";
 import DepositService from "@/services/admin/deposit.service";
 import GoldRateService from "@/services/admin/gold-rate.service";
 
@@ -133,6 +134,72 @@ export default function CustomerDetail({ params }) {
     if (action === "reject_kyc") setToast({ message: "KYC Rejected", type: "alert" });
   };
 
+  const [kycForm, setKycForm] = useState({
+    idType: "Aadhaar",
+    idNumber: "",
+    panNumber: "",
+    bankName: "",
+    accountNumber: "",
+    ifscCode: "",
+    accountHolder: "",
+    nomineeName: "",
+    nomineeRelation: "",
+    nomineeDob: "",
+    nomineeAddress: "",
+    nomineePhone: "",
+  });
+  const [kycFiles, setKycFiles] = useState({
+    aadhaarFront: null,
+    aadhaarBack: null,
+    panCard: null,
+    selfie: null,
+  });
+  const [submittingKyc, setSubmittingKyc] = useState(false);
+
+  const handleKycSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingKyc(true);
+    try {
+      await AdminKYCSubmitService.submitCustomerKYC(id, {
+        ...kycForm,
+        ...kycFiles,
+      });
+      setToast({ message: "KYC documents submitted and verified successfully!", type: "success" });
+      setActiveTab("overview");
+      // Refresh customer data
+      const response = await CustomerService.getCustomerById(id);
+      let customer = null;
+      if (response.data) customer = response.data;
+      else if (response.customer) customer = response.customer;
+      else customer = response;
+
+      if (customer) setCustomerData({
+        id: customer.id,
+        fullName: customer.fullName || "N/A",
+        email: customer.email || "N/A",
+        mobile: customer.mobile || "N/A",
+        whatsapp: customer.whatsapp || null,
+        address: customer.address || "N/A",
+        city: customer.city || null,
+        state: customer.state || null,
+        pincode: customer.pincode || null,
+        gender: customer.gender || null,
+        dob: customer.dob || null,
+        accountNumber: customer.accountNumber || customer.customerCode || "N/A",
+        kycStatus: customer.kycStatus || "pending",
+        createdAt: customer.createdAt || null,
+        user: customer.user || null,
+        kycDocument: customer.kycDocument || null,
+        nominee: customer.nominee || null,
+        bankDetail: customer.bankDetail || null,
+      });
+    } catch (error) {
+      setToast({ message: error.response?.data?.message || "Failed to submit KYC", type: "error" });
+    } finally {
+      setSubmittingKyc(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in duration-500 w-full relative pb-4 sm:pb-6 md:pb-10">
@@ -188,7 +255,7 @@ export default function CustomerDetail({ params }) {
       </div>      {/* 2. Tabs Navigation */}
       <div className="border-b border-border">
         <nav className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide">
-          {['overview', 'deposits'].map((tab) => (
+          {['overview', 'deposits', 'kyc update'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -403,6 +470,197 @@ export default function CustomerDetail({ params }) {
               formatDate={formatDate} 
               setToast={setToast}
             />
+          </div>
+        )}
+
+        {/* --- Tab C: KYC Submission Form --- */}
+        {activeTab === 'kyc update' && (
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
+            <div className="max-w-3xl mx-auto">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <FileText className="text-primary" /> Update Customer KYC Documents
+              </h3>
+              
+              <form onSubmit={handleKycSubmit} className="space-y-8">
+                {/* Identity Info */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold border-b border-border pb-2 flex items-center gap-2">
+                    <UserIcon size={16} className="text-primary" /> Identity Information
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">ID Type</label>
+                      <select
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.idType}
+                        onChange={(e) => setKycForm({ ...kycForm, idType: e.target.value })}
+                      >
+                        <option value="Aadhaar">Aadhaar Card</option>
+                        <option value="PAN">PAN Card</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">ID Number</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Enter ID Number"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.idNumber}
+                        onChange={(e) => setKycForm({ ...kycForm, idNumber: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">PAN Number (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Enter PAN Number"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.panNumber}
+                        onChange={(e) => setKycForm({ ...kycForm, panNumber: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* File Uploads */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { label: "Aadhaar Front", key: "aadhaarFront" },
+                      { label: "Aadhaar Back", key: "aadhaarBack" },
+                      { label: "PAN Card Image", key: "panCard" },
+                      { label: "Selfie", key: "selfie" },
+                    ].map((field) => (
+                      <div key={field.key} className="space-y-1.5">
+                        <label className="text-[12px] font-medium text-muted-foreground">{field.label}</label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id={`file-${field.key}`}
+                            onChange={(e) => setKycFiles({ ...kycFiles, [field.key]: e.target.files[0] })}
+                          />
+                          <label
+                            htmlFor={`file-${field.key}`}
+                            className="flex items-center justify-center gap-2 p-4 bg-muted/20 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/40 hover:border-primary/50 transition-all text-xs text-muted-foreground min-h-[80px] text-center"
+                          >
+                            {kycFiles[field.key] ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-primary font-medium truncate max-w-[200px]">{kycFiles[field.key].name}</span>
+                                <span className="text-[10px] text-muted-foreground">Click to change</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <Plus size={20} className="mb-1 opacity-50" />
+                                <span>Click to Upload</span>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bank Info */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold border-b border-border pb-2 flex items-center gap-2">
+                    <CreditCard size={16} className="text-primary" /> Bank Account Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Account Holder Name</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.accountHolder}
+                        onChange={(e) => setKycForm({ ...kycForm, accountHolder: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Bank Name</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.bankName}
+                        onChange={(e) => setKycForm({ ...kycForm, bankName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Account Number</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.accountNumber}
+                        onChange={(e) => setKycForm({ ...kycForm, accountNumber: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">IFSC Code</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.ifscCode}
+                        onChange={(e) => setKycForm({ ...kycForm, ifscCode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nominee Info */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold border-b border-border pb-2 flex items-center gap-2">
+                    <UserIcon size={16} className="text-primary" /> Nominee Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Nominee Name</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.nomineeName}
+                        onChange={(e) => setKycForm({ ...kycForm, nomineeName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Relationship</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.nomineeRelation}
+                        onChange={(e) => setKycForm({ ...kycForm, nomineeRelation: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[12px] font-medium text-muted-foreground">Nominee Phone</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-input rounded-md px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={kycForm.nomineePhone}
+                        onChange={(e) => setKycForm({ ...kycForm, nomineePhone: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-border flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("overview")}
+                    className="px-6 py-2.5 bg-secondary text-secondary-foreground border border-input rounded-md text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingKyc}
+                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-md text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
+                  >
+                    {submittingKyc ? "Submitting..." : "Submit & Verify customer KYC"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
