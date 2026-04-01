@@ -122,14 +122,14 @@ export default function StaffCapRequestManagement() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">Emergency Requests</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Emergency Requests</h2>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-2"
+          className="w-full sm:w-auto p-2 hover:bg-muted rounded-full transition-colors flex items-center justify-center gap-2 border border-border sm:border-none"
         >
-          <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${refreshing ? 'animate-spin' : ''}`} />
           <span className="text-sm font-medium">Refresh</span>
         </button>
       </div>
@@ -165,36 +165,36 @@ export default function StaffCapRequestManagement() {
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50/50 text-slate-500 border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-semibold text-[13px]">Request ID</th>
-                <th className="px-6 py-4 font-semibold text-[13px]">Customer</th>
-                <th className="px-6 py-4 font-semibold text-[13px] text-right">Requested Amount</th>
-                <th className="px-6 py-4 font-semibold text-[13px]">Applied Date</th>
-                <th className="px-6 py-4 font-semibold text-[13px]">Status</th>
-                <th className="px-6 py-4 font-semibold text-[13px] text-right">Actions</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px]">ID</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px]">Customer</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px] text-right">Amount</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px] hidden md:table-cell">Applied Date</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px]">Status</th>
+                <th className="px-4 sm:px-6 py-4 font-semibold text-[11px] sm:text-[13px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filteredRequests.length > 0 ? (
                 filteredRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-6 py-5 font-bold text-slate-900 text-[13px]"># {req.id}</td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 sm:px-6 py-4 sm:py-5 font-bold text-slate-900 text-[11px] sm:text-[13px]">#{req.id}</td>
+                    <td className="px-4 sm:px-6 py-4 sm:py-5">
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{req.customer?.fullName || 'N/A'}</span>
-                        <span className="text-[11px] text-slate-400 font-medium uppercase mt-0.5">{req.customer?.customerCode || 'N/A'}</span>
+                        <span className="font-bold text-slate-900 text-xs sm:text-sm">{req.customer?.fullName || 'N/A'}</span>
+                        <span className="text-[9px] sm:text-[11px] text-slate-400 font-medium uppercase mt-0.5">{req.customer?.customerCode || 'N/A'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-right font-bold text-amber-600 text-[15px]">₹ {parseFloat(req.amount).toLocaleString('en-IN')}</td>
-                    <td className="px-3 py-5 text-slate-500">
+                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-right font-bold text-amber-600 text-sm sm:text-[15px]">₹{parseFloat(req.amount).toLocaleString('en-IN')}</td>
+                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-slate-500 hidden md:table-cell">
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-slate-300" />
-                        <span className="font-medium">{new Date(req.createdAt).toLocaleDateString()}</span>
+                        <span className="font-medium text-xs">{new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 sm:px-6 py-4 sm:py-5">
                       <StatusBadge status={req.status} />
                     </td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-right">
                       <button
                         onClick={() => handleViewDetails(req)}
                         className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 transition-colors"
@@ -226,22 +226,22 @@ export default function StaffCapRequestManagement() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-8">
+            <div className="p-4 sm:p-6 space-y-6 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Customer Name</label>
-                    <p className="text-sm font-semibold">{selectedRequest.customer?.fullName}</p>
+                    <label className="text-[9px] sm:text-[10px] text-gray-400 uppercase font-bold tracking-wider">Customer Name</label>
+                    <p className="text-xs sm:text-sm font-semibold">{selectedRequest.customer?.fullName}</p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Customer Code</label>
-                    <p className="text-sm font-semibold text-primary">{selectedRequest.customer?.customerCode}</p>
+                    <label className="text-[9px] sm:text-[10px] text-gray-400 uppercase font-bold tracking-wider">Customer Code</label>
+                    <p className="text-xs sm:text-sm font-semibold text-primary">{selectedRequest.customer?.customerCode}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Amount</label>
-                    <p className="text-xl font-bold">₹ {parseFloat(selectedRequest.amount).toLocaleString('en-IN')}</p>
+                    <label className="text-[9px] sm:text-[10px] text-gray-400 uppercase font-bold tracking-wider">Amount</label>
+                    <p className="text-lg sm:text-xl font-bold text-amber-600">₹ {parseFloat(selectedRequest.amount).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               </div>
