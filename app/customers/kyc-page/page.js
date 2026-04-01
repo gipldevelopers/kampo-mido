@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import KYCService from "@/services/customer/kyc.service";
-import NomineeService from "@/services/customer/nominee.service";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -104,9 +103,8 @@ function PremiumDobPicker({ value, onChange, error, disabled }) {
         type="button"
         onClick={handleOpen}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-3 py-2 bg-background border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground transition-all hover:border-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ${
-          error ? "border-destructive ring-1 ring-destructive/20" : "border-input"
-        }`}
+        className={`w-full flex items-center justify-between px-3 py-2 bg-background border rounded-md text-[11px] sm:text-xs md:text-sm text-foreground transition-all hover:border-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ${error ? "border-destructive ring-1 ring-destructive/20" : "border-input"
+          }`}
       >
         <span className={!value ? "text-muted-foreground" : ""}>
           {formatDisplayDate(value)}
@@ -123,9 +121,9 @@ function PremiumDobPicker({ value, onChange, error, disabled }) {
               <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
                 {view === "year" ? "Select Year" : view === "month" ? `Select Month (${selectedYear})` : `Select Day (${months[selectedMonth]} ${selectedYear})`}
               </h3>
-              <button 
+              <button
                 type="button"
-                onClick={() => setIsOpen(false)} 
+                onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-muted rounded-full transition-colors"
               >
                 <X size={18} className="text-muted-foreground" />
@@ -141,9 +139,8 @@ function PremiumDobPicker({ value, onChange, error, disabled }) {
                       type="button"
                       key={year}
                       onClick={() => handleYearSelect(year)}
-                      className={`py-2 text-sm rounded-lg transition-all ${
-                        selectedYear === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-primary/10 text-foreground"
-                      }`}
+                      className={`py-2 text-sm rounded-lg transition-all ${selectedYear === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-primary/10 text-foreground"
+                        }`}
                     >
                       {year}
                     </button>
@@ -158,9 +155,8 @@ function PremiumDobPicker({ value, onChange, error, disabled }) {
                       type="button"
                       key={month}
                       onClick={() => handleMonthSelect(idx)}
-                      className={`py-4 text-sm rounded-xl border transition-all ${
-                        selectedMonth === idx ? "bg-primary text-primary-foreground border-primary font-bold shadow-lg" : "bg-muted/30 hover:bg-muted border-border text-foreground"
-                      }`}
+                      className={`py-4 text-sm rounded-xl border transition-all ${selectedMonth === idx ? "bg-primary text-primary-foreground border-primary font-bold shadow-lg" : "bg-muted/30 hover:bg-muted border-border text-foreground"
+                        }`}
                     >
                       {month}
                     </button>
@@ -310,14 +306,14 @@ export default function KYCPage() {
         }
 
         setKycStatus(finalStatus);
-        
+
         // Populate flags
         if (finalStatus === "Verified" || finalStatus === "Approved" || rawStatus === "pending") {
           setIsSubmitted(true); // Locked for approved or pending (no client submission allowed)
         } else {
           setIsSubmitted(false); // Maybe allow re-upload if rejected? 
           // (User said "customer wont be send the kyc docs", so keeping it mostly locked)
-          setIsSubmitted(true); 
+          setIsSubmitted(true);
         }
 
       } catch (error) {

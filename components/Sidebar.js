@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUser } from "@/context/UserContext";
@@ -32,6 +33,7 @@ const getMenuItems = (role) => {
       { name: "Approve deposits", href: "/staff/approve-deposits", icon: CheckCircle2 },
       { name: "Add Deposit", href: "/staff/deposits/add", icon: PlusCircle },
       { name: "KYC Management", href: "/staff/kyc", icon: ShieldCheck },
+      { name: "Emergency Requests", href: "/staff/cap-requests", icon: AlertTriangle },
       { name: "Staff Profile", href: "/staff/profile", icon: UserCircle },
     ];
   }
@@ -43,6 +45,7 @@ const getMenuItems = (role) => {
     { name: "User Management", href: "/admin/users", icon: Users },
     { name: "Customer Management", href: "/admin/customers", icon: Users },
     { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
+    { name: "Emergency Requests", href: "/admin/cap-requests", icon: AlertTriangle },
     { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },
     { name: "Approve deposits", href: "/admin/approve-deposits", icon: CheckCircle2 },
     { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
