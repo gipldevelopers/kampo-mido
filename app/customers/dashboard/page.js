@@ -22,29 +22,51 @@ import {
 import dashboardService from "../../../services/customer/dashboard.service";
 
 // Reusable Components
-const StatCard = ({ title, value, subtext, icon: Icon, trend }) => (
-  <div className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
-      <span className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground truncate flex-1 pr-2">{title}</span>
-      <div className="p-1 sm:p-1.5 md:p-2 bg-primary/10 rounded-md sm:rounded-lg shrink-0">
-        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
+const StatCard = ({ title, value, subtext, icon: Icon, trend, isProfitLoss }) => {
+  const isLoss = isProfitLoss && trend < 0;
+  const isProfit = isProfitLoss && trend > 0;
+
+  return (
+    <div className={`p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border shadow-sm hover:shadow-md transition-all ${
+      isProfit ? 'bg-green-50 border-green-200' : 
+      isLoss ? 'bg-red-50 border-red-200' : 
+      'bg-card border-border'
+    }`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
+        <span className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground truncate flex-1 pr-2">{title}</span>
+        <div className={`p-1 sm:p-1.5 md:p-2 rounded-md sm:rounded-lg shrink-0 ${
+          isProfit ? 'bg-green-100' : 
+          isLoss ? 'bg-red-100' : 
+          'bg-primary/10'
+        }`}>
+          <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 ${
+            isProfit ? 'text-green-600' : 
+            isLoss ? 'text-red-600' : 
+            'text-primary'
+          }`} />
+        </div>
       </div>
-    </div>
-    <div className="text-lg sm:text-xl md:text-2xl font-bold wrap-break-word">{value}</div>
-    {subtext && (
-      <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
-        <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{subtext}</p>
-        {trend !== undefined && trend !== null && (
-          <span className={`text-[9px] sm:text-[10px] md:text-xs font-medium flex items-center gap-0.5 sm:gap-1 ${trend > 0 ? 'text-green-600' : trend < 0 ? 'text-destructive' : 'text-muted-foreground'
+      <div className={`text-lg sm:text-xl md:text-2xl font-bold wrap-break-word ${
+        isProfit ? 'text-green-600' : 
+        isLoss ? 'text-red-600' : 
+        'text-foreground'
+      }`}>{value}</div>
+      {subtext && (
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
+          <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">{subtext}</p>
+          {trend !== undefined && trend !== null && (
+            <span className={`text-[9px] sm:text-[10px] md:text-xs font-medium flex items-center gap-0.5 sm:gap-1 ${
+              trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-muted-foreground'
             }`}>
-            {trend > 0 ? <TrendingUp size={9} className="sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" /> : trend < 0 ? <TrendingDown size={9} className="sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" /> : null}
-            {trend !== 0 && `${trend > 0 ? '+' : ''}${Math.abs(trend)}%`}
-          </span>
-        )}
-      </div>
-    )}
-  </div>
-);
+              {trend > 0 ? <TrendingUp size={9} className="sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" /> : trend < 0 ? <TrendingDown size={9} className="sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" /> : null}
+              {trend !== 0 && `${trend > 0 ? '+' : ''}${Math.abs(trend)}%`}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function CustomerDashboard() {
   const router = useRouter(); // Initialize router
@@ -82,7 +104,7 @@ export default function CustomerDashboard() {
       const token = localStorage.getItem('token');
       if (!token) {
         console.log('No token found, redirecting to login');
-        router.push('/login');
+        router.push('/');
         return false;
       }
       return true;
@@ -104,7 +126,7 @@ export default function CustomerDashboard() {
         // Check token before making API calls
         const token = localStorage.getItem('token');
         if (!token) {
-          router.push('/login');
+          router.push('/');
           return;
         }
 
@@ -133,7 +155,7 @@ export default function CustomerDashboard() {
           setTimeout(() => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            router.push('/login');
+            router.push('/');
           }, 3000);
         } else {
           setError("Failed to load dashboard data. Please try again.");
@@ -185,7 +207,7 @@ export default function CustomerDashboard() {
         setError("Session expired. Please login again.");
         setTimeout(() => {
           localStorage.clear();
-          router.push('/login');
+          router.push('/');
         }, 2000);
       }
     }
@@ -222,7 +244,7 @@ export default function CustomerDashboard() {
             <button
               onClick={() => {
                 localStorage.clear();
-                router.push('/login');
+                router.push('/');
               }}
               className="px-4 py-2 bg-amber-600 text-white rounded-md text-sm hover:bg-amber-700 transition-colors"
             >
@@ -248,7 +270,7 @@ export default function CustomerDashboard() {
             Retry
           </button>
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/')}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm"
           >
             Go to Login
@@ -303,6 +325,7 @@ export default function CustomerDashboard() {
           subtext={dashboardData.summary.profitLoss >= 0 ? "Total profit" : "Total loss"}
           icon={dashboardData.summary.profitLoss >= 0 ? TrendingUp : TrendingDown}
           trend={dashboardData.summary.profitLossPercent}
+          isProfitLoss={true}
         />
       </div>
 
@@ -414,20 +437,20 @@ export default function CustomerDashboard() {
               <p className="text-sm sm:text-base md:text-lg font-bold text-primary shrink-0 sm:ml-2">{formatINR(dashboardData.summary.currentGoldValue)}</p>
             </div>
             <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 p-2.5 sm:p-3 md:p-4 rounded-lg border ${dashboardData.summary.profitLoss >= 0
-                ? 'bg-green-500/10 border-green-500/20'
-                : 'bg-destructive/10 border-destructive/20'
+                ? 'bg-green-50 border-green-200'
+                : 'bg-red-50 border-red-200'
               }`}>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] sm:text-xs md:text-sm font-medium text-foreground">Net Gain / Loss</p>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Total return on investment</p>
               </div>
               <div className="text-left sm:text-right shrink-0 sm:ml-2">
-                <p className={`text-sm sm:text-base md:text-lg font-bold flex items-center gap-1 ${dashboardData.summary.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'
+                <p className={`text-sm sm:text-base md:text-lg font-bold flex items-center gap-1 ${dashboardData.summary.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                   {dashboardData.summary.profitLoss >= 0 ? <TrendingUp size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" /> : <TrendingDown size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" />}
                   {formatINR(dashboardData.summary.profitLoss)}
                 </p>
-                <p className={`text-[9px] sm:text-[10px] md:text-xs font-medium ${dashboardData.summary.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'
+                <p className={`text-[9px] sm:text-[10px] md:text-xs font-medium ${dashboardData.summary.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                   {dashboardData.summary.profitLoss >= 0 ? '+' : ''}{dashboardData.summary.profitLossPercent}%
                 </p>

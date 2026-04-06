@@ -563,7 +563,7 @@ export default function WithdrawalsPage() {
                     >
                       <Wallet size={20} className="sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2" />
                       <p className="font-medium text-[11px] sm:text-xs md:text-sm">Money Payout</p>
-                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert gold to cash</p>
+                      <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Convert gold to sell</p>
                     </button>
                     <button
                       type="button"
