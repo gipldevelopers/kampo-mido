@@ -291,17 +291,25 @@ export default function WalletPage() {
         </div>
 
         {/* Profit/Loss */}
-        <div className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className={`p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border shadow-sm hover:shadow-md transition-all ${
+          wallet.profitLoss >= 0 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-red-50 border-red-200'
+        }`}>
           <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
             <span className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground truncate flex-1 pr-1">Net Gain / Loss</span>
-            <div className="p-1 sm:p-1.5 md:p-2 bg-primary/10 rounded-md sm:rounded-lg shrink-0">
-              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
+            <div className={`p-1 sm:p-1.5 md:p-2 rounded-md sm:rounded-lg shrink-0 ${
+              wallet.profitLoss >= 0 ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 ${
+                wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
+              } ${wallet.profitLoss < 0 ? 'rotate-180' : ''}`} />
             </div>
           </div>
-          <div className={`text-lg sm:text-xl md:text-2xl font-bold wrap-break-word ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+          <div className={`text-lg sm:text-xl md:text-2xl font-bold wrap-break-word ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {wallet.profitLoss >= 0 ? '+' : ''}{formatINR(wallet.profitLoss)}
           </div>
-          <p className={`text-[9px] sm:text-[10px] md:text-xs mt-0.5 sm:mt-1 ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+          <p className={`text-[9px] sm:text-[10px] md:text-xs mt-0.5 sm:mt-1 ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {formatPercentage(wallet.profitLossPercent)}
           </p>
         </div>
@@ -356,8 +364,8 @@ export default function WalletPage() {
               </div>
 
               <div className={`p-3 sm:p-4 rounded-lg border ${wallet.profitLoss >= 0
-                  ? 'bg-green-500/10 border-green-500/20'
-                  : 'bg-destructive/10 border-destructive/20'
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-red-50 border-red-200'
                 }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -365,12 +373,12 @@ export default function WalletPage() {
                     <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1">Profit/Loss on investment</p>
                   </div>
                   <div className="text-left sm:text-right shrink-0 sm:ml-2">
-                    <p className={`text-lg sm:text-xl font-bold flex items-center gap-1 ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'
+                    <p className={`text-lg sm:text-xl font-bold flex items-center gap-1 ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
                       {wallet.profitLoss >= 0 ? <TrendingUp size={16} className="sm:w-5 sm:h-5" /> : <TrendingUp size={16} className="sm:w-5 sm:h-5 rotate-180" />}
                       {wallet.profitLoss >= 0 ? '+' : ''}{formatINR(wallet.profitLoss)}
                     </p>
-                    <p className={`text-[9px] sm:text-[10px] md:text-xs font-medium ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'
+                    <p className={`text-[9px] sm:text-[10px] md:text-xs font-medium ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
                       {formatPercentage(wallet.profitLossPercent)}
                     </p>
@@ -519,22 +527,22 @@ export default function WalletPage() {
 
               {/* Profit/Loss Summary */}
               <div className={`p-3 sm:p-4 rounded-lg border ${wallet.profitLoss >= 0
-                  ? 'bg-green-500/10 border-green-500/20'
-                  : 'bg-destructive/10 border-destructive/20'
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-red-50 border-red-200'
                 }`}>
                 <div className="flex items-start gap-2">
-                  <div className={`p-1.5 rounded-md ${wallet.profitLoss >= 0 ? 'bg-green-100' : 'bg-destructive/10'}`}>
+                  <div className={`p-1.5 rounded-md ${wallet.profitLoss >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
                     {wallet.profitLoss >= 0 ? (
                       <TrendingUp className="h-4 w-4 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-destructive" />
+                      <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
                     )}
                   </div>
                   <div>
                     <p className="text-[10px] font-medium text-foreground">
                       {wallet.profitLoss >= 0 ? 'Investment Gain' : 'Investment Loss'}
                     </p>
-                    <p className={`text-xs font-bold ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                    <p className={`text-xs font-bold ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {wallet.profitLoss >= 0 ? '+' : ''}{formatINR(wallet.profitLoss)} ({formatPercentage(wallet.profitLossPercent)})
                     </p>
                   </div>
@@ -591,7 +599,7 @@ export default function WalletPage() {
                 <div className="pt-2 border-t border-border">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-muted-foreground">Overall Return:</span>
-                    <span className={`text-xs font-bold ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                    <span className={`text-xs font-bold ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatPercentage(wallet.profitLossPercent)}
                     </span>
                   </div>
