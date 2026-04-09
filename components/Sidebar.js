@@ -19,7 +19,8 @@ import {
   ChevronRight,
   LogOut,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Tag
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useUser } from "@/context/UserContext";
@@ -35,7 +36,9 @@ const getMenuItems = (role) => {
       { name: "KYC Management", href: "/staff/kyc", icon: ShieldCheck },
       { name: "Emergency Requests", href: "/staff/cap-requests", icon: AlertTriangle },
       { name: "Staff Profile", href: "/staff/profile", icon: UserCircle },
+      { name: "Offer Management", href: "/admin/offers", icon: Tag },
     ];
+
   }
   
   // Default Admin menu
@@ -51,9 +54,11 @@ const getMenuItems = (role) => {
     { name: "Deposits", href: "/admin/deposits", icon: ArrowDownCircle },
     { name: "Withdrawals", href: "/admin/withdrawals", icon: ArrowUpCircle },
     { name: "Ledger & Reports", href: "/admin/ledger", icon: BookOpen },
+    { name: "Offer Management", href: "/admin/offers", icon: Tag },
     { name: "Notifications", href: "/admin/notification", icon: Bell },
     { name: "Admin Profile", href: "/admin/profile", icon: UserCircle },
   ];
+
 };
 
 export default function Sidebar({ onClose }) {
