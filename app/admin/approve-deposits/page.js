@@ -14,7 +14,8 @@ import {
     Image as ImageIcon,
     ZoomIn,
     ZoomOut,
-    Download
+    Download,
+    Tag
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import DepositService from "@/services/admin/deposit.service";
@@ -132,7 +133,8 @@ export default function ApproveDeposits() {
                 paymentMode: deposit.paymentMode || deposit.mode || "UPI",
                 screenshot: deposit.screenshot || null,
                 notes: deposit.notes || deposit.adminNotes || "",
-                isConverted: deposit.isConverted || deposit.status === "converted" || deposit.status === "Converted" || !!deposit.conversion
+                isConverted: deposit.isConverted || deposit.status === "converted" || deposit.status === "Converted" || !!deposit.conversion,
+                offer: deposit.offer
             }));
 
             setDeposits(mappedDeposits);
@@ -361,7 +363,14 @@ export default function ApproveDeposits() {
                                         <div className="flex items-start justify-between gap-2 mb-2">
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-medium text-sm text-foreground truncate">{deposit.customerName}</h3>
-                                                <p className="text-[10px] text-muted-foreground mt-0.5">{deposit.accountNo}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-[10px] text-muted-foreground">{deposit.accountNo}</p>
+                                                    {deposit.offer && (
+                                                        <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-bold rounded border border-primary/20 uppercase">
+                                                            <Tag size={8} /> {deposit.offer.code}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <StatusBadge status={deposit.status} />
                                         </div>
@@ -451,7 +460,16 @@ export default function ApproveDeposits() {
                                         filteredDeposits.map((deposit) => (
                                             <tr key={deposit.id} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">
-                                                    {deposit.customerName}
+                                                    <div className="flex flex-col">
+                                                        <span>{deposit.customerName}</span>
+                                                        {deposit.offer && (
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded border border-primary/20 uppercase">
+                                                                    <Tag size={10} /> {deposit.offer.code}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 font-semibold">₹ {deposit.amount.toLocaleString()}</td>
                                                 <td className="px-4 lg:px-6 py-3 lg:py-4 text-muted-foreground">{formatDate(deposit.date)}</td>
@@ -537,15 +555,30 @@ export default function ApproveDeposits() {
                         </div>
                         <div className="p-6 space-y-4">
                             {selectedDeposit && (
-                                <div className="space-y-2">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Customer</p>
-                                        <p className="text-sm font-medium text-foreground">{selectedDeposit.customerName}</p>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Customer</p>
+                                            <p className="text-sm font-medium text-foreground">{selectedDeposit.customerName}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Amount</p>
+                                            <p className="text-sm font-semibold text-foreground">₹ {selectedDeposit.amount.toLocaleString()}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Amount</p>
-                                        <p className="text-sm font-semibold text-foreground">₹ {selectedDeposit.amount.toLocaleString()}</p>
-                                    </div>
+                                    
+                                    {selectedDeposit.offer && (
+                                        <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
+                                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                                                <Tag size={12} /> Applied Promo: {selectedDeposit.offer.code}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {selectedDeposit.offer.discountType === 'percentage' ? `${selectedDeposit.offer.discountValue}% Bonus Gold` : 
+                                                 selectedDeposit.offer.discountType === 'amount' ? `₹${selectedDeposit.offer.discountValue} Extra Value` : 
+                                                 `${selectedDeposit.offer.discountValue}g Bonus Gold`}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             <div className="space-y-2">

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   X,
+  Tag,
   Image as ImageIcon,
   Loader2,
   History,
@@ -16,7 +17,8 @@ import Link from "next/link";
 import Toast from "@/components/Toast";
 import DepositService from "../../../services/customer/deposit.service";
 import UPIService from "../../../services/upi.service";
-import KYCService from "@/services/customer/kyc.service"; // Add this import
+import KYCService from "@/services/customer/kyc.service";
+import OfferService from "@/services/customer/offers.service";
 
 const StatusBadge = ({ status }) => {
   // Normalize status to handle both lowercase and capitalized versions
@@ -62,6 +64,12 @@ export default function DepositPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [fetchingUPI, setFetchingUPI] = useState(true);
   const [qrCodeError, setQrCodeError] = useState(false);
+
+  // Promo Code States
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedOffer, setAppliedOffer] = useState(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
   // KYC State
   const [kycVerified, setKycVerified] = useState(false);
@@ -275,6 +283,32 @@ export default function DepositPage() {
     setScreenshotPreview(null);
   };
 
+  const handleValidatePromo = async () => {
+    if (!promoCode) {
+      setPromoError("Please enter a promo code");
+      return;
+    }
+
+    setValidatingPromo(true);
+    setPromoError("");
+    try {
+      const response = await OfferService.validatePromoCode(promoCode, 'deposit');
+      setAppliedOffer(response.data);
+      setToast({ message: `Promo code "${promoCode}" applied!`, type: "success" });
+    } catch (error) {
+      console.error("Promo error:", error);
+      setPromoError(error.response?.data?.message || "Invalid promo code");
+      setAppliedOffer(null);
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedOffer(null);
+    setPromoCode("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) {
@@ -306,6 +340,10 @@ export default function DepositPage() {
         depositData.screenshot = screenshot;
       }
 
+      if (appliedOffer) {
+        depositData.appliedOfferId = appliedOffer.id;
+      }
+
       // Submit deposit request
       await DepositService.submitDeposit(depositData);
 
@@ -319,6 +357,8 @@ export default function DepositPage() {
       setDepositDate(now.toISOString().slice(0, 10));
       setScreenshot(null);
       setScreenshotPreview(null);
+      setAppliedOffer(null);
+      setPromoCode("");
 
       // Refresh deposit history
       try {
@@ -582,6 +622,65 @@ export default function DepositPage() {
                     </label>
                   )}
                   <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">Upload payment confirmation screenshot for faster verification</p>
+                </div>
+
+                {/* Promo Code Section */}
+                <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Tag size={16} className="text-primary" />
+                    <label className="text-sm font-semibold text-foreground">Promo Code</label>
+                  </div>
+                  
+                  {!appliedOffer ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoError("");
+                          }}
+                          placeholder="ENTER CODE"
+                          className={`flex-1 px-3 py-2 bg-background border ${promoError ? 'border-destructive focus:ring-destructive' : 'border-input focus:ring-primary'} rounded-md text-xs font-mono font-bold tracking-widest focus:ring-1 outline-none`}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleValidatePromo}
+                          disabled={validatingPromo || !promoCode}
+                          className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-xs font-bold uppercase transition-all hover:bg-muted disabled:opacity-50"
+                        >
+                          {validatingPromo ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-[10px] text-destructive font-medium">{promoError}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-md">
+                      <div className="flex items-center gap-2">
+                         <div className="p-1 px-2 bg-primary text-primary-foreground rounded text-[10px] font-black tracking-widest uppercase">
+                            {appliedOffer.code}
+                         </div>
+                         <div className="text-[10px] font-medium text-primary">
+                            {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}% Off` : 
+                             appliedOffer.discountType === 'amount' ? `₹${appliedOffer.discountValue} Extra` : 
+                             `${appliedOffer.discountValue}g Bonus`}
+                         </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={removePromo}
+                        className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-muted-foreground italic">
+                    {appliedOffer ? "Offer benefits will be added after deposit approval." : "Apply a promo code to get bonus gold or discounts."}
+                  </p>
                 </div>
 
                 <div className="bg-muted/30 p-3 sm:p-4 rounded-lg border border-border">
