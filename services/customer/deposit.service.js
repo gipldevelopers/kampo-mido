@@ -20,6 +20,10 @@ class DepositService {
       if (depositData.screenshot) {
         formData.append("screenshot", depositData.screenshot);
       }
+
+      if (depositData.appliedOfferId) {
+        formData.append("appliedOfferId", depositData.appliedOfferId);
+      }
       
       const response = await API.post("/customer/deposit/create", formData, {
         headers: {

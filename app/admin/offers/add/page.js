@@ -34,7 +34,8 @@ export default function AddOffer() {
     endDate: "",
     maxUses: "",
     usesPerCustomer: 1,
-    status: "active"
+    status: "active",
+    applicableTo: "deposit"
   });
 
   const handleSubmit = async (e) => {
@@ -85,10 +86,26 @@ export default function AddOffer() {
         {/* Left Column: Form */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg sm:rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="p-4 sm:p-6 border-b border-border bg-muted/20">
+            <div className="p-4 sm:p-6 border-b border-border bg-muted/20 flex items-center justify-between">
                 <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                    <Info size={16} className="shrink-0" /> Basic Information
                 </h3>
+                <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
+                  {['deposit', 'withdrawal', 'both'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFormData({...formData, applicableTo: type})}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${
+                        formData.applicableTo === type 
+                          ? 'bg-primary text-primary-foreground shadow-sm' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
             </div>
             
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -246,9 +263,18 @@ export default function AddOffer() {
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
                       {formData.discountType === 'percentage' ? <Percent size={18} /> : formData.discountType === 'extra_gold' ? <Coins size={18} /> : <Tag size={18} />}
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase border border-primary/20 bg-primary/5 text-primary">
-                    {formData.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
+                      formData.applicableTo === 'deposit' ? 'border-blue-200 bg-blue-50 text-blue-600' :
+                      formData.applicableTo === 'withdrawal' ? 'border-amber-200 bg-amber-50 text-amber-600' :
+                      'border-purple-200 bg-purple-50 text-purple-600'
+                    }`}>
+                      {formData.applicableTo}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase border border-primary/20 bg-primary/5 text-primary">
+                      {formData.status}
+                    </span>
+                  </div>
                 </div>
 
                 <h3 className="text-lg sm:text-xl font-bold mb-1 truncate">{formData.title || "Offer Title"}</h3>
