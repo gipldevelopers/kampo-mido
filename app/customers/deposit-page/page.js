@@ -69,6 +69,7 @@ export default function DepositPage() {
   const [promoCode, setPromoCode] = useState("");
   const [appliedOffer, setAppliedOffer] = useState(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
   // KYC State
   const [kycVerified, setKycVerified] = useState(false);
@@ -284,21 +285,19 @@ export default function DepositPage() {
 
   const handleValidatePromo = async () => {
     if (!promoCode) {
-      setToast({ message: "Please enter a promo code", type: "error" });
+      setPromoError("Please enter a promo code");
       return;
     }
 
     setValidatingPromo(true);
+    setPromoError("");
     try {
       const response = await OfferService.validatePromoCode(promoCode, 'deposit');
       setAppliedOffer(response.data);
       setToast({ message: `Promo code "${promoCode}" applied!`, type: "success" });
     } catch (error) {
       console.error("Promo error:", error);
-      setToast({ 
-        message: error.response?.data?.message || "Invalid promo code", 
-        type: "error" 
-      });
+      setPromoError(error.response?.data?.message || "Invalid promo code");
       setAppliedOffer(null);
     } finally {
       setValidatingPromo(false);
@@ -633,22 +632,30 @@ export default function DepositPage() {
                   </div>
                   
                   {!appliedOffer ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                        placeholder="ENTER CODE"
-                        className="flex-1 px-3 py-2 bg-background border border-input rounded-md text-xs font-mono font-bold tracking-widest focus:ring-1 focus:ring-primary outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleValidatePromo}
-                        disabled={validatingPromo || !promoCode}
-                        className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-xs font-bold uppercase transition-all hover:bg-muted disabled:opacity-50"
-                      >
-                        {validatingPromo ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
-                      </button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoError("");
+                          }}
+                          placeholder="ENTER CODE"
+                          className={`flex-1 px-3 py-2 bg-background border ${promoError ? 'border-destructive focus:ring-destructive' : 'border-input focus:ring-primary'} rounded-md text-xs font-mono font-bold tracking-widest focus:ring-1 outline-none`}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleValidatePromo}
+                          disabled={validatingPromo || !promoCode}
+                          className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-xs font-bold uppercase transition-all hover:bg-muted disabled:opacity-50"
+                        >
+                          {validatingPromo ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-[10px] text-destructive font-medium">{promoError}</p>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-md">
