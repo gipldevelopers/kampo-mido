@@ -12,8 +12,7 @@ import {
   ArrowDownCircle,
   Pencil,
   Trash2,
-  Loader2,
-  Tag
+  Loader2
 } from "lucide-react";
 import Toast from "@/components/Toast";
 import DepositService from "@/services/admin/deposit.service";
@@ -123,7 +122,6 @@ export default function DepositManagement() {
           rate: deposit.rateUsed || deposit.rate || 0,
           gold: Number(deposit.gold || deposit.goldAmount || 0).toFixed(4),
           status: status,
-          offer: deposit.offer,
           fullData: deposit
         };
       });
@@ -161,12 +159,11 @@ export default function DepositManagement() {
     const doc = new jsPDF();
     doc.text("Deposit Report", 14, 20);
 
-    const tableColumn = ["Transaction ID", "Customer", "Amount", "Promo Code", "Mode", "Date", "Rate Used", "Gold Credited", "Status"];
+    const tableColumn = ["Transaction ID", "Customer", "Amount", "Mode", "Date", "Rate Used", "Gold Credited", "Status"];
     const tableRows = deposits.map(dep => [
       dep.id,
       dep.customer,
       `Rs. ${dep.amount.toLocaleString()}`,
-      dep.offer ? dep.offer.code : "-",
       dep.mode,
       dep.date,
       `Rs. ${dep.rate}`,
@@ -189,7 +186,6 @@ export default function DepositManagement() {
       "Transaction ID": dep.id,
       Customer: dep.customer,
       Amount: dep.amount,
-      "Promo Code": dep.offer ? dep.offer.code : "-",
       Mode: dep.mode,
       Date: dep.date,
       "Rate Used": dep.rate,
@@ -329,14 +325,7 @@ export default function DepositManagement() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground truncate">{dep.id}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-[10px] text-muted-foreground truncate">{dep.customer}</p>
-                          {dep.offer && (
-                            <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-bold rounded border border-primary/20 uppercase">
-                              <Tag size={8} /> {dep.offer.code}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{dep.customer}</p>
                       </div>
                       <StatusBadge status={dep.status} />
                     </div>
@@ -415,18 +404,7 @@ export default function DepositManagement() {
                     filteredDeposits.map((dep) => (
                       <tr key={dep.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-4 lg:px-6 py-3 lg:py-4 font-medium text-foreground">{dep.id}</td>
-                        <td className="px-4 lg:px-6 py-3 lg:py-4">
-                          <div className="flex flex-col">
-                            <span>{dep.customer}</span>
-                            {dep.offer && (
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded border border-primary/20 uppercase">
-                                  <Tag size={10} /> {dep.offer.code}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">{dep.customer}</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 font-semibold">₹ {dep.amount.toLocaleString()}</td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4">
                           <span className="px-1.5 sm:px-2 py-0.5 bg-muted rounded border border-border text-[9px] sm:text-[10px] md:text-xs font-medium">{dep.mode}</span>

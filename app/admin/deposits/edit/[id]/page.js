@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Save, ChevronDown, Calculator, AlertTriangle, Loader2, Tag } from "lucide-react";
+import { ArrowLeft, Save, ChevronDown, Calculator, AlertTriangle, Loader2 } from "lucide-react";
 import Toast from "@/components/Toast";
 import DepositService from "@/services/admin/deposit.service";
 
@@ -24,8 +24,6 @@ export default function EditDeposit({ params }) {
     notes: "",
     goldRate: 0 // The rate locked at the time of deposit
   });
-
-  const [appliedOffer, setAppliedOffer] = useState(null);
 
   const [calculatedGold, setCalculatedGold] = useState(0);
 
@@ -71,10 +69,6 @@ export default function EditDeposit({ params }) {
             notes: deposit.adminNotes || deposit.notes || "",
             goldRate: deposit.rateUsed || deposit.rate || 0
           });
-
-          if (deposit.offer) {
-            setAppliedOffer(deposit.offer);
-          }
         }
       } catch (error) {
         console.error("Error fetching deposit:", error);
@@ -310,45 +304,6 @@ export default function EditDeposit({ params }) {
               </div>
             </div>
           </div>
-
-          {/* Applied Offer Details */}
-          {appliedOffer && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm">
-              <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
-                <Tag size={16} className="sm:w-[18px] sm:h-[18px] text-primary shrink-0" /> <span>Applied Offer</span>
-              </h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Promo Code:</span>
-                  <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded uppercase tracking-wider">
-                    {appliedOffer.code}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Offer Type:</span>
-                  <span className="font-medium text-foreground capitalize">
-                     {appliedOffer.discountType === 'percentage' ? 'Percentage Bonus' : 
-                      appliedOffer.discountType === 'amount' ? 'Extra Value' : 'Bonus Gold'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Value:</span>
-                  <span className="font-black text-primary">
-                    {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}%` : 
-                     appliedOffer.discountType === 'amount' ? `₹${appliedOffer.discountValue}` : 
-                     `${appliedOffer.discountValue}g`}
-                  </span>
-                </div>
-
-                <div className="pt-2 text-[10px] text-muted-foreground italic border-t border-primary/10">
-                  This benefit will be applied automatically when you convert this deposit to gold.
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Warning Box */}
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 text-xs sm:text-sm">
