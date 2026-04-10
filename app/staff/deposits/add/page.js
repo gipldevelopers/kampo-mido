@@ -175,7 +175,6 @@ export default function AddDeposit() {
       const deposit = deposits.find(d => String(d.id) === String(selectedDeposit));
 
       if (deposit) {
-        console.log("Found deposit for auto-fill:", deposit);
 
         // Auto-fill amount - always set if deposit has amount
         if (deposit.amount !== undefined && deposit.amount !== null && deposit.amount !== 0) {
@@ -208,9 +207,6 @@ export default function AddDeposit() {
         // Auto-fill admin notes (check both formatted and fullData)
         const notes = deposit.notes || deposit.fullData?.notes || deposit.fullData?.adminNotes || "";
         setAdminNotes(notes); // Set even if empty to clear previous value
-      } else {
-        console.log("Deposit not found. Selected ID:", selectedDeposit, "Type:", typeof selectedDeposit);
-        console.log("Available deposits:", deposits.map(d => ({ id: d.id, type: typeof d.id })));
       }
     }
   }, [selectedDeposit, deposits]);

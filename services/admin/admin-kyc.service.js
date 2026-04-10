@@ -26,7 +26,7 @@ class AdminKYCService {
       if (!kycId || kycId === "N/A" || kycId === "null") {
         throw new Error("Invalid KYC ID");
       }
-      
+
       // Convert to string and extract numeric part if formatted (e.g., "KYC-1" -> "1")
       let finalKycId = String(kycId);
       if (!/^\d+$/.test(finalKycId)) {
@@ -37,8 +37,7 @@ class AdminKYCService {
           throw new Error("Invalid KYC ID format");
         }
       }
-      
-      console.log("Fetching KYC by ID:", finalKycId);
+
       const response = await API.get(`/admin/kyc/view/${finalKycId}`);
       return response.data;
     } catch (error) {
@@ -54,7 +53,7 @@ class AdminKYCService {
       if (!kycId || kycId === "N/A" || kycId === "null") {
         throw new Error("Invalid KYC ID");
       }
-      
+
       // Convert to string and extract numeric part if formatted (e.g., "KYC-1" -> "1")
       let finalKycId = String(kycId);
       if (!/^\d+$/.test(finalKycId)) {
@@ -65,19 +64,17 @@ class AdminKYCService {
           throw new Error("Invalid KYC ID format");
         }
       }
-      
+
       const payload = {
         status,
         notes: notes || "",
         capLockYears: capLockYears || 0
       };
-      
+
       // Add documentsToReupload if provided (for reject with specific documents)
       if (documentsToReupload && Array.isArray(documentsToReupload) && documentsToReupload.length > 0) {
         payload.documentsToReupload = documentsToReupload;
       }
-      
-      console.log("Updating KYC status:", { kycId: finalKycId, status, notes });
       const response = await API.put(`/admin/kyc/update-status/${finalKycId}`, payload);
       return response.data;
     } catch (error) {
@@ -93,7 +90,7 @@ class AdminKYCService {
       if (!kycId || kycId === "N/A" || kycId === "null") {
         throw new Error("Invalid KYC ID");
       }
-      
+
       // Convert to string and extract numeric part if formatted (e.g., "KYC-1" -> "1")
       let finalKycId = String(kycId);
       if (!/^\d+$/.test(finalKycId)) {
@@ -104,20 +101,18 @@ class AdminKYCService {
           throw new Error("Invalid KYC ID format");
         }
       }
-      
+
       const payload = {};
-      
+
       // Add documentsToReupload if provided
       if (documentsToReupload && Array.isArray(documentsToReupload) && documentsToReupload.length > 0) {
         payload.documentsToReupload = documentsToReupload;
       }
-      
+
       // Add notes if provided
       if (notes) {
         payload.notes = notes;
       }
-      
-      console.log("Requesting re-upload:", { kycId: finalKycId, documentsToReupload, notes });
       const response = await API.post(`/admin/kyc/request-reupload/${finalKycId}`, payload);
       return response.data;
     } catch (error) {

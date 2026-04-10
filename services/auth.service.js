@@ -92,10 +92,19 @@ class AuthService {
       // Even if API call fails, clear local storage
       console.error("Logout API error:", error);
     } finally {
-      // Always clear local storage
+      // Always clear local storage, session storage, and cookies
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.clear();
+        
+        sessionStorage.clear();
+        
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+        });
       }
     }
   }

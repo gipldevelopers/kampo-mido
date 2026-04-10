@@ -65,6 +65,7 @@ export default function CustomerSidebar({ onClose }) {
                   src="/logo/logo.jpeg"
                   alt="Gold Harvesting Platform Logo"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
@@ -100,6 +101,7 @@ export default function CustomerSidebar({ onClose }) {
                 src="/logo/logo.jpeg"
                 alt="Logo"
                 fill
+                sizes="40px"
                 className="object-cover"
               />
             </div>

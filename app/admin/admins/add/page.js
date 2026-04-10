@@ -43,7 +43,7 @@ export default function AddAdmin() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto pb-10">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-8xl mx-auto pb-10">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center gap-3 sm:gap-4">
@@ -88,10 +88,13 @@ export default function AddAdmin() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Email Address</label>
+              <label className="text-sm font-medium text-foreground">
+                Email Address <span className="text-destructive">*</span>
+              </label>
               <input
                 type="email"
                 name="email"
+                required
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:ring-1 focus:ring-primary focus:outline-none"

@@ -83,7 +83,7 @@ export default function EditAdmin(props) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto pb-10">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-8xl mx-auto pb-10">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center gap-3 sm:gap-4">

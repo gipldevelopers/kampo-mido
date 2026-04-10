@@ -8,7 +8,8 @@ import {
   CheckCircle2,
   Loader2,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Gift
 } from "lucide-react";
 import walletService from "@/services/customer/wallet.service";
 
@@ -30,7 +31,8 @@ export default function WalletPage() {
     averageBuyRate: 0,
     totalDeposited: 0,
     profitLoss: 0,
-    profitLossPercent: 0
+    profitLossPercent: 0,
+    totalPromoValue: 0
   });
 
   // State for conversion history
@@ -122,7 +124,8 @@ export default function WalletPage() {
             averageBuyRate: walletData.averageBuyRate || 0,
             totalDeposited: walletData.totalDeposited || 0,
             profitLoss: walletData.profitLoss || 0,
-            profitLossPercent: walletData.profitLossPercent || 0
+            profitLossPercent: walletData.profitLossPercent || 0,
+            totalPromoValue: walletData.totalPromoValue || 0
           });
         }
 
@@ -247,7 +250,7 @@ export default function WalletPage() {
       </div>
 
       {/* Wallet Stats Grid */}
-      <div className="grid gap-2.5 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2.5 sm:gap-3 md:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {/* Total Grams */}
         <div className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -312,6 +315,20 @@ export default function WalletPage() {
           <p className={`text-[9px] sm:text-[10px] md:text-xs mt-0.5 sm:mt-1 ${wallet.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {formatPercentage(wallet.profitLossPercent)}
           </p>
+        </div>
+
+        {/* Promo Code Value */}
+        <div className="bg-purple-50 text-purple-900 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
+            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-purple-700/80 truncate flex-1 pr-1">Promo Benefits</span>
+            <div className="p-1 sm:p-1.5 md:p-2 bg-purple-200/50 rounded-md sm:rounded-lg shrink-0">
+              <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-purple-600" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-xl md:text-2xl font-bold wrap-break-word">
+            {formatINR(wallet.totalPromoValue)}
+          </div>
+          <p className="text-[9px] sm:text-[10px] md:text-xs text-purple-600/80 mt-0.5 sm:mt-1">Value gained from offers</p>
         </div>
       </div>
 

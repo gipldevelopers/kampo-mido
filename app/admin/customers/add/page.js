@@ -306,9 +306,7 @@ export default function AddCustomer() {
       newErrors.whatsapp = "WhatsApp number is required";
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
 
@@ -564,7 +562,7 @@ export default function AddCustomer() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
-                Email Address <span className="text-destructive">*</span>
+                Email Address <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
               </label>
               <input
                 id="email"

@@ -22,6 +22,7 @@ export default function Footer() {
                   src="/logo/logo.jpeg"
                   alt="Gold Harvesting Logo"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>

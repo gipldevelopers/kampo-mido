@@ -171,9 +171,16 @@ export default function CustomerOffers() {
                   
                   <button 
                     onClick={() => handleClaim(offer)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 shadow-sm transition-all active:scale-[0.98]"
+                    disabled={offer.isFullyUsed}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] ${
+                      offer.isFullyUsed 
+                        ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                        : 'bg-primary text-primary-foreground hover:opacity-90'
+                    }`}
                   >
-                    {copiedCode === offer.code ? (
+                    {offer.isFullyUsed ? (
+                      <><ClipboardCheck size={14} /> Used</>
+                    ) : copiedCode === offer.code ? (
                       <><Check size={14} /> Copied</>
                     ) : (
                       <><Clipboard size={14} /> Claim</>

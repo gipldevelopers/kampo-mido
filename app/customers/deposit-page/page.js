@@ -110,12 +110,8 @@ export default function DepositPage() {
       try {
         const response = await UPIService.getUPIQR();
 
-        console.log("UPI QR Response:", response); // Debug log
-
         if (response.success && response.data) {
           const { upiId: apiUpiId, qrCode: apiQrCode, merchantName } = response.data;
-
-          console.log("UPI Data:", { apiUpiId, hasQrCode: !!apiQrCode, merchantName }); // Debug log
 
           if (apiUpiId) {
             setUpiId(apiUpiId);
@@ -630,7 +626,7 @@ export default function DepositPage() {
                     <Tag size={16} className="text-primary" />
                     <label className="text-sm font-semibold text-foreground">Promo Code</label>
                   </div>
-                  
+
                   {!appliedOffer ? (
                     <div className="flex flex-col gap-2">
                       <div className="flex gap-2">
@@ -660,17 +656,17 @@ export default function DepositPage() {
                   ) : (
                     <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-md">
                       <div className="flex items-center gap-2">
-                         <div className="p-1 px-2 bg-primary text-primary-foreground rounded text-[10px] font-black tracking-widest uppercase">
-                            {appliedOffer.code}
-                         </div>
-                         <div className="text-[10px] font-medium text-primary">
-                            {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}% Off` : 
-                             appliedOffer.discountType === 'amount' ? `₹${appliedOffer.discountValue} Extra` : 
-                             `${appliedOffer.discountValue}g Bonus`}
-                         </div>
+                        <div className="p-1 px-2 bg-primary text-primary-foreground rounded text-[10px] font-black tracking-widest uppercase">
+                          {appliedOffer.code}
+                        </div>
+                        <div className="text-[10px] font-medium text-primary">
+                          {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}% Off` :
+                            appliedOffer.discountType === 'amount' ? `₹${appliedOffer.discountValue} Extra` :
+                              `${appliedOffer.discountValue}g Bonus`}
+                        </div>
                       </div>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={removePromo}
                         className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-all"
                       >

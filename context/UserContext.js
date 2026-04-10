@@ -12,6 +12,24 @@ export function UserProvider({ children }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    // Listen for storage changes across tabs
+    const handleStorageChange = (e) => {
+      // If token or user is removed from localStorage, automatically log out
+      if (e.key === "token" && !e.newValue) {
+        setUser(null);
+      }
+      if (e.key === "user" && !e.newValue) {
+        setUser(null);
+      }
+      if (e.key === null) {
+        // localStorage.clear() was called
+        setUser(null);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const login = (userData) => {
@@ -21,10 +39,21 @@ export function UserProvider({ children }) {
 
   const logout = () => {
     setUser(null);
-    // Clear both user and token from localStorage
     if (typeof window !== "undefined") {
+      // Clear localStorage
       localStorage.removeItem("user");
       localStorage.removeItem("token");
+      localStorage.clear();
+
+      // Clear sessionStorage
+      sessionStorage.clear();
+
+      // Clear all cookies
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+      });
     }
   };
 

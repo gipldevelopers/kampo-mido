@@ -119,7 +119,6 @@ export default function LedgerAndReports() {
       };
 
       const response = await ledgerReportsService.getLedgerData(params);
-      console.log('Ledger API Response:', response); // Debug log
 
       if (response.success) {
         setLedgerData(response.data?.entries || []);
@@ -151,7 +150,6 @@ export default function LedgerAndReports() {
   const fetchReportTypes = async () => {
     try {
       const response = await ledgerReportsService.getReportTypes();
-      console.log('Report Types API Response:', response); // Debug log
 
       if (response.success) {
         // Map the API response to include proper icon components
@@ -216,7 +214,6 @@ export default function LedgerAndReports() {
   const fetchRecentReports = async () => {
     try {
       const response = await ledgerReportsService.getRecentReports();
-      console.log('Recent Reports API Response:', response); // Debug log
 
       if (response.success) {
         setRecentReports(response.data || []);

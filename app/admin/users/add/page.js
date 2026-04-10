@@ -267,7 +267,6 @@ export default function AddUser() {
                   }`}
               >
                 <option value="">Select role</option>
-                <option value="admin">Admin</option>
                 <option value="customer">Customer</option>
               </select>
               {errors.role && (

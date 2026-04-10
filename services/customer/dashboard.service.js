@@ -6,9 +6,7 @@ class DashboardService {
   // Get dashboard summary
   async getDashboardSummary() {
     try {
-      console.log('Making dashboard summary request...');
       const response = await API.get("/customer/dashboard/summary");
-      console.log('Dashboard summary response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Dashboard summary error details:', {
