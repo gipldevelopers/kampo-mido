@@ -983,7 +983,7 @@ export default function WithdrawalsPage() {
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-xs sm:text-sm font-medium text-foreground">Reason for Emergency</label>
+                  <label className="text-xs sm:text-sm font-medium text-foreground">Reason for Emergency (Enter reason in detail)</label>
                   <textarea
                     value={emergencyReason}
                     onChange={(e) => setEmergencyReason(e.target.value)}
