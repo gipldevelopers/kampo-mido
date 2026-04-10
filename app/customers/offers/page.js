@@ -15,7 +15,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Toast from "@/components/Toast";
-import OfferService from "@/services/customer/offers.service";
 
 // --- Components ---
 
