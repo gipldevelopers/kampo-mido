@@ -76,11 +76,7 @@ export default function KYCDetail({ params }) {
           return;
         }
 
-        console.log("Fetching KYC with ID:", kycId);
         const response = await AdminKYCService.getKYCById(kycId);
-
-        // Debug: Log the response to understand structure
-        console.log("KYC Detail Response:", response);
 
         // Handle different response structures
         let kyc = null;
@@ -91,9 +87,6 @@ export default function KYCDetail({ params }) {
         } else {
           kyc = response;
         }
-
-        // Debug: Log the parsed KYC data
-        console.log("Parsed KYC Data:", kyc);
 
         if (kyc) {
           // Separate selfie from other documents
@@ -198,8 +191,6 @@ export default function KYCDetail({ params }) {
 
     // Use the KYC ID from kycData if available (more reliable)
     const finalKycId = kycData?.id ? String(kycData.id) : kycId;
-
-    console.log("Action:", action, "KYC ID:", finalKycId);
 
     if (action === "approve") {
       if (!notes.trim()) {

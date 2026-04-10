@@ -140,8 +140,6 @@ export default function AdminProfile() {
       setLoadingUPI(true);
       const response = await UPIService.getUPISettings();
 
-      console.log("UPI Settings Response:", response);
-
       if (response.success && response.data) {
         const upiData = response.data;
 

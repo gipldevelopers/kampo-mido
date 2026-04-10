@@ -150,6 +150,7 @@ export default function LoginPage() {
                 src="/logo/logo.jpeg"
                 alt="Gold Harvesting Platform"
                 fill
+                sizes="48px"
                 className="object-cover"
               />
             </div>
@@ -169,6 +170,7 @@ export default function LoginPage() {
                       src="/logo/logo.jpeg"
                       alt="Gold Harvesting Platform"
                       fill
+                      sizes="64px"
                       className="object-cover"
                     />
                   </div>
@@ -265,6 +267,7 @@ export default function LoginPage() {
                   src="/logo/logo.jpeg"
                   alt="Gold Harvesting Platform"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>

@@ -94,6 +94,7 @@ export default function Sidebar({ onClose }) {
                   src="/logo/logo.jpeg"
                   alt="Gold Harvesting Platform Logo"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
@@ -129,6 +130,7 @@ export default function Sidebar({ onClose }) {
                 src="/logo/logo.jpeg"
                 alt="Logo"
                 fill
+                sizes="40px"
                 className="object-cover"
               />
             </div>

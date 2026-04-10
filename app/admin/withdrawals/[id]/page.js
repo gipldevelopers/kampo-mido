@@ -61,7 +61,6 @@ export default function WithdrawalDetail() {
           if (rateResponse.success && rateResponse.data) {
             const rate = parseFloat(rateResponse.data.ratePerGram);
             setCurrentGoldRate(rate);
-            console.log("Current Gold Rate fetched:", rate);
           }
         } catch (rateError) {
           console.error("Error fetching gold rate:", rateError);
@@ -122,8 +121,6 @@ export default function WithdrawalDetail() {
     if (shouldCalculate && currentGoldRate > 0 && request.amount > 0) {
       const calculatedGrams = parseFloat(request.amount) / currentGoldRate;
       const balanceAfter = parseFloat(request.customer.walletBalance) - calculatedGrams;
-
-      console.log("Calculating grams for money withdrawal:", { amount: request.amount, rate: currentGoldRate, grams: calculatedGrams });
 
       setRequest(prev => ({
         ...prev,
