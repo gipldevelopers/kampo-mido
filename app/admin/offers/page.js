@@ -217,6 +217,13 @@ export default function OfferManagement() {
                     <DiscountIcon type={offer.discountType} />
                   </div>
                   <div className="flex items-center gap-1">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase border ${
+                      offer.applicableTo === 'deposit' ? 'border-blue-200 bg-blue-50 text-blue-600' :
+                      offer.applicableTo === 'withdrawal' ? 'border-amber-200 bg-amber-50 text-amber-600' :
+                      'border-purple-200 bg-purple-50 text-purple-600'
+                    }`}>
+                      {offer.applicableTo}
+                    </span>
                     <StatusBadge status={offer.status} />
                     <Link
                       href={`/admin/offers/edit/${offer.id}`}

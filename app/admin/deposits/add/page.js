@@ -148,6 +148,7 @@ export default function AddDeposit() {
               rawDate: depositDate, // Store raw date for datetime-local input
               notes: adminNotes,
               isConverted: deposit.isConverted || false,
+              offer: deposit.offer || deposit.fullData?.offer || null,
               // Store full deposit object for auto-fill
               fullData: deposit,
               displayName: `₹ ${(deposit.amount || 0).toLocaleString()} - ${deposit.status || "Pending"} (${depositDate ? new Date(depositDate).toLocaleDateString('en-IN') : "N/A"})`
@@ -213,12 +214,27 @@ export default function AddDeposit() {
   // Calculate gold when amount or rate changes
   useEffect(() => {
     if (amount && !isNaN(amount) && goldRate && goldRate > 0) {
-      const gold = (parseFloat(amount) / goldRate).toFixed(4);
-      setCalculatedGold(gold);
+      const parsedAmount = parseFloat(amount);
+      let baseGold = parsedAmount / goldRate;
+      let totalGold = baseGold;
+
+      const selectedDepositData = deposits.find(d => String(d.id) === String(selectedDeposit));
+      if (selectedDepositData && selectedDepositData.offer) {
+        const offer = selectedDepositData.offer;
+        if (offer.discountType === 'percentage') {
+          totalGold += (baseGold * parseFloat(offer.discountValue)) / 100;
+        } else if (offer.discountType === 'amount') {
+          totalGold += parseFloat(offer.discountValue) / goldRate;
+        } else if (offer.discountType === 'extra_gold') {
+          totalGold += parseFloat(offer.discountValue);
+        }
+      }
+
+      setCalculatedGold(totalGold.toFixed(4));
     } else {
       setCalculatedGold(0);
     }
-  }, [amount, goldRate]);
+  }, [amount, goldRate, selectedDeposit, deposits]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -478,6 +494,29 @@ export default function AddDeposit() {
                 <span className="text-muted-foreground">Deposit Amount:</span>
                 <span className="font-medium text-foreground break-words">₹ {amount || 0}</span>
               </div>
+
+              {(() => {
+                const selectedDepositData = deposits.find(d => String(d.id) === String(selectedDeposit));
+                if (selectedDepositData && selectedDepositData.offer && amount && goldRate) {
+                  const baseGoldStr = (parseFloat(amount) / goldRate).toFixed(4);
+                  const bonusGoldStr = (parseFloat(calculatedGold) - parseFloat(baseGoldStr)).toFixed(4);
+                  return (
+                    <div className="pt-2 mt-2 border-t border-primary/10">
+                      <div className="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                        <span className="text-muted-foreground">Base Gold:</span>
+                        <span className="font-medium text-foreground">{baseGoldStr} g</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs sm:text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1 text-primary">
+                          Promo Bonus ({selectedDepositData.offer.code}):
+                        </span>
+                        <span className="font-bold text-primary">+{bonusGoldStr} g</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="pt-3 sm:pt-4 border-t border-primary/20">
                 <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Estimated Gold Credit</p>
