@@ -47,6 +47,7 @@ const getMenuItems = (role) => {
     { name: "Admin Management", href: "/admin/admins", icon: ShieldCheck },
     { name: "User Management", href: "/admin/users", icon: Users },
     { name: "Customer Management", href: "/admin/customers", icon: Users },
+    { name: "Activity Logs", href: "/admin/customer-logs", icon: BookOpen },
     { name: "KYC Management", href: "/admin/kyc", icon: ShieldCheck },
     { name: "Emergency Requests", href: "/admin/cap-requests", icon: AlertTriangle },
     { name: "Gold Rate", href: "/admin/gold-rate", icon: Coins },

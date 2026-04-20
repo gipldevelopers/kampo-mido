@@ -59,12 +59,12 @@ export default function Toast({ message, type = 'info', onClose }) {
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${isVisible
-        ? "opacity-100 translate-x-0"
-        : "opacity-0 translate-x-8"
+      className={`fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[100] transition-all duration-500 ease-in-out w-[calc(100%-2rem)] sm:w-auto max-w-md ${isVisible
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 -translate-y-8"
         }`}
     >
-      <div className={`flex items-center gap-3 px-4 py-3 rounded shadow-lg min-w-[450px] text-white ${config.bg}`}>
+      <div className={`flex items-center gap-3 px-4 py-3 rounded shadow-lg text-white ${config.bg}`}>
         <div className="shrink-0">
           {config.icon}
         </div>
